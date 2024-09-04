@@ -1,0 +1,5 @@
+backend/dist
+backend/database
+backend/.env
+
+node_modules
