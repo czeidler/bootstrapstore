@@ -219,22 +219,33 @@ export async function listFiles(
   return new FileRepository(con).listFiles(auth.userId);
 }
 
-export async function putFile(
+export async function getFile(
   auth: AuthData,
   name: string,
-  data: string,
   con: Connection
-) {
+): Promise<string | undefined> {
   validateAuth(auth);
-  return new FileRepository(con).putFile(auth.userId, name, data);
+
+  return new FileRepository(con).getFile(auth.userId, name);
 }
 
-export async function deleteFile(
+export async function mutateFiles(
   auth: AuthData,
-  name: string,
+  updates: Record<string, string>,
+  deletes: string[],
   con: Connection
 ) {
   validateAuth(auth);
 
-  return new FileRepository(con).deleteFile(auth.userId, name);
+  await con.transaction().execute(async (con) => {
+    const repo = new FileRepository(con);
+    // delete first in case we add the same file again
+    for (const d of deletes) {
+      await repo.deleteFile(auth.userId, d);
+    }
+
+    for (const [key, data] of Object.entries(updates)) {
+      await repo.putFile(auth.userId, key, data);
+    }
+  });
 }

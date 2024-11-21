@@ -1,16 +1,4 @@
-import { Connection, NewUser, User, UserTable } from "./db";
-
-export type Manifest = {
-  /** Encryption key used to encrypt the file data */
-  encryptionKey: string;
-  /** File path to file information */
-  files: Record<
-    string,
-    {
-      hash: string;
-    }
-  >;
-};
+import { Connection, NewUser, User } from "./db";
 
 export class UserRepository {
   constructor(private readonly db: Connection) {}
@@ -49,6 +37,17 @@ export class FileRepository {
       .values({ user_id: userId, name, data })
       .onConflict((oc) => oc.columns(["user_id", "name"]).doUpdateSet({ data }))
       .execute();
+  }
+
+  async getFile(userId: string, name: string): Promise<string | undefined> {
+    const result = await this.db
+      .selectFrom("file")
+      .select("data")
+      .where("user_id", "=", userId)
+      .where("name", "=", name)
+      .execute();
+    const data = result[0]?.data;
+    return data;
   }
 
   async deleteFile(userId: string, name: string) {

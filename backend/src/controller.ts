@@ -5,12 +5,12 @@ import {
   ListFilesResponse,
   StartLoginResponse,
   StartRegistrationResponse,
-  deleteFile,
   finishLogin,
   finishRegistration,
+  getFile,
   listFiles,
   logout,
-  putFile,
+  mutateFiles,
   startLogin,
   startRegistration,
 } from "./service";
@@ -67,20 +67,26 @@ export const appRouter = t.router({
     .query(async (opts): Promise<ListFilesResponse> => {
       return listFiles(opts.input.auth, opts.ctx.connection);
     }),
-  putFile: t.procedure
-    .input(z.object({ auth: Auth, name: z.string(), data: z.string() }))
+  getFile: t.procedure
+    .input(z.object({ auth: Auth, name: z.string() }))
+    .query(async (opts): Promise<string | undefined> => {
+      return getFile(opts.input.auth, opts.input.name, opts.ctx.connection);
+    }),
+  mutateFiles: t.procedure
+    .input(
+      z.object({
+        auth: Auth,
+        updates: z.record(z.string(), z.string()),
+        deletes: z.array(z.string()),
+      })
+    )
     .mutation(async (opts): Promise<void> => {
-      await putFile(
+      await mutateFiles(
         opts.input.auth,
-        opts.input.name,
-        opts.input.data,
+        opts.input.updates,
+        opts.input.deletes,
         opts.ctx.connection
       );
-    }),
-  deleteFile: t.procedure
-    .input(z.object({ auth: Auth, name: z.string() }))
-    .mutation(async (opts): Promise<void> => {
-      await deleteFile(opts.input.auth, opts.input.name, opts.ctx.connection);
     }),
 });
 // export type definition of API
