@@ -66,6 +66,7 @@ const migrations: Record<string, Migration> = {
         .addColumn("id", "integer", (col) =>
           col.primaryKey().notNull().autoIncrement()
         )
+        .addColumn("hash256", "blob", (col) => col.notNull())
         // root tree hash
         .addColumn("tree_content_id", "integer", (col) =>
           col.references("content.id").notNull()

@@ -104,19 +104,15 @@ class Repository {
     return repo;
   }
 
+  private blobPath(hex: string): string[] {
+    return [...this.basePath, "blobs", hex.slice(0, 2), hex.slice(2)];
+  }
+
   async insertFile(path: string[], data: Buffer): Promise<void> {
     const cipher = await this.encryption.encrypt(data, this.key);
     const cipherHash = await sha256(cipher);
-    const chipherHashHex = cipher.toString("hex");
-    await this.store.write(
-      [
-        ...this.basePath,
-        "blobs",
-        chipherHashHex.slice(0, 2),
-        chipherHashHex.slice(2),
-      ],
-      cipher
-    );
+    const cipherHashHex = cipher.toString("hex");
+    await this.store.write(this.blobPath(cipherHashHex), cipher);
     const plainHash = sha256(data);
     const existing = await this.indexRepo.readContent(plainHash);
     const blobDBHash =
@@ -133,9 +129,44 @@ class Repository {
     });
   }
 
-  async snapshot(timestamp: Date): Promise<void> {}
+  async createSnapshot(timestamp: Date): Promise<void> {
+    const head = await this.indexRepo.readLatestSnapshot();
+    const treeHash = await TreeBuilder.finalizeTree(this.indexRepo, this.root);
+    await this.indexRepo.writeSnapshot(
+      treeHash,
+      timestamp,
+      head ? [head.hash256] : []
+    );
+  }
 
-  async readFile(path: string[]): Promise<Buffer | undefined> {}
+  async readFile(path: string[]): Promise<Buffer | undefined> {
+    const fileEntry = await TreeBuilder.readBlob(
+      this.indexRepo,
+      this.root,
+      path
+    );
+    if (fileEntry === undefined) {
+      return undefined;
+    }
+    const info = await this.indexRepo.readEncryptedBlobInfo(fileEntry?.hash[1]);
+    const plainParts = await Promise.all(
+      info.encryptedParts.map(async (part) => {
+        const hex = part.toString("hex");
+        const cipher = await this.store.read(this.blobPath(hex));
+        return this.encryption.decrypt(cipher, info.key);
+      })
+    );
+    return Buffer.concat(plainParts);
+  }
 
-  async listDirectory(path: string[]): Promise<DirEntry[] | undefined> {}
+  async listDirectory(path: string[]): Promise<DirEntry[] | undefined> {
+    const directory = await TreeBuilder.loadTree(
+      this.indexRepo,
+      this.root,
+      path
+    );
+    return Array.from(directory.entries.entries()).map((it) => ({
+      name: it[0],
+    }));
+  }
 }

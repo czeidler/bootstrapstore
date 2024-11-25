@@ -1,3 +1,5 @@
+import { Hash, HashPart, hashParts } from "./hasher";
+
 export type EncryptedBlobInfo = {
   key: Buffer;
   encryptedParts: Hash[];
@@ -14,7 +16,6 @@ export type TreeWriter = {
   ): Promise<DBHash>;
 };
 
-export type Hash = Buffer;
 export type DBHash = [number, Buffer];
 
 export type BlobEntry = {
@@ -40,9 +41,6 @@ export type Entry = BlobEntry | TreeEntry | MutatedTreeEntry;
 export type Tree = {
   entries: Map<string, Entry>;
 };
-
-type HashPart = { key: string; value: Buffer | string };
-
 function entryToHashable(
   name: string,
   entry: BlobEntry | TreeEntry
@@ -59,30 +57,14 @@ function entryToHashable(
   ];
 }
 
-async function hashParts(parts: HashPart[]): Promise<Hash> {
-  const all = parts.reduce<Buffer[]>((prev, cur) => {
-    prev.push(Buffer.from(cur.key, "utf8"));
-    if (typeof cur.value === "string") {
-      prev.push(Buffer.from(cur.key, "utf8"));
-    } else {
-      prev.push(cur.value);
-    }
-    return prev;
-  }, []);
-  const hashArray = await crypto.subtle.digest("SHA-256", Buffer.concat(all));
-  const hash = Buffer.from(hashArray);
-  return hash;
-}
-
 export class TreeBuilder {
-  static async insertBlob(
+  static async loadTree(
     loader: TreeLoader,
     root: Tree,
-    path: string[],
-    blob: BlobEntry
-  ) {
+    dirPath: string[]
+  ): Promise<Tree> {
     let tree: Tree = root;
-    for (const p of path.slice(0, -1)) {
+    for (const p of dirPath) {
       const e = root.entries.get(p);
       if (e === undefined) {
         const newTree: Tree = { entries: new Map() };
@@ -114,11 +96,37 @@ export class TreeBuilder {
         hash: undefined,
       });
     }
+    return tree;
+  }
+
+  static async insertBlob(
+    loader: TreeLoader,
+    root: Tree,
+    path: string[],
+    blob: BlobEntry
+  ) {
+    const tree = await TreeBuilder.loadTree(loader, root, path.slice(0, -1));
     const name = path[path.length - 1];
     if (name === undefined) {
       throw Error("Invalid path");
     }
     tree.entries.set(name, blob);
+  }
+
+  static async readBlob(
+    loader: TreeLoader,
+    root: Tree,
+    path: string[]
+  ): Promise<BlobEntry | undefined> {
+    const tree = await TreeBuilder.loadTree(loader, root, path.slice(0, -1));
+    const file = tree.entries.get(path[path.length - 1]);
+    if (file === undefined) {
+      return undefined;
+    }
+    if (file.type !== "blob") {
+      throw Error("Path points to a directory and not to a file");
+    }
+    return file;
   }
 
   static async finalizeTree(writer: TreeWriter, tree: Tree): Promise<DBHash> {

@@ -28,6 +28,7 @@ export interface EncBlobPart {
 }
 
 export interface Snapshot {
+  hash256: Buffer;
   id: Generated<number>;
   parents: string;
   timestamp: string;

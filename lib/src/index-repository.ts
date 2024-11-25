@@ -4,12 +4,12 @@ import {
   BlobEntry,
   DBHash,
   EncryptedBlobInfo,
-  Hash,
   Tree,
   TreeEntry,
   TreeLoader,
   TreeWriter,
 } from "./tree-builder";
+import { Hash, hashParts } from "./hasher";
 
 type EncryptedBlobInfoReader = {
   readEncryptedBlobInfo(plainBlobHash: Hash): Promise<EncryptedBlobInfo>;
@@ -26,6 +26,7 @@ type EncryptedBlobInfoWriter = {
 };
 
 type Snapshot = {
+  hash256: Hash;
   tree: DBHash;
   timestamp: Date;
   parents: string[];
@@ -170,6 +171,7 @@ export class IndexRepository
       return undefined;
     }
     return {
+      hash256: data.hash256,
       tree: [data.id, data.hash265],
       timestamp: new Date(data.timestamp),
       parents: JSON.parse(data.parents),
@@ -177,7 +179,13 @@ export class IndexRepository
   }
 
   async writeSnapshot(tree: DBHash, timestamp: Date, parents: Hash[]) {
+    const snapshotHash = await hashParts([
+      { key: "t", value: tree[1] },
+      { key: "ts", value: timestamp },
+      ...parents.map((it) => ({ key: "p", value: it })),
+    ]);
     await this.db.insertInto("snapshot").values({
+      hash256: snapshotHash,
       tree_content_id: tree[0],
       timestamp: timestamp.toISOString(),
       parents: JSON.stringify(parents.map((it) => it.toString("hex"))),
