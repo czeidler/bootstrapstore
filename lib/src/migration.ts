@@ -1,4 +1,4 @@
-import { Kysely, Migration, Migrator, sql } from "kysely";
+import { Kysely, Migration, Migrator } from "kysely";
 
 const migrations: Record<string, Migration> = {
   "2024_11_11_init": {
@@ -30,7 +30,7 @@ const migrations: Record<string, Migration> = {
         // b | t (blob or tree)
         .addColumn("type", "varchar", (col) => col.notNull())
         // The content blob id
-        .addColumn("blob_id", "integer", (col) =>
+        .addColumn("content_id", "integer", (col) =>
           col.references("content.id").notNull()
         )
         .execute();
@@ -103,6 +103,4 @@ export async function migrateToLatest(db: Kysely<unknown>) {
     console.error(error);
     process.exit(1);
   }
-
-  await db.destroy();
 }

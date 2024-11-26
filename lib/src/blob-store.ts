@@ -1,4 +1,3 @@
-import { IndexRepository } from "./index-repository";
 import p from "path";
 import fs from "fs/promises";
 
@@ -8,8 +7,9 @@ export type BlobStore = {
   write(path: string[], data: Buffer): Promise<void>;
 };
 
-class FileBlobStore implements BlobStore {
+export class FileBlobStore implements BlobStore {
   constructor(private baseDir: string[]) {}
+
   async list(path: string[]): Promise<string[]> {
     const fullPath = p.join(...this.baseDir, ...path);
     const content = await fs.readdir(fullPath);
@@ -19,8 +19,10 @@ class FileBlobStore implements BlobStore {
     const fullPath = p.join(...this.baseDir, ...path);
     return fs.readFile(fullPath);
   }
-  write(path: string[], data: Buffer): Promise<void> {
-    const fullPath = p.join(...this.baseDir, ...path);
+  async write(path: string[], data: Buffer): Promise<void> {
+    const fullPathArray = [...this.baseDir, ...path];
+    const fullPath = p.join(...fullPathArray);
+    await fs.mkdir(p.join(...fullPathArray.slice(0, -1)), { recursive: true });
     return fs.writeFile(fullPath, data);
   }
 }

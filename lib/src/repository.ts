@@ -11,13 +11,13 @@ export type DirEntry = {
   name: string;
 };
 
-class Repository {
+export class Repository {
   private constructor(
+    public repoId: string,
     private store: BlobStore,
     private encryption: Encryption,
     private key: Buffer,
     private basePath: string[],
-    private repo_id: string,
     private instance: SerializableDBInstance
   ) {}
 
@@ -44,30 +44,30 @@ class Repository {
     basePath: string,
     key: Buffer
   ): Promise<Repository> {
-    const repo_id = Buffer.from(
-      crypto.getRandomValues(new Uint8Array(16))
-    ).toString("base64");
+    const repoId = Buffer.from(
+      crypto.getRandomValues(new Uint8Array(12))
+    ).toString("hex");
 
-    const repoPath = [basePath, "repos", repo_id];
+    const repoPath = [basePath, "repos", repoId];
 
     const instance = serializeDb.create(undefined);
     const kysely = new Kysely<DB>({
       dialect: instance.dialect,
     });
     await migrateToLatest(kysely as Kysely<unknown>);
-    await kysely.destroy();
 
     const buffer = instance.serialize();
+
     const encryption: Encryption = new AESGCMEncryption();
     const cipher = await encryption.encrypt(buffer, key);
     await store.write([...repoPath, "index"], cipher);
 
     const repo = new Repository(
+      repoId,
       store,
       encryption,
       key,
       repoPath,
-      repo_id,
       instance
     );
     await repo.init();
@@ -75,13 +75,13 @@ class Repository {
   }
 
   static async open(
+    repoId: string,
     serializeDb: SerializableDB,
     store: BlobStore,
     basePath: string,
-    repo_id: string,
     key: Buffer
   ): Promise<Repository> {
-    const repoPath = [basePath, "repos", repo_id];
+    const repoPath = [basePath, "repos", repoId];
     const buffer = await store.read([...repoPath, "index"]);
     const encryption: Encryption = new AESGCMEncryption();
     const plain = await encryption.decrypt(buffer, key);
@@ -90,14 +90,13 @@ class Repository {
       dialect: instance.dialect,
     });
     await migrateToLatest(kysely as Kysely<unknown>);
-    await kysely.destroy();
 
     const repo = new Repository(
+      repoId,
       store,
       encryption,
       key,
       repoPath,
-      repo_id,
       instance
     );
     await repo.init();
@@ -109,23 +108,24 @@ class Repository {
   }
 
   async insertFile(path: string[], data: Buffer): Promise<void> {
-    const cipher = await this.encryption.encrypt(data, this.key);
-    const cipherHash = await sha256(cipher);
-    const cipherHashHex = cipher.toString("hex");
+    const key = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
+    const cipher = await this.encryption.encrypt(data, key);
+    const cipherHash = sha256(cipher);
+    const cipherHashHex = cipherHash.toString("hex");
     await this.store.write(this.blobPath(cipherHashHex), cipher);
     const plainHash = sha256(data);
     const existing = await this.indexRepo.readContent(plainHash);
-    const blobDBHash =
+    const plainDBHash =
       existing !== undefined
         ? existing
         : await this.indexRepo.writeEncryptedBlobInfo(plainHash, {
-            key: Buffer.from(crypto.getRandomValues(new Uint8Array(16))),
+            key,
             encryptedParts: [cipherHash],
           });
 
-    TreeBuilder.insertBlob(this.indexRepo, this.root, path, {
+    await TreeBuilder.insertBlob(this.indexRepo, this.root, path, {
       type: "blob",
-      hash: blobDBHash,
+      hash: plainDBHash,
     });
   }
 
@@ -137,6 +137,9 @@ class Repository {
       timestamp,
       head ? [head.hash256] : []
     );
+    const plain = this.instance.serialize();
+    const cipher = await this.encryption.encrypt(plain, this.key);
+    await this.store.write([...this.basePath, "index"], cipher);
   }
 
   async readFile(path: string[]): Promise<Buffer | undefined> {
@@ -148,7 +151,7 @@ class Repository {
     if (fileEntry === undefined) {
       return undefined;
     }
-    const info = await this.indexRepo.readEncryptedBlobInfo(fileEntry?.hash[1]);
+    const info = await this.indexRepo.readEncryptedBlobInfo(fileEntry.hash[1]);
     const plainParts = await Promise.all(
       info.encryptedParts.map(async (part) => {
         const hex = part.toString("hex");

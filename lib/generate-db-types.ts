@@ -32,4 +32,4 @@ async function main() {
   fs.rmSync(tempDBPath);
 }
 
-main().catch((e) => console.error(e));
+main().catch((e: unknown) => console.error(e));

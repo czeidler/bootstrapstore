@@ -141,7 +141,7 @@ export class TreeBuilder {
         case "tree":
           finalizedEntries.push({ name, entry });
           break;
-        case "mutateTree":
+        case "mutateTree": {
           const entryDataHash = await TreeBuilder.finalizeTree(
             writer,
             entry.data
@@ -154,6 +154,7 @@ export class TreeBuilder {
           tree.entries.set(name, finalizedEntry);
           finalizedEntries.push({ name, entry: finalizedEntry });
           break;
+        }
         default:
           throw ((_: never) => {})(entry);
       }

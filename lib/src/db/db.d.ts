@@ -36,7 +36,7 @@ export interface Snapshot {
 }
 
 export interface TreeEntry {
-  blob_id: number;
+  content_id: number;
   id: Generated<number>;
   name: string;
   tree_id: number;

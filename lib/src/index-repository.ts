@@ -44,7 +44,7 @@ export class IndexRepository
   async readTree(hash: DBHash): Promise<Tree> {
     const result = await this.db
       .selectFrom("tree_entry")
-      .innerJoin("content", "content.id", "tree_entry.blob_id")
+      .innerJoin("content", "content.id", "tree_entry.content_id")
       .selectAll("tree_entry")
       .select("content.hash265")
       .where("tree_entry.tree_id", "=", hash[0])
@@ -88,7 +88,7 @@ export class IndexRepository
           name: it.name,
           tree_id: treeDBHash[0],
           type: it.entry.type === "blob" ? "b" : "t",
-          blob_id: it.entry.hash[0],
+          content_id: it.entry.hash[0],
         }))
       )
       .execute();
@@ -163,7 +163,7 @@ export class IndexRepository
       .selectFrom("snapshot")
       .innerJoin("content", "snapshot.tree_content_id", "content.id")
       .selectAll("snapshot")
-      .select("content.hash265")
+      .select("content.hash265 as treeHash")
       .orderBy("snapshot.id desc")
       .limit(1)
       .executeTakeFirst();
@@ -172,7 +172,7 @@ export class IndexRepository
     }
     return {
       hash256: data.hash256,
-      tree: [data.id, data.hash265],
+      tree: [data.tree_content_id, data.treeHash],
       timestamp: new Date(data.timestamp),
       parents: JSON.parse(data.parents),
     };
@@ -184,11 +184,14 @@ export class IndexRepository
       { key: "ts", value: timestamp },
       ...parents.map((it) => ({ key: "p", value: it })),
     ]);
-    await this.db.insertInto("snapshot").values({
-      hash256: snapshotHash,
-      tree_content_id: tree[0],
-      timestamp: timestamp.toISOString(),
-      parents: JSON.stringify(parents.map((it) => it.toString("hex"))),
-    });
+    await this.db
+      .insertInto("snapshot")
+      .values({
+        hash256: snapshotHash,
+        tree_content_id: tree[0],
+        timestamp: timestamp.toISOString(),
+        parents: JSON.stringify(parents.map((it) => it.toString("hex"))),
+      })
+      .execute();
   }
 }
