@@ -1,16 +1,18 @@
-import { describe, test, assert } from "vitest";
+import { describe, test, assert, afterAll } from "vitest";
 import { Repository } from "./repository";
 import { FileBlobStore } from "./blob-store";
 import { BetterSqliteSerializableDB } from "./sqlite";
+import * as fs from "node:fs";
 
-describe("suite", () => {
-  test("test", async () => {
+describe("Repository tests", () => {
+  const testDir = "./test";
+  test("should do basic IO", async () => {
     const store = new FileBlobStore(["."]);
     const key = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
     const repo = await Repository.create(
       BetterSqliteSerializableDB,
       store,
-      "./test",
+      testDir,
       key
     );
     await repo.insertFile(["file1"], Buffer.from("filedatat1"));
@@ -23,12 +25,16 @@ describe("suite", () => {
       repo.repoId,
       BetterSqliteSerializableDB,
       store,
-      "./test",
+      testDir,
       key
     );
     const list2 = await repo2.listDirectory([]);
     assert.equal(list2?.length, 1);
     const content = await repo2.readFile(["file1"]);
     assert.equal(content?.toString(), "filedatat1");
+  });
+
+  afterAll(() => {
+    fs.rmSync(testDir, { recursive: true, force: true });
   });
 });
