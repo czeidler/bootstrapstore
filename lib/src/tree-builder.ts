@@ -33,7 +33,6 @@ export type TreeEntry = {
 export type MutatedTreeEntry = {
   type: "mutateTree";
   data: Tree;
-  hash: Hash | undefined;
 };
 
 export type Entry = BlobEntry | TreeEntry | MutatedTreeEntry;
@@ -65,36 +64,37 @@ export class TreeBuilder {
   ): Promise<Tree> {
     let tree: Tree = root;
     for (const p of dirPath) {
-      const e = root.entries.get(p);
+      const e = tree.entries.get(p);
       if (e === undefined) {
         const newTree: Tree = { entries: new Map() };
         tree.entries.set(p, {
           type: "mutateTree",
           data: newTree,
-          hash: undefined,
         });
         tree = newTree;
         continue;
       }
       if (e.type === "tree") {
+        let t;
         if (!e.data) {
-          const t = await loader.readTree(e.hash);
+          t = await loader.readTree(e.hash);
           e.data = t;
-          tree = t;
         } else {
-          tree = e.data;
+          t = e.data;
         }
+
+        // mark the entry as dirty
+        tree.entries.set(p, {
+          type: "mutateTree",
+          data: t,
+        });
+
+        tree = t;
       } else if (e.type === "mutateTree") {
         tree = e.data;
       } else {
         throw Error("Invalid path");
       }
-      // mark the entry as dirty
-      tree.entries.set(p, {
-        type: "mutateTree",
-        data: tree,
-        hash: undefined,
-      });
     }
     return tree;
   }
