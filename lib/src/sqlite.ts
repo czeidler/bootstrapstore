@@ -3,21 +3,21 @@ import { Dialect, SqliteDialect } from "kysely";
 
 export interface SerializableDBInstance {
   dialect: Dialect;
-  serialize: () => Buffer;
+  serialize: () => Promise<Buffer>;
 }
 
 export interface SerializableDB {
-  create: (buffer: Buffer | undefined) => SerializableDBInstance;
+  create: (buffer: Buffer | undefined) => Promise<SerializableDBInstance>;
 }
 
 export const BetterSqliteSerializableDB: SerializableDB = {
-  create: (buffer: Buffer | undefined) => {
+  create: async (buffer: Buffer | undefined) => {
     const db = new Database(buffer);
     return {
       dialect: new SqliteDialect({
         database: db,
       }),
-      serialize: () => db.serialize(),
+      serialize: async () => db.serialize(),
     };
   },
 };

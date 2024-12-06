@@ -1,11 +1,12 @@
 import { describe, test, assert, afterAll } from "vitest";
 import { Repository } from "./repository";
-import { FileBlobStore } from "./blob-store";
+import { FileBlobStore } from "./file-blob-store";
 import { BetterSqliteSerializableDB } from "./sqlite";
 import * as fs from "node:fs";
+import path from "node:path";
 
 describe("Repository tests", () => {
-  const testDir = "./test";
+  const testDir = ["./test"];
   test("should do basic IO", async () => {
     const store = new FileBlobStore(["."]);
     const key = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
@@ -66,6 +67,6 @@ describe("Repository tests", () => {
   });
 
   afterAll(() => {
-    fs.rmSync(testDir, { recursive: true, force: true });
+    fs.rmSync(path.join(...testDir), { recursive: true, force: true });
   });
 });

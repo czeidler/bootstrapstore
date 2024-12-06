@@ -17,7 +17,7 @@ export async function snapshotDir(repo: Repository, dir: string) {
     }
     const entryNames = await fs.readdir(dir);
     for (const entryName of entryNames) {
-      const entryParts = [...currentDir.path, entryName];
+      const entryParts = [currentDir.path, entryName];
       const entryPath = path.join(currentDir.path, entryName);
 
       const stats = await fs.stat(entryPath);

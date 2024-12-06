@@ -190,7 +190,7 @@ export class IndexRepository
         hash256: snapshotHash,
         tree_content_id: tree[0],
         timestamp: timestamp.toISOString(),
-        parents: JSON.stringify(parents.map((it) => it.toString("hex"))),
+        parents: JSON.stringify(parents.map((it) => bufferToHex(it))),
       })
       .execute();
   }
