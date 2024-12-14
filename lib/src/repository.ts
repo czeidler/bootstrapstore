@@ -107,7 +107,7 @@ export class Repository {
     const key = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
     const cipher = await this.encryption.encrypt(data, key);
     const cipherHash = sha256(cipher);
-    const cipherHashHex = cipherHash.toString("hex");
+    const cipherHashHex = bufferToHex(cipherHash);
     await this.store.write(this.blobPath(cipherHashHex), cipher);
     const plainHash = sha256(data);
     const existing = await this.indexRepo.readContent(plainHash);

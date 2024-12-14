@@ -10,6 +10,7 @@ import {
   TreeWriter,
 } from "./tree-builder";
 import { Hash, hashParts } from "./hasher";
+import { bufferToHex } from "./utils";
 
 type EncryptedBlobInfoReader = {
   readEncryptedBlobInfo(plainBlobHash: Hash): Promise<EncryptedBlobInfo>;
@@ -50,7 +51,7 @@ export class IndexRepository
       .where("tree_entry.tree_id", "=", hash[0])
       .execute();
     const entries = result.reduce((prev, cur) => {
-      const hash: [number, Buffer] = [Number(cur.id), cur.hash265];
+      const hash: [number, Buffer] = [Number(cur.content_id), cur.hash265];
       if (cur.type === "b") {
         prev.set(cur.name, {
           type: "blob",
@@ -174,7 +175,7 @@ export class IndexRepository
       hash256: data.hash256,
       tree: [data.tree_content_id, data.treeHash],
       timestamp: new Date(data.timestamp),
-      parents: JSON.parse(data.parents),
+      parents: JSON.parse(data.parents) as string[],
     };
   }
 
