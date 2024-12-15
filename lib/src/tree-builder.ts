@@ -57,12 +57,10 @@ function entryToHashable(
 }
 
 export class TreeBuilder {
-  static async loadTree(
-    loader: TreeLoader,
-    root: Tree,
-    dirPath: string[]
-  ): Promise<Tree> {
-    let tree: Tree = root;
+  constructor(private root: Tree) {}
+
+  async loadTree(loader: TreeLoader, dirPath: string[]): Promise<Tree> {
+    let tree: Tree = this.root;
     for (const p of dirPath) {
       const e = tree.entries.get(p);
       if (e === undefined) {
@@ -99,26 +97,21 @@ export class TreeBuilder {
     return tree;
   }
 
-  static async insertBlob(
-    loader: TreeLoader,
-    root: Tree,
-    path: string[],
-    blob: BlobEntry
-  ) {
-    const tree = await TreeBuilder.loadTree(loader, root, path.slice(0, -1));
+  async insertBlob(loader: TreeLoader, path: string[], blob: BlobEntry) {
+    const tree = await this.loadTree(loader, path.slice(0, -1));
     const name = path[path.length - 1];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (name === undefined) {
       throw Error("Invalid path");
     }
     tree.entries.set(name, blob);
   }
 
-  static async readBlob(
+  async readBlob(
     loader: TreeLoader,
-    root: Tree,
     path: string[]
   ): Promise<BlobEntry | undefined> {
-    const tree = await TreeBuilder.loadTree(loader, root, path.slice(0, -1));
+    const tree = await this.loadTree(loader, path.slice(0, -1));
     const file = tree.entries.get(path[path.length - 1]);
     if (file === undefined) {
       return undefined;
@@ -129,7 +122,14 @@ export class TreeBuilder {
     return file;
   }
 
-  static async finalizeTree(writer: TreeWriter, tree: Tree): Promise<DBHash> {
+  async finalize(writer: TreeWriter): Promise<DBHash> {
+    return TreeBuilder.finalizeTree(writer, this.root);
+  }
+
+  private static async finalizeTree(
+    writer: TreeWriter,
+    tree: Tree
+  ): Promise<DBHash> {
     const entries = Array.from(tree.entries.entries()).sort(([a], [b]) =>
       a.localeCompare(b)
     );
@@ -156,7 +156,8 @@ export class TreeBuilder {
           break;
         }
         default:
-          throw ((_: never) => {})(entry);
+          ((_: never) => {})(entry);
+          throw Error();
       }
     }
 

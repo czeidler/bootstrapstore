@@ -21,7 +21,8 @@ async function main() {
         if (e) {
           console.error(e);
           console.error(stderr);
-          return err(e);
+          err(e);
+          return;
         }
         console.log(stdout);
         res(true);
@@ -32,4 +33,6 @@ async function main() {
   fs.rmSync(tempDBPath);
 }
 
-main().catch((e: unknown) => console.error(e));
+main().catch((e: unknown) => {
+  console.error(e);
+});

@@ -1,7 +1,7 @@
 import { describe, test, assert, afterAll } from "vitest";
-import { Repository } from "./repository";
+import { Repository } from "lib";
 import { FileBlobStore } from "./file-blob-store";
-import { BetterSqliteSerializableDB } from "./sqlite";
+import { BetterSqliteSerializableDB } from "./better-sqlite";
 import * as fs from "node:fs";
 import path from "node:path";
 

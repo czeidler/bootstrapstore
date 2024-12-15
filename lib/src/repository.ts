@@ -5,7 +5,7 @@ import { migrateToLatest } from "./migration";
 import { SerializableDB, SerializableDBInstance } from "./sqlite";
 import { AESGCMEncryption, Encryption, sha256 } from "./encryption";
 import { IndexRepository } from "./index-repository";
-import { Tree, TreeBuilder } from "./tree-builder";
+import { TreeBuilder } from "./tree-builder";
 import { arrayToHex, bufferToHex } from "./utils";
 
 export type DirEntry = {
@@ -23,7 +23,7 @@ export class Repository {
   ) {}
 
   private indexRepo!: IndexRepository;
-  private root!: Tree;
+  private treeBuilder!: TreeBuilder;
 
   private async init() {
     const kysely = new Kysely<DB>({
@@ -33,9 +33,11 @@ export class Repository {
 
     const snapshot = await this.indexRepo.readLatestSnapshot();
     if (snapshot === undefined) {
-      this.root = { entries: new Map() };
+      this.treeBuilder = new TreeBuilder({ entries: new Map() });
     } else {
-      this.root = await this.indexRepo.readTree(snapshot.tree);
+      this.treeBuilder = new TreeBuilder(
+        await this.indexRepo.readTree(snapshot.tree)
+      );
     }
   }
 
@@ -119,7 +121,7 @@ export class Repository {
             encryptedParts: [cipherHash],
           });
 
-    await TreeBuilder.insertBlob(this.indexRepo, this.root, path, {
+    await this.treeBuilder.insertBlob(this.indexRepo, path, {
       type: "blob",
       hash: plainDBHash,
     });
@@ -127,7 +129,7 @@ export class Repository {
 
   async createSnapshot(timestamp: Date): Promise<void> {
     const head = await this.indexRepo.readLatestSnapshot();
-    const treeHash = await TreeBuilder.finalizeTree(this.indexRepo, this.root);
+    const treeHash = await this.treeBuilder.finalize(this.indexRepo);
     await this.indexRepo.writeSnapshot(
       treeHash,
       timestamp,
@@ -139,11 +141,7 @@ export class Repository {
   }
 
   async readFile(path: string[]): Promise<Buffer | undefined> {
-    const fileEntry = await TreeBuilder.readBlob(
-      this.indexRepo,
-      this.root,
-      path
-    );
+    const fileEntry = await this.treeBuilder.readBlob(this.indexRepo, path);
     if (fileEntry === undefined) {
       return undefined;
     }
@@ -159,11 +157,7 @@ export class Repository {
   }
 
   async listDirectory(path: string[]): Promise<DirEntry[] | undefined> {
-    const directory = await TreeBuilder.loadTree(
-      this.indexRepo,
-      this.root,
-      path
-    );
+    const directory = await this.treeBuilder.loadTree(this.indexRepo, path);
     return Array.from(directory.entries.entries()).map((it) => ({
       name: it[0],
     }));
