@@ -3,3 +3,7 @@ backend/database
 backend/.env
 
 node_modules
+
+dist
+.vscode/*
+testRepo

@@ -1,5 +1,5 @@
 import type { BlobStore } from "lib";
-import { tsr } from "./App";
+import { tsr } from "./tsr";
 
 export class HttpBlobStore implements BlobStore {
   async list(path: string[]): Promise<string[]> {

@@ -1,95 +1,120 @@
-import { RenderImageProps, RowsPhotoAlbum } from "react-photo-album";
+import { RowsPhotoAlbum } from "react-photo-album";
 import "react-photo-album/rows.css";
 import { SqlocalSerializableDB } from "./sqlite";
 import { HttpBlobStore } from "./HttpBlobStore";
 import { Repository } from "lib";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { ImageDialog } from "./ImageDialog";
+import { Image } from "./Image";
+import { Box, Pagination, Stack } from "@mui/material";
 
 const store = new HttpBlobStore();
 
-function Image(
-  props: { repo: Repository | undefined; path: string } & RenderImageProps
-) {
-  console.log(`image`);
-  const [image, setImage] = useState<string | undefined>();
-  useEffect(() => {
-    if (props.repo === undefined) {
-      return;
-    }
-    (async () => {
-      const file = await props.repo?.readFile(props.path.split("//"));
-      console.log(file);
+const baseWidth = 800;
+const baseHeight = 600;
 
-      if (file === undefined) {
-        return;
-      }
-      const blob = new Blob([file]);
+type RepoPhoto = { src: string; path: string[]; width: number; height: number };
 
-      // Create a URL for the Blob
-      const blobUrl = URL.createObjectURL(blob);
-      setImage(blobUrl);
-    })();
-  }, [props.path, props.repo]);
-  if (props.repo === undefined || image === undefined) {
-    return null;
-  }
-
-  return <img {...props} src={image} />;
-}
-
-function passwordToKey(password: string): Buffer {
-  const buffer = Buffer.alloc(16, 0); // Create a 16-byte buffer filled with zeros
-  const passwordBuffer = Buffer.from(password, "utf8");
-  passwordBuffer.copy(buffer, 0, 0, Math.min(passwordBuffer.length, 16));
-  return buffer;
-}
-
-export default function Gallery() {
+export default function Gallery(props: { repoKey: Buffer }) {
   const [repo, setRepo] = useState<Repository>();
 
-  const [imagePaths, setImagePaths] = useState<string[]>([]);
+  const [images, setImages] = useState<RepoPhoto[] | undefined>(undefined);
   useEffect(() => {
     (async () => {
-      const indexData = await store.read(["index"]);
-      console.log(indexData);
-      const key = passwordToKey("mySecret123");
       const repo = await Repository.open(
         "noid",
         SqlocalSerializableDB,
         store,
         [],
-        key
+        props.repoKey
       );
       setRepo(repo);
     })();
-  }, []);
+  }, [props]);
 
   useEffect(() => {
     if (repo === undefined) {
       return;
     }
     (async () => {
-      const baseDir: string[] = ["./testData"];
+      const baseDir: string[] = [];
       const content = await repo.listDirectory(baseDir);
-      console.log(content);
-      setImagePaths(
-        content?.map((it) => [...baseDir, it.name].join("//")) ?? []
+      setImages(
+        content
+          ?.filter((it) => it.name.endsWith(".jpg"))
+          .map((it) => ({
+            src: [...baseDir, it.name].join("/"),
+            path: [...baseDir, it.name],
+            width: baseWidth,
+            height: baseHeight,
+          })) ?? []
       );
     })();
   }, [repo]);
+  // Update image dimensions
+  const onLoaded = useCallback(
+    (index: number, image: { width: number; height: number }) => {
+      const newImages = [...(images ?? [])];
+      newImages[index].width = image.width;
+      newImages[index].height = image.height;
+      setImages(newImages);
+    },
+    [images]
+  );
 
+  const [selected, setSelected] = useState<
+    { src: string; path: string[] } | undefined
+  >(undefined);
+  const [page, setPage] = useState(0);
+  const imagesPerPage = 25;
+  const imagesOnPage = images?.slice(
+    page * imagesPerPage,
+    page * imagesPerPage + imagesPerPage
+  );
   return (
-    <RowsPhotoAlbum
-      sizes={{ size: "100vw" }}
-      defaultContainerWidth={1000}
-      photos={imagePaths.map((it) => ({
-        src: it,
-        width: 800,
-        height: 600,
-      }))}
-      render={{
-        image: (props) => <Image repo={repo} path={props.src} {...props} />,
-      }}
-    />
+    <>
+      <Stack direction={"column"} height="100%">
+        <Box overflow={"auto"}>
+          <RowsPhotoAlbum
+            sizes={{ size: "100vw" }}
+            rowConstraints={{
+              maxPhotos: 3,
+            }}
+            defaultContainerWidth={1000}
+            photos={imagesOnPage ?? []}
+            onClick={(e) => setSelected(e.photo)}
+            render={{
+              image: (props, context) => (
+                <Image
+                  repo={repo}
+                  path={context.photo.path}
+                  {...props}
+                  onLoaded={(image) =>
+                    onLoaded(page * imagesPerPage + context.index, image)
+                  }
+                  thumbnail={true}
+                />
+              ),
+            }}
+          />
+        </Box>
+        <Pagination
+          count={Math.ceil((images?.length ?? 0) / imagesPerPage)}
+          page={page + 1}
+          onChange={(_, value) => {
+            setPage(value - 1);
+          }}
+          sx={{ margin: "auto", marginBottom: 0 }}
+        />
+      </Stack>
+      <ImageDialog
+        repo={repo}
+        images={images ?? []}
+        onClose={() => {
+          setSelected(undefined);
+        }}
+        selected={selected}
+      />
+    </>
   );
 }

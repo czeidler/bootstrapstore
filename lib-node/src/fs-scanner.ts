@@ -1,9 +1,10 @@
 import path from "path";
-import { Repository } from "./repository";
-
 import fs from "fs/promises";
 
-export async function snapshotDir(repo: Repository, dir: string) {
+export async function scanDir(
+  dir: string,
+  callback: (entryParts: string[], blob: Buffer) => Promise<void>
+) {
   type Ongoing = {
     // parts relative to dir;
     pathParts: string[];
@@ -17,7 +18,7 @@ export async function snapshotDir(repo: Repository, dir: string) {
     }
     const entryNames = await fs.readdir(dir);
     for (const entryName of entryNames) {
-      const entryParts = [currentDir.path, entryName];
+      const entryParts = [...currentDir.pathParts, entryName];
       const entryPath = path.join(currentDir.path, entryName);
 
       const stats = await fs.stat(entryPath);
@@ -38,9 +39,8 @@ export async function snapshotDir(repo: Repository, dir: string) {
       }
       const blob = await fs.readFile(entryPath);
 
-      console.log(`> Insert: ${entryPath}`);
-      await repo.insertFile(entryParts, blob);
+      console.log(`> Insert: ${entryPath} to ${entryParts}`);
+      await callback(entryParts, blob);
     }
   }
-  await repo.createSnapshot(new Date());
 }

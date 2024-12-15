@@ -1,20 +1,25 @@
 import "./App.css";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { initTsrReactQuery } from "@ts-rest/react-query/v5";
-import { contract } from "../../backend/src/contract";
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  useSearchParams,
+} from "react-router-dom";
 import Gallery from "./Gallery";
-
-export const tsr = initTsrReactQuery(contract, {
-  baseUrl: "http://localhost:8080",
-});
+import { Stack } from "@mui/material";
+import { tsr } from "./tsr";
 
 const Home = () => {
+  const [searchParams] = useSearchParams();
+  const keyParam = searchParams.get("key");
+
+  const key = Buffer.from(keyParam ?? "", "hex");
   return (
-    <div style={{ width: "100%" }}>
-      <Gallery />
-    </div>
+    <Stack style={{ width: "100%", height: "100%" }}>
+      <Gallery repoKey={key} />
+    </Stack>
   );
 };
 
