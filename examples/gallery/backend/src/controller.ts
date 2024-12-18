@@ -13,6 +13,7 @@ const postsRouter = s.router(contract, {
   postBlob: {
     middleware: [upload.single("blob")],
     handler: async ({ query, file }) => {
+      throw new Error("Not supported");
       const blob = file as Express.Multer.File;
       await store.write(query.path, blob.buffer);
       return {
@@ -34,6 +35,7 @@ const postsRouter = s.router(contract, {
     };
   },
   list: async ({ query }) => {
+    throw new Error("Not supported");
     const content = await store.list(query.path);
     return {
       status: 200,
