@@ -9,6 +9,20 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
+export interface Branch {
+  commit_id: number;
+  id: Generated<number>;
+  name: string;
+}
+
+export interface Commit {
+  hash256: Buffer;
+  id: Generated<number>;
+  parents: string;
+  timestamp: string;
+  tree_content_id: number;
+}
+
 export interface Content {
   hash265: Buffer;
   id: Generated<number>;
@@ -27,14 +41,6 @@ export interface EncBlobPart {
   index: number;
 }
 
-export interface Snapshot {
-  hash256: Buffer;
-  id: Generated<number>;
-  parents: string;
-  timestamp: string;
-  tree_content_id: number;
-}
-
 export interface TreeEntry {
   content_id: number;
   id: Generated<number>;
@@ -44,9 +50,10 @@ export interface TreeEntry {
 }
 
 export interface DB {
+  branch: Branch;
+  commit: Commit;
   content: Content;
   enc_blob: EncBlob;
   enc_blob_part: EncBlobPart;
-  snapshot: Snapshot;
   tree_entry: TreeEntry;
 }

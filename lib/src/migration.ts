@@ -62,7 +62,7 @@ const migrations: Record<string, Migration> = {
         .execute();
 
       await db.schema
-        .createTable("snapshot")
+        .createTable("commit")
         .addColumn("id", "integer", (col) =>
           col.primaryKey().notNull().autoIncrement()
         )
@@ -73,6 +73,17 @@ const migrations: Record<string, Migration> = {
         )
         .addColumn("timestamp", "timestamp", (col) => col.notNull())
         .addColumn("parents", "varchar", (col) => col.notNull())
+        .execute();
+
+      await db.schema
+        .createTable("branch")
+        .addColumn("id", "integer", (col) =>
+          col.primaryKey().notNull().autoIncrement()
+        )
+        .addColumn("name", "text", (col) => col.notNull().unique())
+        .addColumn("commit_id", "integer", (col) =>
+          col.references("commit.id").notNull()
+        )
         .execute();
     },
   },

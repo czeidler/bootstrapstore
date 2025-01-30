@@ -159,14 +159,16 @@ export class IndexRepository
     return [contentId, plainBlobHash];
   }
 
-  async readLatestSnapshot(): Promise<Snapshot | undefined> {
+  async readLatestSnapshot(
+    branch: string = "main"
+  ): Promise<Snapshot | undefined> {
     const data = await this.db
-      .selectFrom("snapshot")
-      .innerJoin("content", "snapshot.tree_content_id", "content.id")
-      .selectAll("snapshot")
+      .selectFrom("commit")
+      .innerJoin("branch", "branch.commit_id", "commit.id")
+      .innerJoin("content", "commit.tree_content_id", "content.id")
+      .selectAll("commit")
       .select("content.hash265 as treeHash")
-      .orderBy("snapshot.id desc")
-      .limit(1)
+      .where("branch.name", "=", branch)
       .executeTakeFirst();
     if (data === undefined) {
       return undefined;
@@ -179,20 +181,36 @@ export class IndexRepository
     };
   }
 
-  async writeSnapshot(tree: DBHash, timestamp: Date, parents: Hash[]) {
+  async writeSnapshot(
+    tree: DBHash,
+    timestamp: Date,
+    parents: Hash[],
+    branch: string = "main"
+  ) {
     const snapshotHash = await hashParts([
       { key: "t", value: tree[1] },
       { key: "ts", value: timestamp },
       ...parents.map((it) => ({ key: "p", value: it })),
     ]);
-    await this.db
-      .insertInto("snapshot")
+    const result = await this.db
+      .insertInto("commit")
       .values({
         hash256: snapshotHash,
         tree_content_id: tree[0],
         timestamp: timestamp.toISOString(),
         parents: JSON.stringify(parents.map((it) => bufferToHex(it))),
       })
+      .executeTakeFirst();
+    const commitId = Number(result.insertId);
+    await this.db
+      .insertInto("branch")
+      .values({ commit_id: commitId, name: branch })
+      .onConflict((oc) =>
+        oc
+          .column("name")
+          .doUpdateSet({ commit_id: commitId })
+          .where("name", "=", branch)
+      )
       .execute();
   }
 }
