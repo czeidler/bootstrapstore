@@ -1,9 +1,12 @@
 import { Hash, HashPart, hashParts } from "./hasher";
 
-export type EncryptedBlobInfo = {
-  key: Buffer;
-  encryptedParts: Hash[];
-};
+export type BlobInfo =
+  | {
+      type: "encrypted";
+      encKey: Buffer;
+      parts: Hash[];
+    }
+  | { type: "inlined"; parts: Buffer[] };
 
 export type TreeLoader = {
   readTree(hash: DBHash): Promise<Tree>;

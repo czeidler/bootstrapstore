@@ -9,6 +9,20 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
+export interface Blob {
+  content_id: number;
+  enc_key: Buffer | null;
+  id: Generated<number>;
+}
+
+export interface BlobPart {
+  blob_id: number;
+  data: Buffer | null;
+  id: Generated<number>;
+  index: number;
+  key: Buffer | null;
+}
+
 export interface Branch {
   commit_id: number;
   id: Generated<number>;
@@ -28,19 +42,6 @@ export interface Content {
   id: Generated<number>;
 }
 
-export interface EncBlob {
-  content_id: number;
-  id: Generated<number>;
-  key: Buffer;
-}
-
-export interface EncBlobPart {
-  enc_blob_id: number;
-  hash: Buffer;
-  id: Generated<number>;
-  index: number;
-}
-
 export interface TreeEntry {
   content_id: number;
   id: Generated<number>;
@@ -50,10 +51,10 @@ export interface TreeEntry {
 }
 
 export interface DB {
+  blob: Blob;
+  blob_part: BlobPart;
   branch: Branch;
   commit: Commit;
   content: Content;
-  enc_blob: EncBlob;
-  enc_blob_part: EncBlobPart;
   tree_entry: TreeEntry;
 }

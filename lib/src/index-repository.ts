@@ -3,7 +3,7 @@ import { DB } from "./db/db";
 import {
   BlobEntry,
   DBHash,
-  EncryptedBlobInfo,
+  BlobInfo,
   Tree,
   TreeEntry,
   TreeLoader,
@@ -13,16 +13,16 @@ import { Hash, hashParts } from "./hasher";
 import { bufferToHex } from "./utils";
 
 type EncryptedBlobInfoReader = {
-  readEncryptedBlobInfo(plainBlobHash: Hash): Promise<EncryptedBlobInfo>;
+  readBlobInfo(plainBlobHash: Hash): Promise<BlobInfo>;
 };
 
 type EncryptedBlobInfoWriter = {
   /** User has to make sure that there isn't already an entry for the plain blob
    * @returns the DBHash of the inserted plain blob
    */
-  writeEncryptedBlobInfo(
+  writeBlobInfo(
     plainBlobHash: Hash,
-    encryptedBlobInfo: EncryptedBlobInfo
+    encryptedBlobInfo: BlobInfo
   ): Promise<DBHash>;
 };
 
@@ -109,28 +109,46 @@ export class IndexRepository
     return [id.id, hash];
   }
 
-  async readEncryptedBlobInfo(plainBlobHash: Hash): Promise<EncryptedBlobInfo> {
+  async readBlobInfo(plainBlobHash: Hash): Promise<BlobInfo> {
     const enc_blob = await this.db
-      .selectFrom("enc_blob")
-      .select(["enc_blob.id", "enc_blob.key"])
-      .innerJoin("content", "content.id", "enc_blob.content_id")
+      .selectFrom("blob")
+      .select(["blob.id", "blob.enc_key"])
+      .innerJoin("content", "content.id", "blob.content_id")
       .where("content.hash265", "=", plainBlobHash)
       .executeTakeFirstOrThrow();
-    const parts = await this.db
-      .selectFrom("enc_blob_part")
-      .select(["enc_blob_part.hash"])
-      .where("enc_blob_part.enc_blob_id", "=", enc_blob.id)
-      .orderBy("enc_blob_part.index asc")
+    const blobParts = await this.db
+      .selectFrom("blob_part")
+      .select(["blob_part.key", "blob_part.data"])
+      .where("blob_part.blob_id", "=", enc_blob.id)
+      .orderBy("blob_part.index asc")
       .execute();
-    return {
-      key: enc_blob.key,
-      encryptedParts: parts.map((it) => it.hash),
-    };
+    if (enc_blob.enc_key) {
+      return {
+        type: "encrypted",
+        encKey: enc_blob.enc_key,
+        parts: blobParts.map((it) => {
+          if (it.key === null) {
+            throw Error("Key part expected!");
+          }
+          return it.key;
+        }),
+      };
+    } else {
+      return {
+        type: "inlined",
+        parts: blobParts.map((it) => {
+          if (it.data === null) {
+            throw Error("Data part expected!");
+          }
+          return it.data;
+        }),
+      };
+    }
   }
 
-  async writeEncryptedBlobInfo(
+  async writeBlobInfo(
     plainBlobHash: Hash,
-    encryptedBlobInfo: EncryptedBlobInfo
+    blobInfo: BlobInfo
   ): Promise<DBHash> {
     const contentResult = await this.db
       .insertInto("content")
@@ -139,21 +157,27 @@ export class IndexRepository
     const contentId = Number(contentResult.insertId);
 
     const result = await this.db
-      .insertInto("enc_blob")
+      .insertInto("blob")
       .values({
         content_id: contentId,
-        key: encryptedBlobInfo.key,
+        enc_key: blobInfo.type === "encrypted" ? blobInfo.encKey : undefined,
       })
       .executeTakeFirst();
-    const enc_blob_id = Number(result.insertId);
+    const blob_id = Number(result.insertId);
     await this.db
-      .insertInto("enc_blob_part")
+      .insertInto("blob_part")
       .values(
-        encryptedBlobInfo.encryptedParts.map((it, i) => ({
-          enc_blob_id,
-          hash: it,
-          index: i,
-        }))
+        blobInfo.type === "encrypted"
+          ? blobInfo.parts.map((it, i) => ({
+              blob_id,
+              key: it,
+              index: i,
+            }))
+          : blobInfo.parts.map((it, i) => ({
+              blob_id,
+              data: it,
+              index: i,
+            }))
       )
       .execute();
     return [contentId, plainBlobHash];

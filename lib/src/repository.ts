@@ -5,21 +5,30 @@ import { migrateToLatest } from "./migration";
 import { SerializableDB, SerializableDBInstance } from "./sqlite";
 import { AESGCMEncryption, Encryption, sha256 } from "./encryption";
 import { IndexRepository } from "./index-repository";
-import { TreeBuilder } from "./tree-builder";
+import { BlobInfo, TreeBuilder } from "./tree-builder";
 import { arrayToHex, bufferToHex } from "./utils";
 
 export type DirEntry = {
   name: string;
 };
 
+export type RepoConfig = {
+  key: Buffer;
+  /** Branch name */
+  branch: string;
+  /** All data is stored in the index */
+  inlined: boolean;
+};
 export class Repository {
   private constructor(
     public repoId: string,
     private store: BlobStore,
-    private encryption: Encryption,
-    private key: Buffer,
+    // base path in the blob store
     private basePath: string[],
-    private instance: SerializableDBInstance
+    private encryption: Encryption,
+
+    private instance: SerializableDBInstance,
+    private config: RepoConfig
   ) {}
 
   private indexRepo!: IndexRepository;
@@ -45,7 +54,7 @@ export class Repository {
     serializeDb: SerializableDB,
     store: BlobStore,
     repoPath: string[],
-    key: Buffer
+    config: RepoConfig
   ): Promise<Repository> {
     const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
 
@@ -58,16 +67,16 @@ export class Repository {
     const buffer = await instance.serialize();
 
     const encryption: Encryption = new AESGCMEncryption();
-    const cipher = await encryption.encrypt(buffer, key);
+    const cipher = await encryption.encrypt(buffer, config.key);
     await store.write([...repoPath, "index"], cipher);
 
     const repo = new Repository(
       repoId,
       store,
-      encryption,
-      key,
       repoPath,
-      instance
+      encryption,
+      instance,
+      config
     );
     await repo.init();
     return repo;
@@ -78,11 +87,11 @@ export class Repository {
     serializeDb: SerializableDB,
     store: BlobStore,
     repoPath: string[],
-    key: Buffer
+    config: RepoConfig
   ): Promise<Repository> {
     const buffer = await store.read([...repoPath, "index"]);
     const encryption: Encryption = new AESGCMEncryption();
-    const plain = await encryption.decrypt(buffer, key);
+    const plain = await encryption.decrypt(buffer, config.key);
     const instance = await serializeDb.create(plain);
     const kysely = new Kysely<DB>({
       dialect: instance.dialect,
@@ -92,10 +101,10 @@ export class Repository {
     const repo = new Repository(
       repoId,
       store,
-      encryption,
-      key,
       repoPath,
-      instance
+      encryption,
+      instance,
+      config
     );
     await repo.init();
     return repo;
@@ -106,20 +115,31 @@ export class Repository {
   }
 
   async insertFile(path: string[], data: Buffer): Promise<void> {
-    const key = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
-    const cipher = await this.encryption.encrypt(data, key);
-    const cipherHash = sha256(cipher);
-    const cipherHashHex = bufferToHex(cipherHash);
-    await this.store.write(this.blobPath(cipherHashHex), cipher);
+    const writeDataToStore = async () => {
+      const encKey = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
+      const cipher = await this.encryption.encrypt(data, encKey);
+      const cipherHash = sha256(cipher);
+      const cipherHashHex = bufferToHex(cipherHash);
+      await this.store.write(this.blobPath(cipherHashHex), cipher);
+      return {
+        type: "encrypted",
+        encKey,
+        parts: [cipherHash],
+      } satisfies BlobInfo;
+    };
+    const blobInfo: BlobInfo = this.config.inlined
+      ? {
+          type: "inlined",
+          parts: [data],
+        }
+      : await writeDataToStore();
+
     const plainHash = sha256(data);
     const existing = await this.indexRepo.readContent(plainHash);
     const plainDBHash =
       existing !== undefined
         ? existing
-        : await this.indexRepo.writeEncryptedBlobInfo(plainHash, {
-            key,
-            encryptedParts: [cipherHash],
-          });
+        : await this.indexRepo.writeBlobInfo(plainHash, blobInfo);
 
     await this.treeBuilder.insertBlob(this.indexRepo, path, {
       type: "blob",
@@ -136,7 +156,7 @@ export class Repository {
       head ? [head.hash256] : []
     );
     const plain = await this.instance.serialize();
-    const cipher = await this.encryption.encrypt(plain, this.key);
+    const cipher = await this.encryption.encrypt(plain, this.config.key);
     await this.store.write([...this.basePath, "index"], cipher);
   }
 
@@ -145,15 +165,19 @@ export class Repository {
     if (fileEntry === undefined) {
       return undefined;
     }
-    const info = await this.indexRepo.readEncryptedBlobInfo(fileEntry.hash[1]);
-    const plainParts = await Promise.all(
-      info.encryptedParts.map(async (part) => {
-        const hex = bufferToHex(part);
-        const cipher = await this.store.read(this.blobPath(hex));
-        return this.encryption.decrypt(cipher, info.key);
-      })
-    );
-    return Buffer.concat(plainParts);
+    const info = await this.indexRepo.readBlobInfo(fileEntry.hash[1]);
+    if (info.type === "inlined") {
+      return Buffer.concat(info.parts);
+    } else {
+      const plainParts = await Promise.all(
+        info.parts.map(async (part) => {
+          const hex = bufferToHex(part);
+          const cipher = await this.store.read(this.blobPath(hex));
+          return this.encryption.decrypt(cipher, info.encKey);
+        })
+      );
+      return Buffer.concat(plainParts);
+    }
   }
 
   async listDirectory(path: string[]): Promise<DirEntry[] | undefined> {

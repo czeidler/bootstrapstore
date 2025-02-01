@@ -35,30 +35,34 @@ const migrations: Record<string, Migration> = {
         )
         .execute();
 
-      // Information about where encrypted blobs are stored
+      // Information about where blobs are stored
       await db.schema
-        .createTable("enc_blob")
+        .createTable("blob")
         .addColumn("id", "integer", (col) =>
           col.primaryKey().notNull().autoIncrement()
         )
         .addColumn("content_id", "integer", (col) =>
           col.references("content.id").notNull()
         )
-        .addColumn("key", "blob", (col) => col.notNull())
+        // The encryption key. If null data is not encrypted
+        .addColumn("enc_key", "blob")
         .execute();
       // An encrypted blob can be split in multiple parts
       await db.schema
-        .createTable("enc_blob_part")
+        .createTable("blob_part")
         .addColumn("id", "integer", (col) =>
           col.primaryKey().notNull().autoIncrement()
         )
-        .addColumn("enc_blob_id", "integer", (col) =>
-          col.references("enc_blob.id").notNull()
+        .addColumn("blob_id", "integer", (col) =>
+          col.references("blob.id").notNull()
         )
-        // index of the part
+        // Index of the part
         .addColumn("index", "integer", (col) => col.notNull())
-        // hash of the encrypted blob part
-        .addColumn("hash", "blob", (col) => col.notNull())
+        // Lookup key of externally stored data part. Usually, the hash of the encrypted blob part. If null data is
+        // stored in the data column.
+        .addColumn("key", "blob")
+        // Inlined blob part data. If null data is stored outside of the database and can be found by the hash value.
+        .addColumn("data", "blob")
         .execute();
 
       await db.schema
