@@ -48,12 +48,11 @@ async function snapshot({
 }) {
   const store = new FileBlobStore([blobStoreDir]);
 
-  const repo = await Repository.create(
-    BetterSqliteSerializableDB,
-    store,
-    [],
-    key
-  );
+  const repo = await Repository.create(BetterSqliteSerializableDB, store, [], {
+    key,
+    branch: "main",
+    inlined: false,
+  });
   const start = Date.now();
   //await snapshotDir(repo, "./testData");
   await snapshotDirWithThumbnails(repo, sourceDir);
