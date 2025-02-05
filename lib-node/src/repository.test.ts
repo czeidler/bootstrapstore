@@ -5,13 +5,16 @@ import { BetterSqliteSerializableDB } from "./better-sqlite";
 import * as fs from "node:fs";
 import path from "node:path";
 import { RepoConfig } from "lib/src/repository";
+import { arrayToHex } from "lib/src/utils";
 
 const buildTest = (name: string, config: RepoConfig) => {
   describe(name, () => {
     const testDir = ["./test"];
     test("should do basic IO", async () => {
       const store = new FileBlobStore(["."]);
+      const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
       const repo = await Repository.create(
+        repoId,
         BetterSqliteSerializableDB,
         store,
         testDir,
@@ -38,7 +41,9 @@ const buildTest = (name: string, config: RepoConfig) => {
 
     test("should do handle sub directories", async () => {
       const store = new FileBlobStore(["."]);
+      const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
       const repo = await Repository.create(
+        repoId,
         BetterSqliteSerializableDB,
         store,
         testDir,
@@ -68,7 +73,9 @@ const buildTest = (name: string, config: RepoConfig) => {
 
     test("should be able to create multiple snapshots", async () => {
       const store = new FileBlobStore(["."]);
+      const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
       const repo = await Repository.create(
+        repoId,
         BetterSqliteSerializableDB,
         store,
         testDir,

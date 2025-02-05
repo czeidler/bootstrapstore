@@ -183,9 +183,7 @@ export class IndexRepository
     return [contentId, plainBlobHash];
   }
 
-  async readLatestSnapshot(
-    branch: string = "main"
-  ): Promise<Snapshot | undefined> {
+  async readLatestSnapshot(branch: string): Promise<Snapshot | undefined> {
     const data = await this.db
       .selectFrom("commit")
       .innerJoin("branch", "branch.commit_id", "commit.id")
@@ -209,7 +207,7 @@ export class IndexRepository
     tree: DBHash,
     timestamp: Date,
     parents: Hash[],
-    branch: string = "main"
+    branch: string
   ) {
     const snapshotHash = await hashParts([
       { key: "t", value: tree[1] },

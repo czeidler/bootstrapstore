@@ -11,17 +11,17 @@
   "license": "ISC",
   "dependencies": {
     "lib": "workspace:*",
-    "better-sqlite3": "^11.5.0",
+    "better-sqlite3": "^11.8.1",
     "kysely": "^0.27.4"
   },
   "devDependencies": {
-    "@eslint/js": "^9.15.0",
-    "@types/node": "^22.4.0",
-    "@types/better-sqlite3": "^7.6.11",
-    "eslint": "^9.15.0",
+    "@eslint/js": "^9.19.0",
+    "@types/node": "^22.13.1",
+    "@types/better-sqlite3": "^7.6.12",
+    "eslint": "^9.19.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3",
-    "typescript-eslint": "^8.16.0",
-    "vitest": "^2.1.5"
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.23.0",
+    "vitest": "^3.0.5"
   }
 }

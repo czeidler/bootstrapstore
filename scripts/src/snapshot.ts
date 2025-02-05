@@ -2,6 +2,7 @@ import sharp from "sharp";
 import { Repository } from "lib";
 import { BetterSqliteSerializableDB, FileBlobStore, scanDir } from "lib-node";
 import { program } from "commander";
+import { arrayToHex } from "lib/src/utils";
 
 export async function snapshotDir(repo: Repository, dir: string) {
   await scanDir(dir, async (entryParts, blob) => {
@@ -48,11 +49,18 @@ async function snapshot({
 }) {
   const store = new FileBlobStore([blobStoreDir]);
 
-  const repo = await Repository.create(BetterSqliteSerializableDB, store, [], {
-    key,
-    branch: "main",
-    inlined: false,
-  });
+  const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
+  const repo = await Repository.create(
+    repoId,
+    BetterSqliteSerializableDB,
+    store,
+    [],
+    {
+      key,
+      branch: "main",
+      inlined: false,
+    }
+  );
   const start = Date.now();
   //await snapshotDir(repo, "./testData");
   await snapshotDirWithThumbnails(repo, sourceDir);

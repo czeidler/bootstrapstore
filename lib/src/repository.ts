@@ -6,7 +6,7 @@ import { SerializableDB, SerializableDBInstance } from "./sqlite";
 import { AESGCMEncryption, Encryption, sha256 } from "./encryption";
 import { IndexRepository } from "./index-repository";
 import { BlobInfo, TreeBuilder } from "./tree-builder";
-import { arrayToHex, bufferToHex } from "./utils";
+import { bufferToHex } from "./utils";
 
 export type DirEntry = {
   name: string;
@@ -40,7 +40,9 @@ export class Repository {
     });
     this.indexRepo = new IndexRepository(kysely);
 
-    const snapshot = await this.indexRepo.readLatestSnapshot();
+    const snapshot = await this.indexRepo.readLatestSnapshot(
+      this.config.branch
+    );
     if (snapshot === undefined) {
       this.treeBuilder = new TreeBuilder({ entries: new Map() });
     } else {
@@ -51,13 +53,12 @@ export class Repository {
   }
 
   static async create(
+    repoId: string,
     serializeDb: SerializableDB,
     store: BlobStore,
     repoPath: string[],
     config: RepoConfig
   ): Promise<Repository> {
-    const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
-
     const instance = await serializeDb.create(undefined);
     const kysely = new Kysely<DB>({
       dialect: instance.dialect,
@@ -110,6 +111,23 @@ export class Repository {
     return repo;
   }
 
+  async branch(branch: string, inlined: boolean): Promise<Repository> {
+    const repo = new Repository(
+      this.repoId,
+      this.store,
+      this.basePath,
+      this.encryption,
+      this.instance,
+      {
+        ...this.config,
+        branch,
+        inlined,
+      }
+    );
+    await repo.init();
+    return repo;
+  }
+
   private blobPath(hex: string): string[] {
     return [...this.basePath, "blobs", hex.slice(0, 2), hex.slice(2)];
   }
@@ -148,12 +166,13 @@ export class Repository {
   }
 
   async createSnapshot(timestamp: Date): Promise<void> {
-    const head = await this.indexRepo.readLatestSnapshot();
+    const head = await this.indexRepo.readLatestSnapshot(this.config.branch);
     const treeHash = await this.treeBuilder.finalize(this.indexRepo);
     await this.indexRepo.writeSnapshot(
       treeHash,
       timestamp,
-      head ? [head.hash256] : []
+      head ? [head.hash256] : [],
+      this.config.branch
     );
     const plain = await this.instance.serialize();
     const cipher = await this.encryption.encrypt(plain, this.config.key);
