@@ -6,18 +6,18 @@ import * as fs from "node:fs";
 import path from "node:path";
 import { RepoConfig } from "lib/src/repository";
 import { arrayToHex } from "lib/src/utils";
+import { RepoBlobStoreGetter } from "lib/src/blob-store";
 
 const buildTest = (name: string, config: RepoConfig) => {
   describe(name, () => {
     const testDir = ["./test"];
     test("should do basic IO", async () => {
-      const store = new FileBlobStore(["."]);
+      const storeGetter = new RepoBlobStoreGetter(new FileBlobStore(testDir));
       const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
       const repo = await Repository.create(
         repoId,
         BetterSqliteSerializableDB,
-        store,
-        testDir,
+        storeGetter,
         config
       );
       await repo.insertFile(["file1"], Buffer.from("filedata1"));
@@ -29,8 +29,7 @@ const buildTest = (name: string, config: RepoConfig) => {
       const repo2 = await Repository.open(
         repo.repoId,
         BetterSqliteSerializableDB,
-        store,
-        testDir,
+        storeGetter,
         config
       );
       const list2 = await repo2.listDirectory([]);
@@ -40,13 +39,12 @@ const buildTest = (name: string, config: RepoConfig) => {
     });
 
     test("should do handle sub directories", async () => {
-      const store = new FileBlobStore(["."]);
+      const storeGetter = new RepoBlobStoreGetter(new FileBlobStore(testDir));
       const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
       const repo = await Repository.create(
         repoId,
         BetterSqliteSerializableDB,
-        store,
-        testDir,
+        storeGetter,
         config
       );
       await repo.insertFile(["subdir", "file1"], Buffer.from("filedata1"));
@@ -61,8 +59,7 @@ const buildTest = (name: string, config: RepoConfig) => {
       const repo2 = await Repository.open(
         repo.repoId,
         BetterSqliteSerializableDB,
-        store,
-        testDir,
+        storeGetter,
         config
       );
       const list2 = await repo2.listDirectory([]);
@@ -72,13 +69,12 @@ const buildTest = (name: string, config: RepoConfig) => {
     });
 
     test("should be able to create multiple snapshots", async () => {
-      const store = new FileBlobStore(["."]);
+      const storeGetter = new RepoBlobStoreGetter(new FileBlobStore(testDir));
       const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
       const repo = await Repository.create(
         repoId,
         BetterSqliteSerializableDB,
-        store,
-        testDir,
+        storeGetter,
         config
       );
       const path = ["subdir", "file1"];
@@ -93,8 +89,7 @@ const buildTest = (name: string, config: RepoConfig) => {
       const repo2 = await Repository.open(
         repo.repoId,
         BetterSqliteSerializableDB,
-        store,
-        testDir,
+        storeGetter,
         config
       );
       assert.equal((await repo2.readFile(path))?.toString(), "filedata2");

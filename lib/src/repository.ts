@@ -1,5 +1,5 @@
 import { Kysely } from "kysely";
-import type { BlobStore } from "./blob-store";
+import type { BlobStore, RepoBlobStoreGetter } from "./blob-store";
 import { DB } from "./db/db";
 import { migrateToLatest } from "./migration";
 import { SerializableDB, SerializableDBInstance } from "./sqlite";
@@ -19,12 +19,11 @@ export type RepoConfig = {
   /** All data is stored in the index */
   inlined: boolean;
 };
+
 export class Repository {
   private constructor(
     public repoId: string,
     private store: BlobStore,
-    // base path in the blob store
-    private basePath: string[],
     private encryption: Encryption,
 
     private instance: SerializableDBInstance,
@@ -55,8 +54,7 @@ export class Repository {
   static async create(
     repoId: string,
     serializeDb: SerializableDB,
-    store: BlobStore,
-    repoPath: string[],
+    storeGetter: RepoBlobStoreGetter,
     config: RepoConfig
   ): Promise<Repository> {
     const instance = await serializeDb.create(undefined);
@@ -69,16 +67,10 @@ export class Repository {
 
     const encryption: Encryption = new AESGCMEncryption();
     const cipher = await encryption.encrypt(buffer, config.key);
-    await store.write([...repoPath, "index"], cipher);
+    const store = storeGetter.get(repoId);
+    await store.write(["index"], cipher);
 
-    const repo = new Repository(
-      repoId,
-      store,
-      repoPath,
-      encryption,
-      instance,
-      config
-    );
+    const repo = new Repository(repoId, store, encryption, instance, config);
     await repo.init();
     return repo;
   }
@@ -86,11 +78,11 @@ export class Repository {
   static async open(
     repoId: string,
     serializeDb: SerializableDB,
-    store: BlobStore,
-    repoPath: string[],
+    storeGetter: RepoBlobStoreGetter,
     config: RepoConfig
   ): Promise<Repository> {
-    const buffer = await store.read([...repoPath, "index"]);
+    const store = storeGetter.get(repoId);
+    const buffer = await store.read(["index"]);
     const encryption: Encryption = new AESGCMEncryption();
     const plain = await encryption.decrypt(buffer, config.key);
     const instance = await serializeDb.create(plain);
@@ -99,14 +91,7 @@ export class Repository {
     });
     await migrateToLatest(kysely as Kysely<unknown>);
 
-    const repo = new Repository(
-      repoId,
-      store,
-      repoPath,
-      encryption,
-      instance,
-      config
-    );
+    const repo = new Repository(repoId, store, encryption, instance, config);
     await repo.init();
     return repo;
   }
@@ -115,7 +100,6 @@ export class Repository {
     const repo = new Repository(
       this.repoId,
       this.store,
-      this.basePath,
       this.encryption,
       this.instance,
       {
@@ -129,7 +113,7 @@ export class Repository {
   }
 
   private blobPath(hex: string): string[] {
-    return [...this.basePath, "blobs", hex.slice(0, 2), hex.slice(2)];
+    return ["blobs", hex.slice(0, 2), hex.slice(2)];
   }
 
   async insertFile(path: string[], data: Buffer): Promise<void> {
@@ -176,7 +160,7 @@ export class Repository {
     );
     const plain = await this.instance.serialize();
     const cipher = await this.encryption.encrypt(plain, this.config.key);
-    await this.store.write([...this.basePath, "index"], cipher);
+    await this.store.write(["index"], cipher);
   }
 
   async readFile(path: string[]): Promise<Buffer | undefined> {

@@ -1,4 +1,4 @@
-import { BlobStore } from "./blob-store";
+import { RepoBlobStoreGetter } from "./blob-store";
 import { Repository } from "./repository";
 import { SerializableDB } from "./sqlite";
 import { arrayToHex } from "./utils";
@@ -16,11 +16,11 @@ export class MainRepository {
 
   async createChild(
     serializeDb: SerializableDB,
-    store: BlobStore
+    storeGetter: RepoBlobStoreGetter
   ): Promise<Repository> {
     const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
     const key = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
-    const repo = await Repository.create(repoId, serializeDb, store, [repoId], {
+    const repo = await Repository.create(repoId, serializeDb, storeGetter, {
       key,
       branch: "main",
       inlined: false,
@@ -47,7 +47,7 @@ export class MainRepository {
   async openChild(
     repoId: string,
     serializeDb: SerializableDB,
-    store: BlobStore
+    storeGetter: RepoBlobStoreGetter
   ): Promise<Repository | undefined> {
     const metaRepo = await this.rootRepo.branch(".metadata", true);
     const metadataBuf = await metaRepo.readFile(["repositories", repoId]);
@@ -55,7 +55,7 @@ export class MainRepository {
       return undefined;
     }
     const repoInfo = JSON.parse(metadataBuf.toString()) as RepositoryInfo;
-    const repo = Repository.open(repoId, serializeDb, store, [repoId], {
+    const repo = Repository.open(repoId, serializeDb, storeGetter, {
       key: Buffer.from(repoInfo.encKey, "base64"),
       branch: "main",
       inlined: false,
