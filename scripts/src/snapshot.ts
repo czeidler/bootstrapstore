@@ -3,6 +3,7 @@ import { Repository } from "lib";
 import { BetterSqliteSerializableDB, FileBlobStore, scanDir } from "lib-node";
 import { program } from "commander";
 import { arrayToHex } from "lib/src/utils";
+import { RepoBlobStoreGetter } from "lib/src/blob-store";
 
 export async function snapshotDir(repo: Repository, dir: string) {
   await scanDir(dir, async (entryParts, blob) => {
@@ -47,14 +48,14 @@ async function snapshot({
   sourceDir: string;
   blobStoreDir: string;
 }) {
-  const store = new FileBlobStore([blobStoreDir]);
-
+  const storeGetter = new RepoBlobStoreGetter(
+    new FileBlobStore([blobStoreDir])
+  );
   const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
   const repo = await Repository.create(
     repoId,
     BetterSqliteSerializableDB,
-    store,
-    [],
+    storeGetter,
     {
       key,
       branch: "main",
