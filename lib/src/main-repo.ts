@@ -7,8 +7,6 @@ type RepositoryInfo = {
   id: string;
   timestamp: string;
   encKey: string;
-  /** If undefined, its the parent remote */
-  remoteId: string | undefined;
 };
 
 export class MainRepository {
@@ -34,7 +32,6 @@ export class MainRepository {
           id: repoId,
           timestamp: new Date().toISOString(),
           encKey: key.toString("base64"),
-          remoteId: undefined,
         } satisfies RepositoryInfo)
       )
     );
