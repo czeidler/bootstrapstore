@@ -29,7 +29,8 @@ describe("Main repo test", () => {
       BetterSqliteSerializableDB,
       storeGetter
     );
-    await child.insertFile(["child1"], Buffer.from("child"));
+    const now = Date.now();
+    await child.insertFile(["child1"], Buffer.from("child"), now, now);
     await child.createSnapshot(new Date());
 
     const child1 = await mainRepo.openChild(

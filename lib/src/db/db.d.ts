@@ -33,7 +33,7 @@ export interface Commit {
   hash256: Buffer;
   id: Generated<number>;
   parents: string;
-  timestamp: string;
+  timestamp: number;
   tree_content_id: number;
 }
 
@@ -43,9 +43,13 @@ export interface Content {
 }
 
 export interface TreeEntry {
-  content_id: number;
+  content_id: number | null;
+  creation_time: number | null;
   id: Generated<number>;
+  link: string | null;
+  modification_time: number | null;
   name: string;
+  size: number | null;
   tree_id: number;
   type: string;
 }

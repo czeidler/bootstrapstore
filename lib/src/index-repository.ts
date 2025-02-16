@@ -8,6 +8,7 @@ import {
   TreeEntry,
   TreeLoader,
   TreeWriter,
+  RepoLinkEntry,
 } from "./tree-builder";
 import { Hash, hashParts } from "./hasher";
 import { bufferToHex } from "./utils";
@@ -33,6 +34,12 @@ type Snapshot = {
   parents: string[];
 };
 
+export const TreeEntryType = {
+  Blob: "b",
+  RepoLink: "r",
+  Tree: "t",
+} as const;
+
 export class IndexRepository
   implements
     TreeLoader,
@@ -52,14 +59,22 @@ export class IndexRepository
       .execute();
     const entries = result.reduce((prev, cur) => {
       const hash: [number, Buffer] = [Number(cur.content_id), cur.hash265];
-      if (cur.type === "b") {
+      if (cur.type === TreeEntryType.Blob) {
         prev.set(cur.name, {
-          type: "blob",
+          type: TreeEntryType.Blob,
           hash,
+          size: cur.size ?? 0,
+          creationTime: cur.creation_time ?? 0,
+          modificationTime: cur.modification_time ?? 0,
         });
-      } else if (cur.type === "t") {
+      } else if (cur.type === TreeEntryType.RepoLink) {
         prev.set(cur.name, {
-          type: "tree",
+          type: TreeEntryType.RepoLink,
+          repoId: cur.link ?? "",
+        });
+      } else if (cur.type === TreeEntryType.Tree) {
+        prev.set(cur.name, {
+          type: TreeEntryType.Tree,
           hash,
           data: undefined,
         });
@@ -67,7 +82,7 @@ export class IndexRepository
         throw Error("Invalid tree entry type");
       }
       return prev;
-    }, new Map<string, BlobEntry | TreeEntry>());
+    }, new Map<string, BlobEntry | RepoLinkEntry | TreeEntry>());
     return {
       entries,
     };
@@ -75,23 +90,54 @@ export class IndexRepository
 
   async writeTree(
     treeHash: Hash,
-    entries: { name: string; entry: BlobEntry | TreeEntry }[]
+    entries: { name: string; entry: BlobEntry | RepoLinkEntry | TreeEntry }[]
   ): Promise<DBHash> {
     const result = await this.db
       .insertInto("content")
       .values({ hash265: treeHash })
       .executeTakeFirst();
     const treeDBHash = [Number(result.insertId), treeHash] as DBHash;
+    const mapEntry = (entry: {
+      name: string;
+      entry: BlobEntry | RepoLinkEntry | TreeEntry;
+    }) => {
+      switch (entry.entry.type) {
+        case TreeEntryType.Blob: {
+          return {
+            name: entry.name,
+            tree_id: treeDBHash[0],
+            type: TreeEntryType.Blob,
+            content_id: entry.entry.hash[0],
+            size: entry.entry.size,
+            creation_time: entry.entry.creationTime,
+            modification_time: entry.entry.modificationTime,
+          };
+        }
+        case TreeEntryType.RepoLink: {
+          return {
+            name: entry.name,
+            tree_id: treeDBHash[0],
+            type: TreeEntryType.RepoLink,
+            link: entry.entry.repoId,
+          };
+        }
+        case TreeEntryType.Tree: {
+          return {
+            name: entry.name,
+            tree_id: treeDBHash[0],
+            type: TreeEntryType.Tree,
+            content_id: entry.entry.hash[0],
+          };
+        }
+        default: {
+          const exhaustiveCheck: never = entry.entry;
+          throw Error(`Unknown entry type ${exhaustiveCheck}`);
+        }
+      }
+    };
     await this.db
       .insertInto("tree_entry")
-      .values(
-        entries.map((it) => ({
-          name: it.name,
-          tree_id: treeDBHash[0],
-          type: it.entry.type === "blob" ? "b" : "t",
-          content_id: it.entry.hash[0],
-        }))
-      )
+      .values(entries.map(mapEntry))
       .execute();
     return treeDBHash;
   }
@@ -219,7 +265,7 @@ export class IndexRepository
       .values({
         hash256: snapshotHash,
         tree_content_id: tree[0],
-        timestamp: timestamp.toISOString(),
+        timestamp: timestamp.getTime(),
         parents: JSON.stringify(parents.map((it) => bufferToHex(it))),
       })
       .executeTakeFirst();

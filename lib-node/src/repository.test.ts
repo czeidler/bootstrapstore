@@ -20,7 +20,8 @@ const buildTest = (name: string, config: RepoConfig) => {
         storeGetter,
         config
       );
-      await repo.insertFile(["file1"], Buffer.from("filedata1"));
+      const now = Date.now();
+      await repo.insertFile(["file1"], Buffer.from("filedata1"), now, now);
       await repo.createSnapshot(new Date());
 
       const list = await repo.listDirectory([]);
@@ -47,8 +48,19 @@ const buildTest = (name: string, config: RepoConfig) => {
         storeGetter,
         config
       );
-      await repo.insertFile(["subdir", "file1"], Buffer.from("filedata1"));
-      await repo.insertFile(["subdir", "file2"], Buffer.from("filedata2"));
+      const now = Date.now();
+      await repo.insertFile(
+        ["subdir", "file1"],
+        Buffer.from("filedata1"),
+        now,
+        now
+      );
+      await repo.insertFile(
+        ["subdir", "file2"],
+        Buffer.from("filedata2"),
+        now,
+        now
+      );
       await repo.createSnapshot(new Date());
 
       const list = await repo.listDirectory([]);
@@ -77,12 +89,13 @@ const buildTest = (name: string, config: RepoConfig) => {
         storeGetter,
         config
       );
+      const now = Date.now();
       const path = ["subdir", "file1"];
-      await repo.insertFile(path, Buffer.from("filedata1"));
+      await repo.insertFile(path, Buffer.from("filedata1"), now, now);
       await repo.createSnapshot(new Date());
       assert.equal((await repo.readFile(path))?.toString(), "filedata1");
 
-      await repo.insertFile(path, Buffer.from("filedata2"));
+      await repo.insertFile(path, Buffer.from("filedata2"), now, now);
       await repo.createSnapshot(new Date());
       assert.equal((await repo.readFile(path))?.toString(), "filedata2");
 

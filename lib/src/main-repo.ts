@@ -25,6 +25,7 @@ export class MainRepository {
     });
 
     const metaRepo = await this.rootRepo.branch(".metadata", true);
+    const now = Date.now();
     await metaRepo.insertFile(
       ["repositories", repoId],
       Buffer.from(
@@ -33,7 +34,9 @@ export class MainRepository {
           timestamp: new Date().toISOString(),
           encKey: key.toString("base64"),
         } satisfies RepositoryInfo)
-      )
+      ),
+      now,
+      now
     );
 
     // TODO move to separate method?

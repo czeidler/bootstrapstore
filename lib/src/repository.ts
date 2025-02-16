@@ -4,9 +4,10 @@ import { DB } from "./db/db";
 import { migrateToLatest } from "./migration";
 import { SerializableDB, SerializableDBInstance } from "./sqlite";
 import { AESGCMEncryption, Encryption, sha256 } from "./encryption";
-import { IndexRepository } from "./index-repository";
+import { IndexRepository, TreeEntryType } from "./index-repository";
 import { BlobInfo, TreeBuilder } from "./tree-builder";
 import { bufferToHex } from "./utils";
+import { buffer } from "stream/consumers";
 
 export type DirEntry = {
   name: string;
@@ -116,7 +117,12 @@ export class Repository {
     return ["blobs", hex.slice(0, 2), hex.slice(2)];
   }
 
-  async insertFile(path: string[], data: Buffer): Promise<void> {
+  async insertFile(
+    path: string[],
+    data: Buffer,
+    creationTime: number,
+    modificationTime: number
+  ): Promise<void> {
     const writeDataToStore = async () => {
       const encKey = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
       const cipher = await this.encryption.encrypt(data, encKey);
@@ -143,9 +149,19 @@ export class Repository {
         ? existing
         : await this.indexRepo.writeBlobInfo(plainHash, blobInfo);
 
-    await this.treeBuilder.insertBlob(this.indexRepo, path, {
-      type: "blob",
+    await this.treeBuilder.insertEntry(this.indexRepo, path, {
+      type: TreeEntryType.Blob,
       hash: plainDBHash,
+      size: buffer.length,
+      creationTime,
+      modificationTime,
+    });
+  }
+
+  async insertRepoLink(path: string[], repoId: string): Promise<void> {
+    await this.treeBuilder.insertEntry(this.indexRepo, path, {
+      type: TreeEntryType.RepoLink,
+      repoId,
     });
   }
 
@@ -181,6 +197,17 @@ export class Repository {
       );
       return Buffer.concat(plainParts);
     }
+  }
+
+  /**
+   * @returns the repo id
+   */
+  async readRepoLink(path: string[]): Promise<string | undefined> {
+    const entry = await this.treeBuilder.readRepoLink(this.indexRepo, path);
+    if (entry === undefined) {
+      return undefined;
+    }
+    return entry.repoId;
   }
 
   async listDirectory(path: string[]): Promise<DirEntry[] | undefined> {

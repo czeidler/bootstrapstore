@@ -1,6 +1,6 @@
 export type Hash = Buffer;
 
-export type HashPart = { key: string; value: Buffer | string | Date };
+export type HashPart = { key: string; value: Buffer | string | Date | number };
 
 export async function hashParts(parts: HashPart[]): Promise<Hash> {
   const all = parts.reduce<Buffer[]>((prev, cur) => {
@@ -9,6 +9,9 @@ export async function hashParts(parts: HashPart[]): Promise<Hash> {
       prev.push(Buffer.from(cur.key, "utf8"));
     } else if (cur.value instanceof Date) {
       prev.push(Buffer.from(cur.value.toISOString(), "utf8"));
+    } else if (typeof cur.value === "number") {
+      // TODO directly convert to buffer?
+      prev.push(Buffer.from(`${cur.value}`, "utf8"));
     } else {
       prev.push(cur.value);
     }

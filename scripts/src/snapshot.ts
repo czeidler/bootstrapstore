@@ -6,36 +6,45 @@ import { arrayToHex } from "lib/src/utils";
 import { RepoBlobStoreGetter } from "lib/src/blob-store";
 
 export async function snapshotDir(repo: Repository, dir: string) {
-  await scanDir(dir, async (entryParts, blob) => {
-    await repo.insertFile(entryParts, blob);
-  });
+  await scanDir(
+    dir,
+    async (entryParts, blob, creationTime, modificationTime) => {
+      await repo.insertFile(entryParts, blob, creationTime, modificationTime);
+    }
+  );
   await repo.createSnapshot(new Date());
 }
 
-async function snapshotDirWithThumbnails(repo: Repository, dir: string) {
-  await scanDir(dir, async (entryParts, blob) => {
-    await repo.insertFile(entryParts, blob);
-    const fileName = entryParts[entryParts.length - 1];
-    if (fileName.endsWith(".jpg")) {
-      const thumbnail = await sharp(blob)
-        .rotate()
-        .resize(600, 600, {
-          fit: "contain",
-          background: "rgba(256, 256, 256, 1.0)",
-        })
-        .jpeg({ mozjpeg: true })
-        .toBuffer();
-      console.log(
-        `Thumbnail size: ${thumbnail.byteLength / 1024}kB, Original size: ${
-          blob.byteLength / 1024
-        }/kB`
-      );
-      await repo.insertFile(
-        [...entryParts.slice(0, -1), ".thumbnails", fileName],
-        thumbnail
-      );
+export async function snapshotDirWithThumbnails(repo: Repository, dir: string) {
+  await scanDir(
+    dir,
+    async (entryParts, blob, creationTime, modificationTime) => {
+      await repo.insertFile(entryParts, blob, creationTime, modificationTime);
+      const fileName = entryParts[entryParts.length - 1];
+      if (fileName.endsWith(".jpg")) {
+        const thumbnail = await sharp(blob)
+          .rotate()
+          .resize(600, 600, {
+            fit: "contain",
+            background: "rgba(256, 256, 256, 1.0)",
+          })
+          .jpeg({ mozjpeg: true })
+          .toBuffer();
+        console.log(
+          `Thumbnail size: ${thumbnail.byteLength / 1024}kB, Original size: ${
+            blob.byteLength / 1024
+          }/kB`
+        );
+        const now = Date.now();
+        await repo.insertFile(
+          [...entryParts.slice(0, -1), ".thumbnails", fileName],
+          thumbnail,
+          now,
+          now
+        );
+      }
     }
-  });
+  );
   await repo.createSnapshot(new Date());
 }
 

@@ -3,7 +3,12 @@ import fs from "fs/promises";
 
 export async function scanDir(
   dir: string,
-  callback: (entryParts: string[], blob: Buffer) => Promise<void>
+  callback: (
+    entryParts: string[],
+    blob: Buffer,
+    creationTime: number,
+    modificationTime: number
+  ) => Promise<void>
 ) {
   type Ongoing = {
     // parts relative to dir;
@@ -40,7 +45,7 @@ export async function scanDir(
       const blob = await fs.readFile(entryPath);
 
       console.log(`> Insert: ${entryPath} to ${entryParts}`);
-      await callback(entryParts, blob);
+      await callback(entryParts, blob, stats.ctimeMs, stats.mtimeMs);
     }
   }
 }

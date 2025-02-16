@@ -1,4 +1,5 @@
 import { Hash, HashPart, hashParts } from "./hasher";
+import { TreeEntryType } from "./index-repository";
 
 export type BlobInfo =
   | {
@@ -15,19 +16,27 @@ export type TreeLoader = {
 export type TreeWriter = {
   writeTree(
     treeHash: Hash,
-    entries: { name: string; entry: BlobEntry | TreeEntry }[]
+    entries: { name: string; entry: BlobEntry | RepoLinkEntry | TreeEntry }[]
   ): Promise<DBHash>;
 };
 
 export type DBHash = [number, Buffer];
 
 export type BlobEntry = {
-  type: "blob";
+  type: typeof TreeEntryType.Blob;
   hash: DBHash;
+  size: number;
+  creationTime: number;
+  modificationTime: number;
+};
+
+export type RepoLinkEntry = {
+  type: typeof TreeEntryType.RepoLink;
+  repoId: string;
 };
 
 export type TreeEntry = {
-  type: "tree";
+  type: typeof TreeEntryType.Tree;
   hash: DBHash;
   /** When loaded */
   data: Tree | undefined;
@@ -38,24 +47,66 @@ export type MutatedTreeEntry = {
   data: Tree;
 };
 
-export type Entry = BlobEntry | TreeEntry | MutatedTreeEntry;
+export type Entry = BlobEntry | RepoLinkEntry | TreeEntry | MutatedTreeEntry;
 
 export type Tree = {
   entries: Map<string, Entry>;
 };
 function entryToHashable(
   name: string,
-  entry: BlobEntry | TreeEntry
+  entry: BlobEntry | RepoLinkEntry | TreeEntry
 ): HashPart[] {
+  const blob: HashPart[] =
+    entry.type === TreeEntryType.Blob
+      ? [
+          {
+            key: "h",
+            value: entry.hash[1],
+          },
+          {
+            key: "s",
+            value: entry.size,
+          },
+          {
+            key: "c",
+            value: entry.creationTime,
+          },
+          {
+            key: "m",
+            value: entry.modificationTime,
+          },
+        ]
+      : [];
+  const repoLink: HashPart[] =
+    entry.type === TreeEntryType.RepoLink
+      ? [
+          {
+            key: "r",
+            value: entry.repoId,
+          },
+        ]
+      : [];
+  const tree: HashPart[] =
+    entry.type === TreeEntryType.Tree
+      ? [
+          {
+            key: "h",
+            value: entry.hash[1],
+          },
+        ]
+      : [];
   return [
     {
       key: "n",
       value: name,
     },
     {
-      key: "h",
-      value: entry.hash[1],
+      key: "t",
+      value: entry.type,
     },
+    ...blob,
+    ...repoLink,
+    ...tree,
   ];
 }
 
@@ -75,7 +126,7 @@ export class TreeBuilder {
         tree = newTree;
         continue;
       }
-      if (e.type === "tree") {
+      if (e.type === TreeEntryType.Tree) {
         let t;
         if (!e.data) {
           t = await loader.readTree(e.hash);
@@ -94,13 +145,17 @@ export class TreeBuilder {
       } else if (e.type === "mutateTree") {
         tree = e.data;
       } else {
-        throw Error("Invalid path");
+        throw Error("Invalid type");
       }
     }
     return tree;
   }
 
-  async insertBlob(loader: TreeLoader, path: string[], blob: BlobEntry) {
+  async insertEntry(
+    loader: TreeLoader,
+    path: string[],
+    blob: BlobEntry | RepoLinkEntry
+  ) {
     const tree = await this.loadTree(loader, path.slice(0, -1));
     const name = path[path.length - 1];
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -119,10 +174,25 @@ export class TreeBuilder {
     if (file === undefined) {
       return undefined;
     }
-    if (file.type !== "blob") {
+    if (file.type !== TreeEntryType.Blob) {
       throw Error("Path points to a directory and not to a file");
     }
     return file;
+  }
+
+  async readRepoLink(
+    loader: TreeLoader,
+    path: string[]
+  ): Promise<RepoLinkEntry | undefined> {
+    const tree = await this.loadTree(loader, path.slice(0, -1));
+    const repoLink = tree.entries.get(path[path.length - 1]);
+    if (repoLink === undefined) {
+      return undefined;
+    }
+    if (repoLink.type !== TreeEntryType.RepoLink) {
+      throw Error("Path points to a directory and not to a file");
+    }
+    return repoLink;
   }
 
   async finalize(writer: TreeWriter): Promise<DBHash> {
@@ -136,12 +206,15 @@ export class TreeBuilder {
     const entries = Array.from(tree.entries.entries()).sort(([a], [b]) =>
       a.localeCompare(b)
     );
-    const finalizedEntries: { name: string; entry: BlobEntry | TreeEntry }[] =
-      [];
+    const finalizedEntries: {
+      name: string;
+      entry: BlobEntry | RepoLinkEntry | TreeEntry;
+    }[] = [];
     for (const [name, entry] of entries) {
       switch (entry.type) {
-        case "blob":
-        case "tree":
+        case TreeEntryType.Blob:
+        case TreeEntryType.RepoLink:
+        case TreeEntryType.Tree:
           finalizedEntries.push({ name, entry });
           break;
         case "mutateTree": {
@@ -150,7 +223,7 @@ export class TreeBuilder {
             entry.data
           );
           const finalizedEntry: TreeEntry = {
-            type: "tree",
+            type: TreeEntryType.Tree,
             data: entry.data,
             hash: entryDataHash,
           };

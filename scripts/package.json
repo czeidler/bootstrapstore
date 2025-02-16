@@ -9,18 +9,18 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "commander": "12.1.0",
+    "commander": "13.1.0",
     "lib": "workspace:*",
     "lib-node": "workspace:*",
     "sharp": "^0.33.5"
   },
   "devDependencies": {
-    "@eslint/js": "^9.15.0",
-    "@types/node": "^22.4.0",
-    "eslint": "^9.15.0",
+    "@eslint/js": "^9.20.0",
+    "@types/node": "^22.13.4",
+    "eslint": "^9.20.1",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3",
-    "typescript-eslint": "^8.16.0",
-    "vitest": "^2.1.5"
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.24.0",
+    "vitest": "^3.0.5"
   }
 }

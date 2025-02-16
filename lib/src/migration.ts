@@ -1,4 +1,4 @@
-import { Kysely, Migration, Migrator } from "kysely";
+import { Kysely, Migration, Migrator, sql } from "kysely";
 
 const migrations: Record<string, Migration> = {
   "2024_11_11_init": {
@@ -6,6 +6,7 @@ const migrations: Record<string, Migration> = {
       // trees or blobs clear text hashes
       await db.schema
         .createTable("content")
+        .modifyEnd(sql`STRICT`)
         .addColumn("id", "integer", (col) =>
           col.primaryKey().notNull().autoIncrement()
         )
@@ -19,6 +20,7 @@ const migrations: Record<string, Migration> = {
 
       await db.schema
         .createTable("tree_entry")
+        .modifyEnd(sql`STRICT`)
         .addColumn("id", "integer", (col) =>
           col.primaryKey().notNull().autoIncrement()
         )
@@ -26,18 +28,24 @@ const migrations: Record<string, Migration> = {
         .addColumn("tree_id", "integer", (col) =>
           col.references("content.id").notNull()
         )
-        .addColumn("name", "varchar", (col) => col.notNull())
-        // b | t (blob or tree)
-        .addColumn("type", "varchar", (col) => col.notNull())
-        // The content blob id
+        .addColumn("name", "text", (col) => col.notNull())
+        // b | t | l | r (blob | tree | symbolic link | repository)
+        .addColumn("type", "text", (col) => col.notNull())
+        // link path in case type is l OR repository id if type is r
+        .addColumn("link", "text")
+        .addColumn("size", "integer")
+        .addColumn("creation_time", "integer")
+        .addColumn("modification_time", "integer")
+        // The content blob id. Can be null for links
         .addColumn("content_id", "integer", (col) =>
-          col.references("content.id").notNull()
+          col.references("content.id")
         )
         .execute();
 
       // Information about where blobs are stored
       await db.schema
         .createTable("blob")
+        .modifyEnd(sql`STRICT`)
         .addColumn("id", "integer", (col) =>
           col.primaryKey().notNull().autoIncrement()
         )
@@ -50,6 +58,7 @@ const migrations: Record<string, Migration> = {
       // An encrypted blob can be split in multiple parts
       await db.schema
         .createTable("blob_part")
+        .modifyEnd(sql`STRICT`)
         .addColumn("id", "integer", (col) =>
           col.primaryKey().notNull().autoIncrement()
         )
@@ -67,6 +76,7 @@ const migrations: Record<string, Migration> = {
 
       await db.schema
         .createTable("commit")
+        .modifyEnd(sql`STRICT`)
         .addColumn("id", "integer", (col) =>
           col.primaryKey().notNull().autoIncrement()
         )
@@ -75,12 +85,13 @@ const migrations: Record<string, Migration> = {
         .addColumn("tree_content_id", "integer", (col) =>
           col.references("content.id").notNull()
         )
-        .addColumn("timestamp", "timestamp", (col) => col.notNull())
-        .addColumn("parents", "varchar", (col) => col.notNull())
+        .addColumn("timestamp", "integer", (col) => col.notNull())
+        .addColumn("parents", "text", (col) => col.notNull())
         .execute();
 
       await db.schema
         .createTable("branch")
+        .modifyEnd(sql`STRICT`)
         .addColumn("id", "integer", (col) =>
           col.primaryKey().notNull().autoIncrement()
         )
