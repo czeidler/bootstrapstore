@@ -4,7 +4,11 @@ export type BlobStore = {
   write(path: string[], data: Buffer): Promise<void>;
 };
 
-export class RepoBlobStoreGetter {
+export interface BlobStoreGetter {
+  get(repoId: string): BlobStore;
+}
+
+export class RepoBlobStoreGetter implements BlobStoreGetter {
   constructor(private parent: BlobStore) {}
   get(repoId: string): BlobStore {
     return new RepoBlobStore(this.parent, [repoId]);

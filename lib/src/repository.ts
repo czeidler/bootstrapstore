@@ -1,5 +1,5 @@
 import { Kysely } from "kysely";
-import type { BlobStore, RepoBlobStoreGetter } from "./blob-store";
+import type { BlobStore, BlobStoreGetter } from "./blob-store";
 import { DB } from "./db/db";
 import { migrateToLatest } from "./migration";
 import { SerializableDB, SerializableDBInstance } from "./sqlite";
@@ -7,7 +7,6 @@ import { AESGCMEncryption, Encryption, sha256 } from "./encryption";
 import { IndexRepository, TreeEntryType } from "./index-repository";
 import { BlobInfo, TreeBuilder } from "./tree-builder";
 import { bufferToHex } from "./utils";
-import { buffer } from "stream/consumers";
 
 export type DirEntry = {
   name: string;
@@ -55,7 +54,7 @@ export class Repository {
   static async create(
     repoId: string,
     serializeDb: SerializableDB,
-    storeGetter: RepoBlobStoreGetter,
+    storeGetter: BlobStoreGetter,
     config: RepoConfig
   ): Promise<Repository> {
     const instance = await serializeDb.create(undefined);
@@ -79,7 +78,7 @@ export class Repository {
   static async open(
     repoId: string,
     serializeDb: SerializableDB,
-    storeGetter: RepoBlobStoreGetter,
+    storeGetter: BlobStoreGetter,
     config: RepoConfig
   ): Promise<Repository> {
     const store = storeGetter.get(repoId);
@@ -152,7 +151,7 @@ export class Repository {
     await this.treeBuilder.insertEntry(this.indexRepo, path, {
       type: TreeEntryType.Blob,
       hash: plainDBHash,
-      size: buffer.length,
+      size: data.length,
       creationTime,
       modificationTime,
     });

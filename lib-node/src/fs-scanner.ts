@@ -45,7 +45,12 @@ export async function scanDir(
       const blob = await fs.readFile(entryPath);
 
       console.log(`> Insert: ${entryPath} to ${entryParts}`);
-      await callback(entryParts, blob, stats.ctimeMs, stats.mtimeMs);
+      await callback(
+        entryParts,
+        blob,
+        Math.floor(stats.ctimeMs),
+        Math.floor(stats.mtimeMs)
+      );
     }
   }
 }
