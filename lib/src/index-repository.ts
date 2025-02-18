@@ -49,17 +49,20 @@ export class IndexRepository
 {
   constructor(private db: Kysely<DB>) {}
 
-  async readTree(hash: DBHash): Promise<Tree> {
+  async readTree(dbHash: DBHash): Promise<Tree> {
     const result = await this.db
       .selectFrom("tree_entry")
-      .innerJoin("content", "content.id", "tree_entry.content_id")
+      .leftJoin("content", "content.id", "tree_entry.content_id")
       .selectAll("tree_entry")
       .select("content.hash265")
-      .where("tree_entry.tree_id", "=", hash[0])
+      .where("tree_entry.tree_id", "=", dbHash[0])
       .execute();
     const entries = result.reduce((prev, cur) => {
-      const hash: [number, Buffer] = [Number(cur.content_id), cur.hash265];
       if (cur.type === TreeEntryType.Blob) {
+        if (cur.hash265 === null) {
+          throw Error("Missing entry hash value");
+        }
+        const hash: [number, Buffer] = [Number(cur.content_id), cur.hash265];
         prev.set(cur.name, {
           type: TreeEntryType.Blob,
           hash,
@@ -73,6 +76,10 @@ export class IndexRepository
           repoId: cur.link ?? "",
         });
       } else if (cur.type === TreeEntryType.Tree) {
+        if (cur.hash265 === null) {
+          throw Error("Missing entry hash value");
+        }
+        const hash: [number, Buffer] = [Number(cur.content_id), cur.hash265];
         prev.set(cur.name, {
           type: TreeEntryType.Tree,
           hash,
