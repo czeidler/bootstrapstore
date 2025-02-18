@@ -7,26 +7,34 @@ import { useCallback, useEffect, useState } from "react";
 import { ImageDialog } from "./ImageDialog";
 import { Image } from "./Image";
 import { Box, Pagination, Stack } from "@mui/material";
+import { BlobStore, BlobStoreGetter } from "lib/src/blob-store";
 
-const store = new HttpBlobStore();
+const storeGetter: BlobStoreGetter = {
+  get: function (repoId: string): BlobStore {
+    return new HttpBlobStore(repoId);
+  },
+};
 
 const baseWidth = 800;
 const baseHeight = 600;
 
 type RepoPhoto = { src: string; path: string[]; width: number; height: number };
 
-export default function Gallery(props: { repoKey: Buffer }) {
+export default function Gallery(props: { repoId: string; repoKey: Buffer }) {
   const [repo, setRepo] = useState<Repository>();
 
   const [images, setImages] = useState<RepoPhoto[] | undefined>(undefined);
   useEffect(() => {
     (async () => {
       const repo = await Repository.open(
-        "noid",
+        props.repoId,
         SqlocalSerializableDB,
-        store,
-        [],
-        props.repoKey
+        storeGetter,
+        {
+          key: props.repoKey,
+          branch: "main",
+          inlined: false,
+        }
       );
       setRepo(repo);
     })();

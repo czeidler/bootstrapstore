@@ -2,7 +2,7 @@ import { createExpressEndpoints, initServer } from "@ts-rest/express";
 import { contract } from "./contract";
 import multer from "multer";
 import express from "express";
-import { store } from "./service";
+import { storeGetter } from "./service";
 import cors from "cors";
 import { Readable } from "stream";
 
@@ -15,7 +15,7 @@ const postsRouter = s.router(contract, {
     handler: async ({ query, file }) => {
       throw new Error("Not supported");
       const blob = file as Express.Multer.File;
-      await store.write(query.path, blob.buffer);
+      await storeGetter.get(query.repoId).write(query.path, blob.buffer);
       return {
         status: 201,
         body: {
@@ -27,7 +27,7 @@ const postsRouter = s.router(contract, {
     },
   },
   getFile: async ({ res, query }) => {
-    const buffer = await store.read(query.path);
+    const buffer = await storeGetter.get(query.repoId).read(query.path);
     res.setHeader("Content-type", "application/octet-stream");
     return {
       status: 200,
@@ -36,7 +36,7 @@ const postsRouter = s.router(contract, {
   },
   list: async ({ query }) => {
     throw new Error("Not supported");
-    const content = await store.list(query.path);
+    const content = await storeGetter.get(query.repoId).list(query.path);
     return {
       status: 200,
       body: { content: content.map((it) => ({ name: it })) },

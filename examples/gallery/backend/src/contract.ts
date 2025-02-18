@@ -9,6 +9,7 @@ export const contract = c.router({
     path: "/blobs",
     contentType: "multipart/form-data",
     query: z.object({
+      repoId: z.string(),
       path: z.array(z.string()),
     }),
     body: c.type<{ blob: File }>(),
@@ -28,6 +29,7 @@ export const contract = c.router({
       "Content-disposition": z.string().optional(),
     }),
     query: z.object({
+      repoId: z.string(),
       path: z.array(z.string()),
     }),
     responses: {
@@ -39,6 +41,7 @@ export const contract = c.router({
     method: "GET",
     path: "/ls",
     query: z.object({
+      repoId: z.string(),
       path: z.array(z.string()),
     }),
     responses: {

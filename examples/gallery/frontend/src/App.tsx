@@ -14,11 +14,12 @@ import { tsr } from "./tsr";
 const Home = () => {
   const [searchParams] = useSearchParams();
   const keyParam = searchParams.get("key");
+  const repoId = searchParams.get("repoId") ?? "";
 
   const key = Buffer.from(keyParam ?? "", "hex");
   return (
     <Stack style={{ width: "100%", height: "100%" }}>
-      <Gallery repoKey={key} />
+      <Gallery repoId={repoId} repoKey={key} />
     </Stack>
   );
 };

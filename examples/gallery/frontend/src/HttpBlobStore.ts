@@ -2,8 +2,12 @@ import type { BlobStore } from "lib";
 import { tsr } from "./tsr";
 
 export class HttpBlobStore implements BlobStore {
+  constructor(private repoId: string) {}
+
   async list(path: string[]): Promise<string[]> {
-    const result = await tsr.list.query({ query: { path } });
+    const result = await tsr.list.query({
+      query: { repoId: this.repoId, path },
+    });
     if (result.status !== 200) {
       throw Error(`HTTP error: ${result.status}`);
     }
@@ -11,7 +15,9 @@ export class HttpBlobStore implements BlobStore {
   }
 
   async read(path: string[]): Promise<Buffer> {
-    const result = await tsr.getFile.query({ query: { path } });
+    const result = await tsr.getFile.query({
+      query: { repoId: this.repoId, path },
+    });
     if (result.status !== 200) {
       throw Error(`HTTP error: ${result.status}`);
     }
@@ -21,7 +27,7 @@ export class HttpBlobStore implements BlobStore {
 
   async write(path: string[], data: Buffer): Promise<void> {
     const result = await tsr.postBlob.mutate({
-      query: { path },
+      query: { repoId: this.repoId, path },
       body: {
         blob: new File([data], "blob", { type: "application/octet-stream" }),
       },
