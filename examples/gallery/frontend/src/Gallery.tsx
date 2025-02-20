@@ -3,7 +3,7 @@ import "react-photo-album/rows.css";
 import { useCallback, useEffect, useState } from "react";
 import { ImageDialog } from "./ImageDialog";
 import { Image } from "./Image";
-import { Box, Pagination, Stack } from "@mui/material";
+import { Pagination, Stack } from "@mui/material";
 import { PathStackEntry } from "./App";
 
 const baseWidth = 800;
@@ -61,40 +61,39 @@ export default function Gallery({
   );
   return (
     <>
-      <Stack direction={"column"} height="100%">
-        <Box overflow={"auto"}>
-          <RowsPhotoAlbum
-            sizes={{ size: "100vw" }}
-            rowConstraints={{
-              maxPhotos: 3,
-            }}
-            defaultContainerWidth={1000}
-            photos={imagesOnPage ?? []}
-            onClick={(e) => setSelected(e.photo)}
-            render={{
-              image: (props, context) => (
-                <Image
-                  repo={currentPath.repo}
-                  path={context.photo.path}
-                  {...props}
-                  onLoaded={(image) =>
-                    onLoaded(page * imagesPerPage + context.index, image)
-                  }
-                  thumbnail={true}
-                />
-              ),
-            }}
-          />
-        </Box>
-        <Pagination
-          count={Math.ceil((images?.length ?? 0) / imagesPerPage)}
-          page={page + 1}
-          onChange={(_, value) => {
-            setPage(value - 1);
+      <Stack overflow={"auto"}>
+        <RowsPhotoAlbum
+          sizes={{ size: "100vw" }}
+          rowConstraints={{
+            maxPhotos: 3,
           }}
-          sx={{ margin: "auto", marginBottom: 0 }}
+          defaultContainerWidth={1000}
+          photos={imagesOnPage ?? []}
+          onClick={(e) => setSelected(e.photo)}
+          render={{
+            image: (props, context) => (
+              <Image
+                repo={currentPath.repo}
+                path={context.photo.path}
+                {...props}
+                onLoaded={(image) =>
+                  onLoaded(page * imagesPerPage + context.index, image)
+                }
+                thumbnail={true}
+              />
+            ),
+          }}
         />
       </Stack>
+      <Pagination
+        count={Math.ceil((images?.length ?? 0) / imagesPerPage)}
+        page={page + 1}
+        onChange={(_, value) => {
+          setPage(value - 1);
+        }}
+        sx={{ margin: "auto", marginBottom: 0 }}
+      />
+
       <ImageDialog
         repo={currentPath.repo}
         images={images ?? []}

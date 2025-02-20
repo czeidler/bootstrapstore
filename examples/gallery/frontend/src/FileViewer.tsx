@@ -1,6 +1,5 @@
 import { MainRepository, Repository } from "lib";
 import { useEffect, useState } from "react";
-import { Stack } from "@mui/material";
 import { DataGrid, GridRowParams } from "@mui/x-data-grid";
 import { DirEntry } from "lib/src/repository";
 import FolderTwoToneIcon from "@mui/icons-material/FolderTwoTone";
@@ -35,93 +34,93 @@ export default function FileViewer({
   }, [currentPath]);
 
   return (
-    <Stack direction={"column"} height="100%">
-      <DataGrid
-        rows={dirEntries}
-        columns={[
-          {
-            field: "icon",
-            headerName: "",
-            width: 30,
-            renderCell: (params) => {
-              const type = params.row.type;
-              if (type === "dir") {
-                return <FolderTwoToneIcon />;
-              }
-              if (type === "repo") {
-                return <DriveFileMoveTwoToneIcon />;
-              }
-              return <InsertDriveFileTwoToneIcon />;
+    <DataGrid
+      rows={dirEntries}
+      columns={[
+        {
+          field: "icon",
+          headerName: "",
+          width: 30,
+          renderCell: (params) => {
+            const type = params.row.type;
+            if (type === "dir") {
+              return <FolderTwoToneIcon />;
+            }
+            if (type === "repo") {
+              return <DriveFileMoveTwoToneIcon />;
+            }
+            return <InsertDriveFileTwoToneIcon />;
+          },
+        },
+        { field: "name", headerName: "Name", flex: 2 },
+        {
+          field: "size",
+          headerName: "Size",
+          width: 110,
+        },
+        {
+          field: "type",
+          headerName: "Type",
+          width: 110,
+        },
+        {
+          field: "creationTime",
+          headerName: "Created",
+          width: 170,
+          valueGetter: (_value, row) =>
+            `${
+              row.type === "file"
+                ? new Date(row.creationTime).toLocaleString()
+                : ""
+            }`,
+        },
+        {
+          field: "modificationTime",
+          headerName: "Last modified",
+          width: 170,
+          valueGetter: (_value, row) =>
+            `${
+              row.type === "file"
+                ? new Date(row.modificationTime).toLocaleString()
+                : ""
+            }`,
+        },
+      ]}
+      onRowClick={async (params: GridRowParams<DirEntry>) => {
+        const row = params.row;
+        if (row.type === "dir") {
+          setPathStack([
+            ...pathStack.slice(0, -1),
+            {
+              repo: currentPath.repo,
+              repoPath: [...currentPath.repoPath, row.name],
+              path: [...currentPath.path, row.name],
             },
-          },
-          { field: "name", headerName: "Name", flex: 2 },
-          {
-            field: "size",
-            headerName: "Size",
-            width: 110,
-          },
-          {
-            field: "type",
-            headerName: "Type",
-            width: 110,
-          },
-          {
-            field: "creationTime",
-            headerName: "Created",
-            width: 170,
-            valueGetter: (_value, row) =>
-              `${
-                row.type === "file"
-                  ? new Date(row.creationTime).toLocaleString()
-                  : ""
-              }`,
-          },
-          {
-            field: "modificationTime",
-            headerName: "Last modified",
-            width: 170,
-            valueGetter: (_value, row) =>
-              `${
-                row.type === "file"
-                  ? new Date(row.modificationTime).toLocaleString()
-                  : ""
-              }`,
-          },
-        ]}
-        onRowClick={async (params: GridRowParams<DirEntry>) => {
-          const row = params.row;
-          if (row.type === "dir") {
-            setPathStack([
-              ...pathStack.slice(0, -1),
-              {
-                repo: currentPath.repo,
-                repoPath: [...currentPath.repoPath, row.name],
-                path: [...currentPath.path, row.name],
-              },
-            ]);
+          ]);
+          return;
+        }
+        if (row.type === "repo") {
+          const child = await mainRepo.openChild(
+            row.repoId,
+            SqlocalSerializableDB,
+            storeGetter
+          );
+          if (child === undefined) {
             return;
           }
-          if (row.type === "repo") {
-            const child = await mainRepo.openChild(
-              row.repoId,
-              SqlocalSerializableDB,
-              storeGetter
-            );
-            if (child === undefined) {
-              return;
-            }
-            setPathStack([
-              ...pathStack,
-              {
-                repo: child,
-                repoPath: [],
-                path: [...currentPath.path, row.name],
-              },
-            ]);
-          }
-        }}
-        sx={{ border: 0 }}
-      />
-    </Stack>
+          setPathStack([
+            ...pathStack,
+            {
+              repo: child,
+              repoPath: [],
+              path: [...currentPath.path, row.name],
+            },
+          ]);
+        }
+      }}
+      sx={{
+        border: 0,
+      }}
+    />
   );
 }
