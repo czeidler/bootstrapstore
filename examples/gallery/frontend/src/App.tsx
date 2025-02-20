@@ -84,12 +84,14 @@ const Home = () => {
     <Stack style={{ width: "100%", height: "100%" }} gap={1}>
       <Stack direction={"row"} alignItems={"center"}>
         <Tooltip title="Navigate to parent directory">
-          <IconButton
-            disabled={(currentPath?.path.length ?? 0) === 0}
-            onClick={onBack}
-          >
-            <DriveFolderUploadTwoToneIcon />
-          </IconButton>
+          <span>
+            <IconButton
+              disabled={(currentPath?.path.length ?? 0) === 0}
+              onClick={onBack}
+            >
+              <DriveFolderUploadTwoToneIcon />
+            </IconButton>
+          </span>
         </Tooltip>
         <Breadcrumbs aria-label="breadcrumb">
           {currentPath?.path.map((it) => (
