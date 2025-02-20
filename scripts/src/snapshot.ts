@@ -12,13 +12,19 @@ export async function snapshotDir(repo: Repository, dir: string) {
   await repo.createSnapshot(new Date());
 }
 
+const imageExtensions = [".jpg", ".png"];
+
 export async function snapshotDirWithThumbnails(repo: Repository, dir: string) {
   await scanDir(
     dir,
     async (entryParts, blob, creationTime, modificationTime) => {
       await repo.insertFile(entryParts, blob, creationTime, modificationTime);
       const fileName = entryParts[entryParts.length - 1];
-      if (fileName.endsWith(".jpg")) {
+      if (
+        imageExtensions.some((ext) =>
+          fileName.toLocaleLowerCase().endsWith(ext)
+        )
+      ) {
         const thumbnail = await sharp(blob)
           .rotate()
           .resize(600, 600, {
