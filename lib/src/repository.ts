@@ -6,11 +6,25 @@ import { SerializableDB, SerializableDBInstance } from "./sqlite";
 import { AESGCMEncryption, Encryption, sha256 } from "./encryption";
 import { IndexRepository, TreeEntryType } from "./index-repository";
 import { BlobInfo, TreeBuilder } from "./tree-builder";
-import { bufferToHex } from "./utils";
+import { bufferToHex, ExhaustiveCheckError } from "./utils";
 
-export type DirEntry = {
-  name: string;
-};
+export type DirEntry =
+  | {
+      type: "dir";
+      name: string;
+    }
+  | {
+      type: "file";
+      name: string;
+      size: number;
+      creationTime: number;
+      modificationTime: number;
+    }
+  | {
+      type: "repo";
+      name: string;
+      repoId: string;
+    };
 
 export type RepoConfig = {
   key: Buffer;
@@ -211,8 +225,32 @@ export class Repository {
 
   async listDirectory(path: string[]): Promise<DirEntry[] | undefined> {
     const directory = await this.treeBuilder.loadTree(this.indexRepo, path);
-    return Array.from(directory.entries.entries()).map((it) => ({
-      name: it[0],
-    }));
+    return Array.from(directory.entries.entries()).map((it) => {
+      const [name, entry] = it;
+      switch (entry.type) {
+        case "b":
+          return {
+            type: "file",
+            name,
+            size: entry.size,
+            creationTime: entry.creationTime,
+            modificationTime: entry.modificationTime,
+          };
+        case "r":
+          return {
+            type: "repo",
+            name,
+            repoId: entry.repoId,
+          };
+        case "t":
+        case "mutateTree":
+          return {
+            type: "dir",
+            name,
+          };
+        default:
+          throw new ExhaustiveCheckError(entry);
+      }
+    });
   }
 }

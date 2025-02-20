@@ -1,55 +1,35 @@
 import { RowsPhotoAlbum } from "react-photo-album";
 import "react-photo-album/rows.css";
-import { SqlocalSerializableDB } from "./sqlite";
-import { HttpBlobStore } from "./HttpBlobStore";
-import { Repository } from "lib";
 import { useCallback, useEffect, useState } from "react";
 import { ImageDialog } from "./ImageDialog";
 import { Image } from "./Image";
 import { Box, Pagination, Stack } from "@mui/material";
-import { BlobStore, BlobStoreGetter } from "lib/src/blob-store";
-
-const storeGetter: BlobStoreGetter = {
-  get: function (repoId: string): BlobStore {
-    return new HttpBlobStore(repoId);
-  },
-};
+import { PathStackEntry } from "./App";
 
 const baseWidth = 800;
 const baseHeight = 600;
 
 type RepoPhoto = { src: string; path: string[]; width: number; height: number };
 
-export default function Gallery(props: { repoId: string; repoKey: Buffer }) {
-  const [repo, setRepo] = useState<Repository>();
-
+const imageExtensions = [".jpg", ".png"];
+export default function Gallery({
+  pathStack,
+}: {
+  pathStack: PathStackEntry[];
+}) {
   const [images, setImages] = useState<RepoPhoto[] | undefined>(undefined);
+  const currentPath = pathStack[pathStack.length - 1];
   useEffect(() => {
-    (async () => {
-      const repo = await Repository.open(
-        props.repoId,
-        SqlocalSerializableDB,
-        storeGetter,
-        {
-          key: props.repoKey,
-          branch: "main",
-          inlined: false,
-        }
-      );
-      setRepo(repo);
-    })();
-  }, [props]);
-
-  useEffect(() => {
-    if (repo === undefined) {
-      return;
-    }
     (async () => {
       const baseDir: string[] = [];
-      const content = await repo.listDirectory(baseDir);
+      const content = await currentPath.repo.listDirectory(baseDir);
       setImages(
         content
-          ?.filter((it) => it.name.endsWith(".jpg"))
+          ?.filter((it) =>
+            imageExtensions.some((ext) =>
+              it.name.toLocaleLowerCase().endsWith(ext)
+            )
+          )
           .map((it) => ({
             src: [...baseDir, it.name].join("/"),
             path: [...baseDir, it.name],
@@ -58,7 +38,7 @@ export default function Gallery(props: { repoId: string; repoKey: Buffer }) {
           })) ?? []
       );
     })();
-  }, [repo]);
+  }, [currentPath]);
   // Update image dimensions
   const onLoaded = useCallback(
     (index: number, image: { width: number; height: number }) => {
@@ -94,7 +74,7 @@ export default function Gallery(props: { repoId: string; repoKey: Buffer }) {
             render={{
               image: (props, context) => (
                 <Image
-                  repo={repo}
+                  repo={currentPath.repo}
                   path={context.photo.path}
                   {...props}
                   onLoaded={(image) =>
@@ -116,7 +96,7 @@ export default function Gallery(props: { repoId: string; repoKey: Buffer }) {
         />
       </Stack>
       <ImageDialog
-        repo={repo}
+        repo={currentPath.repo}
         images={images ?? []}
         onClose={() => {
           setSelected(undefined);

@@ -11,7 +11,7 @@ import {
   RepoLinkEntry,
 } from "./tree-builder";
 import { Hash, hashParts } from "./hasher";
-import { bufferToHex } from "./utils";
+import { bufferToHex, ExhaustiveCheckError } from "./utils";
 
 type EncryptedBlobInfoReader = {
   readBlobInfo(plainBlobHash: Hash): Promise<BlobInfo>;
@@ -137,8 +137,7 @@ export class IndexRepository
           };
         }
         default: {
-          const exhaustiveCheck: never = entry.entry;
-          throw Error(`Unknown entry type ${exhaustiveCheck}`);
+          throw new ExhaustiveCheckError(entry.entry);
         }
       }
     };
