@@ -86,7 +86,6 @@ repo
       );
       console.log(`Child repo id: ${child.repoId}`);
       await repo.insertRepoLink(arg.childTargetPath.split("/"), child.repoId);
-      await repo.insertFile(["test"], Buffer.from("test"), 0, 0);
       await repo.createSnapshot(new Date());
     }
   );
