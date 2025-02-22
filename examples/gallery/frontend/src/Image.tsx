@@ -69,6 +69,8 @@ export function Image(props: ImageProps) {
         objectFit: "contain",
         maxHeight: "100%",
         maxWidth: "100%",
+        marginTop: "auto",
+        marginBottom: "auto",
       }}
     />
   );
