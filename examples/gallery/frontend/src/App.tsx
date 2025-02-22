@@ -28,7 +28,8 @@ import { Repository } from "lib";
 import { SqlocalSerializableDB } from "./sqlite";
 
 import FileViewer from "./FileViewer";
-import { storeGetter } from "./utils";
+import { imageExtensions, storeGetter } from "./utils";
+import { DirEntry } from "lib/src/repository";
 
 export type PathStackEntry = {
   repo: Repository;
@@ -45,6 +46,25 @@ const Home = () => {
 
   const [pathStack, setPathStack] = useState<PathStackEntry[]>([]);
   const currentPath = pathStack[pathStack.length - 1];
+  const [currentPathContent, setCurrentPathContent] = useState<DirEntry[]>([]);
+  useEffect(() => {
+    (async () => {
+      const content = await currentPath.repo.listDirectory(
+        currentPath.repoPath
+      );
+      setCurrentPathContent(content ?? []);
+      // revert to file mode if there are no images to display:
+      if (
+        !content?.some((it) =>
+          imageExtensions.some((ext) =>
+            it.name.toLocaleLowerCase().endsWith(ext)
+          )
+        )
+      ) {
+        setViewType("file");
+      }
+    })();
+  }, [currentPath]);
 
   const onBack = () => {
     if (!currentPath) {
@@ -94,8 +114,8 @@ const Home = () => {
           </span>
         </Tooltip>
         <Breadcrumbs aria-label="breadcrumb">
-          {currentPath?.path.map((it) => (
-            <Typography>{it}</Typography>
+          {currentPath?.path.map((it, i) => (
+            <Typography key={`${i}`}>{it}</Typography>
           ))}
         </Breadcrumbs>
 
@@ -129,12 +149,13 @@ const Home = () => {
           <CircularProgress />
         </Stack>
       ) : viewType === "gallery" ? (
-        <Gallery pathStack={pathStack} />
+        <Gallery content={currentPathContent} path={currentPath} />
       ) : (
         <FileViewer
           repo={repo}
           pathStack={pathStack}
           setPathStack={setPathStack}
+          content={currentPathContent}
         />
       )}
     </Stack>

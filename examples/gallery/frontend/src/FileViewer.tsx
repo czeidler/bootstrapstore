@@ -13,10 +13,13 @@ export default function FileViewer({
   repo,
   pathStack,
   setPathStack,
+  content,
 }: {
   repo: Repository;
   pathStack: PathStackEntry[];
   setPathStack: React.Dispatch<React.SetStateAction<PathStackEntry[]>>;
+  // current dir entries
+  content: DirEntry[];
 }) {
   const [mainRepo] = useState(new MainRepository(repo));
 
@@ -26,12 +29,9 @@ export default function FileViewer({
   );
   useEffect(() => {
     (async () => {
-      const entries = await currentPath.repo.listDirectory(
-        currentPath.repoPath
-      );
-      setDirEntries(entries?.map((it) => ({ id: it.name, ...it })) ?? []);
+      setDirEntries(content?.map((it) => ({ id: it.name, ...it })) ?? []);
     })();
-  }, [currentPath]);
+  }, [content]);
 
   return (
     <DataGrid

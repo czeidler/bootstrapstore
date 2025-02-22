@@ -5,24 +5,25 @@ import { ImageDialog } from "./ImageDialog";
 import { Image } from "./Image";
 import { Pagination, Stack } from "@mui/material";
 import { PathStackEntry } from "./App";
+import { DirEntry } from "lib/src/repository";
+import { imageExtensions } from "./utils";
 
 const baseWidth = 800;
 const baseHeight = 600;
 
 type RepoPhoto = { src: string; path: string[]; width: number; height: number };
 
-const imageExtensions = [".jpg", ".png"];
 export default function Gallery({
-  pathStack,
+  path,
+  content,
 }: {
-  pathStack: PathStackEntry[];
+  path: PathStackEntry;
+  content: DirEntry[];
 }) {
   const [images, setImages] = useState<RepoPhoto[] | undefined>(undefined);
-  const currentPath = pathStack[pathStack.length - 1];
+
   useEffect(() => {
     (async () => {
-      const baseDir: string[] = [];
-      const content = await currentPath.repo.listDirectory(baseDir);
       setImages(
         content
           ?.filter((it) =>
@@ -31,14 +32,14 @@ export default function Gallery({
             )
           )
           .map((it) => ({
-            src: [...baseDir, it.name].join("/"),
-            path: [...baseDir, it.name],
+            src: [...path.repoPath, it.name].join("/"),
+            path: [...path.repoPath, it.name],
             width: baseWidth,
             height: baseHeight,
           })) ?? []
       );
     })();
-  }, [currentPath]);
+  }, [path, content]);
   // Update image dimensions
   const onLoaded = useCallback(
     (index: number, image: { width: number; height: number }) => {
@@ -73,7 +74,7 @@ export default function Gallery({
           render={{
             image: (props, context) => (
               <Image
-                repo={currentPath.repo}
+                repo={path.repo}
                 path={context.photo.path}
                 {...props}
                 onLoaded={(image) =>
@@ -95,7 +96,7 @@ export default function Gallery({
       />
 
       <ImageDialog
-        repo={currentPath.repo}
+        repo={path.repo}
         images={images ?? []}
         onClose={() => {
           setSelected(undefined);
