@@ -14,6 +14,7 @@ export function ImageDialog(props: ImageDialogProps) {
 
   return (
     <Dialog
+      onClick={onClose}
       onClose={onClose}
       open={selected !== undefined}
       maxWidth={"xl"}
