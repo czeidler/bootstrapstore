@@ -100,8 +100,8 @@ importers:
         specifier: ^3.51.0
         version: 3.51.0(@tanstack/react-query@5.62.0(react@18.3.1))(@ts-rest/core@3.51.0(@types/node@22.10.1)(zod@3.23.8))(react@18.3.1)(zod@3.23.8)
       kysely:
-        specifier: ^0.27.4
-        version: 0.27.4
+        specifier: ^0.27.5
+        version: 0.27.5
       lib:
         specifier: workspace:*
         version: link:../../../lib
@@ -121,8 +121,8 @@ importers:
         specifier: ^5.2.0
         version: 5.2.0
       sqlocal:
-        specifier: ^0.13.0
-        version: 0.13.0(kysely@0.27.4)
+        specifier: ^0.14.0
+        version: 0.14.0(kysely@0.27.5)
       zustand:
         specifier: ^4.5.5
         version: 4.5.5(@types/react@18.3.12)(react@18.3.1)
@@ -210,8 +210,8 @@ importers:
         specifier: ^11.8.1
         version: 11.8.1
       kysely:
-        specifier: ^0.27.4
-        version: 0.27.4
+        specifier: ^0.27.5
+        version: 0.27.5
       lib:
         specifier: workspace:*
         version: link:../lib
@@ -1147,8 +1147,8 @@ packages:
     resolution: {integrity: sha512-sFxGxZWdBciJ1Bp2F5Pey5q3kW+bN/RYpsZueLogb/KAWF50XuYk5bSG0Y8gH784jV+2XI/G8ptX+kWA0w6N3Q==}
     hasBin: true
 
-  '@sqlite.org/sqlite-wasm@3.47.1-build1':
-    resolution: {integrity: sha512-3qnVGab3sjJ8ov0ce1rQGZrMkglYEQ/q5fnq1s1BpRWFMYsiJVaLD1zKepcI9E9r3qx7929+2G27Hfsasvrm6Q==}
+  '@sqlite.org/sqlite-wasm@3.48.0-build4':
+    resolution: {integrity: sha512-hI6twvUkzOmyGZhQMza1gpfqErZxXRw6JEsiVjUbo7tFanVD+8Oil0Ih3l2nGzHdxPI41zFmfUQG7GHqhciKZQ==}
     hasBin: true
 
   '@tanstack/query-core@5.62.0':
@@ -2325,10 +2325,6 @@ packages:
       tedious:
         optional: true
 
-  kysely@0.27.4:
-    resolution: {integrity: sha512-dyNKv2KRvYOQPLCAOCjjQuCk4YFd33BvGdf/o5bC7FiW+BB6snA81Zt+2wT9QDFzKqxKa5rrOmvlK/anehCcgA==}
-    engines: {node: '>=14.0.0'}
-
   kysely@0.27.5:
     resolution: {integrity: sha512-s7hZHcQeSNKpzCkHRm8yA+0JPLjncSWnjb+2TIElwS2JAqYr+Kv3Ess+9KFfJS0C1xcQ1i9NkNHpWwCYpHMWsA==}
     engines: {node: '>=14.0.0'}
@@ -2852,8 +2848,8 @@ packages:
     resolution: {integrity: sha512-LbrmJOMUSdEVxIKvdcJzQC+nQhe8FUZQTXQy6+I75skNgn3OoQ0DZA8YnFa7gp8tqtL3KPf1kmo0R5DoApeSGQ==}
     engines: {node: '>=0.10.0'}
 
-  sqlocal@0.13.0:
-    resolution: {integrity: sha512-C38F42jJ47oyDGvHSUHOad+3otFF/B2oL0/s6VkMuhX615P5SP9aZk7gF7y7Q5550wwROKl0Uk+lKQuFUoEYpA==}
+  sqlocal@0.14.0:
+    resolution: {integrity: sha512-qhkjWXrvh0aG0IwMeuTznCozNTJvlp2hr+JlSGOx2c1vpjgWoXYvZEf4jcynJ5n/pm05mdKNcDFzb/9KJL/IHQ==}
     peerDependencies:
       drizzle-orm: '*'
       kysely: '*'
@@ -3919,7 +3915,7 @@ snapshots:
 
   '@serenity-kit/opaque@0.8.4': {}
 
-  '@sqlite.org/sqlite-wasm@3.47.1-build1': {}
+  '@sqlite.org/sqlite-wasm@3.48.0-build4': {}
 
   '@tanstack/query-core@5.62.0': {}
 
@@ -5389,8 +5385,6 @@ snapshots:
     optionalDependencies:
       better-sqlite3: 11.8.1
 
-  kysely@0.27.4: {}
-
   kysely@0.27.5: {}
 
   levn@0.4.1:
@@ -5985,12 +5979,12 @@ snapshots:
 
   source-map@0.5.7: {}
 
-  sqlocal@0.13.0(kysely@0.27.4):
+  sqlocal@0.14.0(kysely@0.27.5):
     dependencies:
-      '@sqlite.org/sqlite-wasm': 3.47.1-build1
+      '@sqlite.org/sqlite-wasm': 3.48.0-build4
       coincident: 1.2.3
     optionalDependencies:
-      kysely: 0.27.4
+      kysely: 0.27.5
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
