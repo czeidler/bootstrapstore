@@ -34,12 +34,17 @@ export class AESGCMEncryption implements Encryption {
     );
     const iv = cipher.subarray(0, 16);
     const encrypted = cipher.subarray(16);
-    const data = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: iv },
-      cryptoKey,
-      encrypted
-    );
-    return Buffer.from(data);
+    try {
+      const data = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: iv },
+        cryptoKey,
+        encrypted
+      );
+      return Buffer.from(data);
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
   }
 }
 

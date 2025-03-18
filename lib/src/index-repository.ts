@@ -102,8 +102,12 @@ export class IndexRepository
     const result = await this.db
       .insertInto("content")
       .values({ hash265: treeHash })
+      .returning("id as id")
       .executeTakeFirst();
-    const treeDBHash = [Number(result.insertId), treeHash] as DBHash;
+    if (result?.id === undefined) {
+      throw Error("Missing insert it");
+    }
+    const treeDBHash = [result.id, treeHash] as DBHash;
     const mapEntry = (entry: {
       name: string;
       entry: BlobEntry | RepoLinkEntry | TreeEntry;
@@ -205,8 +209,12 @@ export class IndexRepository
     const contentResult = await this.db
       .insertInto("content")
       .values({ hash265: plainBlobHash })
+      .returning("id as id")
       .executeTakeFirst();
-    const contentId = Number(contentResult.insertId);
+    const contentId = contentResult?.id;
+    if (contentId === undefined) {
+      throw Error("Missing insert id");
+    }
 
     const result = await this.db
       .insertInto("blob")
@@ -214,8 +222,12 @@ export class IndexRepository
         content_id: contentId,
         enc_key: blobInfo.type === "encrypted" ? blobInfo.encKey : undefined,
       })
+      .returning("id as id")
       .executeTakeFirst();
-    const blob_id = Number(result.insertId);
+    const blob_id = result?.id;
+    if (blob_id === undefined) {
+      throw Error("Missing insert id");
+    }
     await this.db
       .insertInto("blob_part")
       .values(
@@ -274,8 +286,12 @@ export class IndexRepository
         timestamp: timestamp.getTime(),
         parents: JSON.stringify(parents.map((it) => bufferToHex(it))),
       })
+      .returning("id as id")
       .executeTakeFirst();
-    const commitId = Number(result.insertId);
+    const commitId = result?.id;
+    if (commitId === undefined) {
+      throw Error("Missing insert id");
+    }
     await this.db
       .insertInto("branch")
       .values({ commit_id: commitId, name: branch })

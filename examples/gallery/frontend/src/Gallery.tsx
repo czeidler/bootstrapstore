@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { ImageDialog } from "./ImageDialog";
 import { Image } from "./Image";
 import { Pagination, Stack } from "@mui/material";
-import { PathStackEntry } from "./App";
 import { DirEntry } from "lib/src/repository";
 import { imageExtensions } from "./utils";
+import { PathStackEntry } from "./Home";
 
 const baseWidth = 800;
 const baseHeight = 600;

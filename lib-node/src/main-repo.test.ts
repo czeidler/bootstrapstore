@@ -1,5 +1,5 @@
 import { describe, test, assert, afterAll } from "vitest";
-import { MainRepository, Repository } from "lib";
+import { Repository, MetadataRepository } from "lib";
 import { FileBlobStore } from "./file-blob-store";
 import { BetterSqliteSerializableDB } from "./better-sqlite";
 import * as fs from "node:fs";
@@ -13,7 +13,13 @@ describe("Main repo test", () => {
     const storeGetter = new RepoBlobStoreGetter(new FileBlobStore(testDir));
     const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
     const key = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
-    const rootRepo = await Repository.create(
+    await Repository.create(
+      repoId,
+      BetterSqliteSerializableDB,
+      storeGetter,
+      key
+    );
+    const rootRepo = await Repository.open(
       repoId,
       BetterSqliteSerializableDB,
       storeGetter,
@@ -24,8 +30,9 @@ describe("Main repo test", () => {
       }
     );
 
-    const mainRepo = new MainRepository(rootRepo);
+    const mainRepo = await MetadataRepository.init(rootRepo);
     const child = await mainRepo.createChild(
+      "default",
       BetterSqliteSerializableDB,
       storeGetter
     );
@@ -34,6 +41,7 @@ describe("Main repo test", () => {
     await child.createSnapshot(new Date());
 
     const child1 = await mainRepo.openChild(
+      "default",
       child.repoId,
       BetterSqliteSerializableDB,
       storeGetter

@@ -14,7 +14,13 @@ const buildTest = (name: string, config: RepoConfig) => {
     test("should do basic IO", async () => {
       const storeGetter = new RepoBlobStoreGetter(new FileBlobStore(testDir));
       const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
-      const repo = await Repository.create(
+      await Repository.create(
+        repoId,
+        BetterSqliteSerializableDB,
+        storeGetter,
+        config.key
+      );
+      const repo = await Repository.open(
         repoId,
         BetterSqliteSerializableDB,
         storeGetter,
@@ -42,7 +48,13 @@ const buildTest = (name: string, config: RepoConfig) => {
     test("should do handle sub directories", async () => {
       const storeGetter = new RepoBlobStoreGetter(new FileBlobStore(testDir));
       const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
-      const repo = await Repository.create(
+      await Repository.create(
+        repoId,
+        BetterSqliteSerializableDB,
+        storeGetter,
+        config.key
+      );
+      const repo = await Repository.open(
         repoId,
         BetterSqliteSerializableDB,
         storeGetter,
@@ -83,7 +95,13 @@ const buildTest = (name: string, config: RepoConfig) => {
     test("should be able to create multiple snapshots", async () => {
       const storeGetter = new RepoBlobStoreGetter(new FileBlobStore(testDir));
       const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
-      const repo = await Repository.create(
+      await Repository.create(
+        repoId,
+        BetterSqliteSerializableDB,
+        storeGetter,
+        config.key
+      );
+      const repo = await Repository.open(
         repoId,
         BetterSqliteSerializableDB,
         storeGetter,
@@ -111,7 +129,13 @@ const buildTest = (name: string, config: RepoConfig) => {
     test("should be able to store repo links", async () => {
       const storeGetter = new RepoBlobStoreGetter(new FileBlobStore(testDir));
       const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
-      const repo = await Repository.create(
+      await Repository.create(
+        repoId,
+        BetterSqliteSerializableDB,
+        storeGetter,
+        config.key
+      );
+      const repo = await Repository.open(
         repoId,
         BetterSqliteSerializableDB,
         storeGetter,

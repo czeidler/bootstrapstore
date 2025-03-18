@@ -2,7 +2,7 @@ import type { BlobStore } from "lib";
 import { tsr } from "./tsr";
 
 export class HttpBlobStore implements BlobStore {
-  constructor(private repoId: string) {}
+  constructor(private repoId?: string) {}
 
   async list(path: string[]): Promise<string[]> {
     const result = await tsr.list.query({
@@ -23,6 +23,16 @@ export class HttpBlobStore implements BlobStore {
     }
     const blob = result.body as Blob;
     return Buffer.from(await blob.arrayBuffer());
+  }
+
+  async exists(path: string[]): Promise<boolean> {
+    const result = await tsr.fileExists.query({
+      query: { repoId: this.repoId, path },
+    });
+    if (result.status !== 200) {
+      throw Error(`HTTP error: ${result.status}`);
+    }
+    return result.body;
   }
 
   async write(path: string[], data: Buffer): Promise<void> {

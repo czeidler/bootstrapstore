@@ -11,11 +11,7 @@ async function initRepo(keyHex: string) {
   const storeGetter = new RepoBlobStoreGetter(
     new FileBlobStore([".storage", "repos"])
   );
-  await Repository.create(repoId, BetterSqliteSerializableDB, storeGetter, {
-    key,
-    branch: "main",
-    inlined: false,
-  });
+  await Repository.create(repoId, BetterSqliteSerializableDB, storeGetter, key);
   console.log(`Repo created: ${repoId}`);
 }
 
@@ -79,7 +75,7 @@ repo
           inlined: false,
         }
       );
-      const mainRepo = new MainRepository(repo);
+      const mainRepo = await MainRepository.init(repo);
       const child = await mainRepo.createChild(
         BetterSqliteSerializableDB,
         storeGetter
@@ -117,11 +113,9 @@ repo
           inlined: false,
         }
       );
-      const child1 = await new MainRepository(repo).openChild(
-        arg.childRepoId,
-        BetterSqliteSerializableDB,
-        storeGetter
-      );
+      const child1 = await (
+        await MainRepository.init(repo)
+      ).openChild(arg.childRepoId, BetterSqliteSerializableDB, storeGetter);
       if (child1 === undefined) {
         console.error(`Can't find child repo`);
         return;

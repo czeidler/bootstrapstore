@@ -69,8 +69,8 @@ export class Repository {
     repoId: string,
     serializeDb: SerializableDB,
     storeGetter: BlobStoreGetter,
-    config: RepoConfig
-  ): Promise<Repository> {
+    key: Buffer
+  ): Promise<void> {
     const instance = await serializeDb.create(undefined);
     const kysely = new Kysely<DB>({
       dialect: instance.dialect,
@@ -80,13 +80,9 @@ export class Repository {
     const buffer = await instance.serialize();
 
     const encryption: Encryption = new AESGCMEncryption();
-    const cipher = await encryption.encrypt(buffer, config.key);
+    const cipher = await encryption.encrypt(buffer, key);
     const store = storeGetter.get(repoId);
     await store.write(["index"], cipher);
-
-    const repo = new Repository(repoId, store, encryption, instance, config);
-    await repo.init();
-    return repo;
   }
 
   static async open(

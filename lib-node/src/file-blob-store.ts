@@ -1,6 +1,7 @@
 import p from "path";
 import fs from "fs/promises";
 import { BlobStore } from "lib";
+import { existsSync } from "fs";
 
 export class FileBlobStore implements BlobStore {
   constructor(private baseDir: string[]) {}
@@ -18,6 +19,11 @@ export class FileBlobStore implements BlobStore {
     const fullPath = p.join(...this.baseDir, ...path);
     const content = await fs.readdir(fullPath);
     return content;
+  }
+  async exists(path: string[]): Promise<boolean> {
+    this.validatePath(path);
+    const fullPath = p.join(...this.baseDir, ...path);
+    return existsSync(fullPath);
   }
   read(path: string[]): Promise<Buffer> {
     this.validatePath(path);
