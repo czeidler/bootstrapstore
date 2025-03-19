@@ -13,7 +13,7 @@ const baseHeight = 600;
 
 type RepoPhoto = { src: string; path: string[]; width: number; height: number };
 
-export default function Gallery({
+export default function GalleryView({
   path,
   content,
 }: {

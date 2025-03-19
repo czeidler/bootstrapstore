@@ -5,7 +5,7 @@ import FolderTwoToneIcon from "@mui/icons-material/FolderTwoTone";
 import InsertDriveFileTwoToneIcon from "@mui/icons-material/InsertDriveFileTwoTone";
 import DriveFileMoveTwoToneIcon from "@mui/icons-material/DriveFileMoveTwoTone";
 
-export default function FileViewer({
+export default function FileView({
   content,
   openFolder,
 }: {
