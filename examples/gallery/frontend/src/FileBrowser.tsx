@@ -19,6 +19,7 @@ import { Repository } from "lib";
 import FileView from "./FileView";
 import { imageExtensions, storeGetter } from "./utils";
 import { useFileNavigation } from "./useFileNavigation";
+import { DirEntry } from "lib/src/repository";
 
 export type PathStackEntry = {
   repo: Repository;
@@ -32,6 +33,13 @@ export const FileBrowser = ({ repo }: { repo: Repository | undefined }) => {
     repo,
     storeGetter
   );
+
+  const onDirEntryClicked = async (entry: DirEntry) => {
+    if (entry.type !== "file") {
+      await openFolder(entry);
+      return;
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -98,7 +106,7 @@ export const FileBrowser = ({ repo }: { repo: Repository | undefined }) => {
       ) : viewType === "gallery" ? (
         <GalleryView content={dirEntries} path={currentPath} />
       ) : (
-        <FileView content={dirEntries} openFolder={openFolder} />
+        <FileView content={dirEntries} onDirEntryClicked={onDirEntryClicked} />
       )}
     </>
   );

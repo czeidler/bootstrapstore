@@ -10,7 +10,7 @@ import { readAccountFile, Account } from "lib";
 import { storeGetter } from "./utils";
 import { useState } from "react";
 import { SqlocalSerializableDB } from "./sqlite";
-import { OpenAccount } from "./OpenAccount";
+import { AccountView } from "./AccountView";
 
 // TEMP
 function create16ByteBuffer(str: string): Buffer {
@@ -69,7 +69,7 @@ export const Admin = () => {
       ) : !accountFile ? (
         <AccountCreation />
       ) : (
-        <OpenAccount accountFile={accountFile} />
+        <AccountView accountFile={accountFile} />
       )}
     </Stack>
   );

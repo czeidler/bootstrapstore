@@ -7,9 +7,9 @@ import DriveFileMoveTwoToneIcon from "@mui/icons-material/DriveFileMoveTwoTone";
 
 export default function FileView({
   content,
-  openFolder,
+  onDirEntryClicked,
 }: {
-  openFolder: (row: DirEntry) => Promise<void>;
+  onDirEntryClicked: (row: DirEntry) => Promise<void>;
   // current dir entries
   content: DirEntry[];
 }) {
@@ -76,7 +76,7 @@ export default function FileView({
         },
       ]}
       onRowClick={async (params: GridRowParams<DirEntry>) => {
-        openFolder(params.row);
+        onDirEntryClicked(params.row);
       }}
       sx={{
         border: 0,

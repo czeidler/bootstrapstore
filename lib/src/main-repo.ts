@@ -10,6 +10,7 @@ type RepositoryInfo = {
    * If not set the "default" search path is used
    */
   path?: string;
+  name?: string;
 };
 
 type RemoteInfo = {
@@ -71,11 +72,33 @@ const checkoutInfoPath = (remoteId: string, checkoutId: string) => [
  * };
  */
 export class MetadataRepository {
-  private constructor(private metaRepo: Repository) {}
+  private constructor(
+    public metaRepo: Repository,
+    private storeGetter: BlobStoreGetter,
+    private serializeDb: SerializableDB
+  ) {}
 
-  static async init(rootRepo: Repository): Promise<MetadataRepository> {
-    const metaRepo = await rootRepo.branch(".metadata", true);
-    return new MetadataRepository(metaRepo);
+  static async open(
+    repoId: string,
+    storeGetter: BlobStoreGetter,
+    serializeDb: SerializableDB,
+    key: Buffer
+  ): Promise<MetadataRepository> {
+    const metaRepo = await Repository.open(repoId, serializeDb, storeGetter, {
+      key,
+      branch: ".metadata",
+      inlined: true,
+    });
+    return new MetadataRepository(metaRepo, storeGetter, serializeDb);
+  }
+
+  static async fromRepo(
+    repo: Repository,
+    storeGetter: BlobStoreGetter,
+    serializeDb: SerializableDB
+  ): Promise<MetadataRepository> {
+    const metaRepo = await repo.branch(".metadata", true);
+    return new MetadataRepository(metaRepo, storeGetter, serializeDb);
   }
 
   private async write(path: string[], obj: object) {
@@ -149,15 +172,11 @@ export class MetadataRepository {
     await this.metaRepo.createSnapshot(new Date());
   }
 
-  async createChild(
-    remoteId: string,
-    serializeDb: SerializableDB,
-    storeGetter: BlobStoreGetter
-  ): Promise<Repository> {
+  async createChild(remoteId: string, repoName?: string): Promise<Repository> {
     const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
     const key = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
-    await Repository.create(repoId, serializeDb, storeGetter, key);
-    const repo = Repository.open(repoId, serializeDb, storeGetter, {
+    await Repository.create(repoId, this.serializeDb, this.storeGetter, key);
+    const repo = Repository.open(repoId, this.serializeDb, this.storeGetter, {
       key,
       branch: "main",
       inlined: false,
@@ -166,6 +185,7 @@ export class MetadataRepository {
     await this.writeRepository(remoteId, {
       id: repoId,
       encKey: key.toString("base64"),
+      name: repoName,
     });
 
     // TODO move to separate method?
@@ -175,15 +195,13 @@ export class MetadataRepository {
 
   async openChild(
     remoteId: string,
-    repoId: string,
-    serializeDb: SerializableDB,
-    storeGetter: BlobStoreGetter
+    repoId: string
   ): Promise<Repository | undefined> {
     const repoInfo = await this.readRepository(remoteId, repoId);
     if (repoInfo === undefined) {
       return undefined;
     }
-    const repo = Repository.open(repoId, serializeDb, storeGetter, {
+    const repo = Repository.open(repoId, this.serializeDb, this.storeGetter, {
       key: Buffer.from(repoInfo.encKey, "base64"),
       branch: "main",
       inlined: false,

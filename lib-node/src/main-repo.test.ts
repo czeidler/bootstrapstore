@@ -19,18 +19,13 @@ describe("Main repo test", () => {
       storeGetter,
       key
     );
-    const rootRepo = await Repository.open(
-      repoId,
-      BetterSqliteSerializableDB,
-      storeGetter,
-      {
-        key,
-        branch: "main",
-        inlined: false,
-      }
-    );
 
-    const mainRepo = await MetadataRepository.init(rootRepo);
+    const mainRepo = await MetadataRepository.open(
+      repoId,
+      storeGetter,
+      BetterSqliteSerializableDB,
+      key
+    );
     const child = await mainRepo.createChild(
       "default",
       BetterSqliteSerializableDB,

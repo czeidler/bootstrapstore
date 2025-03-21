@@ -1,7 +1,7 @@
 import { BlobStore, BlobStoreGetter } from "./blob-store";
 import { AESGCMEncryption, Encryption } from "./encryption";
 import { MetadataRepository } from "./main-repo";
-import { RepoConfig, Repository } from "./repository";
+import { Repository } from "./repository";
 import { SerializableDB } from "./sqlite";
 import { arrayToHex } from "./utils";
 
@@ -74,12 +74,13 @@ export class Account {
     const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
     const repoKey = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
     await Repository.create(repoId, serializeDb, storeGetter, repoKey);
-    const mainRepo = await Repository.open(repoId, serializeDb, storeGetter, {
-      key: repoKey,
-      branch: "main",
-      inlined: false,
-    });
-    const metadataRepo = await MetadataRepository.init(mainRepo);
+
+    const metadataRepo = await MetadataRepository.open(
+      repoId,
+      storeGetter,
+      serializeDb,
+      repoKey
+    );
     const remoteId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
     await metadataRepo.addRemote({
       id: remoteId,
@@ -104,12 +105,12 @@ export class Account {
     return new Account(storeGetter, serializeDb, accountData);
   }
 
-  openRepository(config: RepoConfig): Promise<Repository> {
-    return Repository.open(
+  openMetadataRepo(): Promise<MetadataRepository> {
+    return MetadataRepository.open(
       this.accountData.repoId,
-      this.serializeDb,
       this.storeGetter,
-      config
+      this.serializeDb,
+      Buffer.from(this.accountData.repoKeyBase64, "base64")
     );
   }
 }

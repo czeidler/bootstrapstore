@@ -14,7 +14,6 @@ export const useFileNavigation = (
   repo: Repository | undefined,
   storeGetter: BlobStoreGetter
 ) => {
-  const [mainRepo, setMainRepo] = useState<Promise<MetadataRepository>>();
   const [pathStack, setPathStack] = useState<PathStackEntry[]>([]);
   const currentPath: PathStackEntry | undefined =
     pathStack[pathStack.length - 1];
@@ -36,7 +35,6 @@ export const useFileNavigation = (
       setPathStack([]);
       return;
     }
-    setMainRepo(MetadataRepository.init(repo));
     setPathStack([{ repo, repoPath: [], path: [] }]);
   }, [repo]);
 
@@ -75,11 +73,12 @@ export const useFileNavigation = (
         return;
       }
       if (row.type === "repo") {
-        const mRepo = mainRepo ?? MetadataRepository.init(currentPath.repo);
-        setMainRepo(mRepo);
-        const child = await (
-          await mRepo
-        ).openChild("default", row.repoId, SqlocalSerializableDB, storeGetter);
+        const mRepo = MetadataRepository.fromRepo(
+          currentPath.repo,
+          storeGetter,
+          SqlocalSerializableDB
+        );
+        const child = await (await mRepo).openChild("default", row.repoId);
         if (child === undefined) {
           return;
         }
@@ -93,7 +92,7 @@ export const useFileNavigation = (
         ]);
       }
     },
-    [mainRepo, pathStack, storeGetter]
+    [pathStack, storeGetter]
   );
 
   return { onBack, openFolder, currentPath, dirEntries };
