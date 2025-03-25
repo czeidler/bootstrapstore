@@ -26,21 +26,12 @@ describe("Main repo test", () => {
       BetterSqliteSerializableDB,
       key
     );
-    const child = await mainRepo.createChild(
-      "default",
-      BetterSqliteSerializableDB,
-      storeGetter
-    );
+    const child = await mainRepo.createChild("default");
     const now = Date.now();
     await child.insertFile(["child1"], Buffer.from("child"), now, now);
     await child.createSnapshot(new Date());
 
-    const child1 = await mainRepo.openChild(
-      "default",
-      child.repoId,
-      BetterSqliteSerializableDB,
-      storeGetter
-    );
+    const child1 = await mainRepo.openChild("default", child.repoId);
     assert.equal((await child1?.readFile(["child1"]))?.toString(), "child");
   });
 
