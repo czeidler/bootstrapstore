@@ -3,7 +3,7 @@ import { DirEntry, Repository } from "./repository";
 import { SerializableDB } from "./sqlite";
 import { arrayToHex } from "./utils";
 
-type RepositoryInfo = {
+export type RepositoryInfo = {
   id: string;
   encKey: string;
   /**
@@ -20,7 +20,7 @@ type RemoteInfo = {
   machineId?: string;
 };
 
-type CheckoutInfo = {
+export type CheckoutInfo = {
   id: string;
   type: "repo";
   /**

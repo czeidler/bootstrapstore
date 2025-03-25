@@ -1,14 +1,13 @@
 import "./App.css";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { tsr } from "./tsr";
 import { Home } from "./Home";
 import { AdminAuth } from "./Auth";
 import { Admin } from "./Admin";
-
-const queryClient = new QueryClient();
+import { queryClient } from "./main";
 
 const App = () => {
   return (
