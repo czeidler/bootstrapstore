@@ -80,3 +80,28 @@ export const contract = c.router({
     },
   },
 });
+
+/** Endpoints for a trusted server, e.g. when run locally. */
+export const trustedContract = c.router({
+  syncRepo: {
+    method: "GET",
+    path: "/sync-repo",
+    responses: {
+      200: z.object({}),
+    },
+  },
+  syncRepoStatus: {
+    method: "GET",
+    path: "/sync-repo-status",
+    responses: {
+      200: z.object({
+        changes: z.array(
+          z.object({
+            path: z.string(),
+            status: z.enum(["new", "deleted", "changed"]),
+          })
+        ),
+      }),
+    },
+  },
+});
