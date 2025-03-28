@@ -157,12 +157,20 @@ export class TreeBuilder {
     blob: BlobEntry | RepoLinkEntry
   ) {
     const tree = await this.loadTree(loader, path.slice(0, -1));
-    const name = path[path.length - 1];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const name = path.at(path.length - 1);
     if (name === undefined) {
       throw Error("Invalid path");
     }
     tree.entries.set(name, blob);
+  }
+
+  async deleteEntry(loader: TreeLoader, path: string[]) {
+    const tree = await this.loadTree(loader, path.slice(0, -1));
+    const name = path.at(path.length - 1);
+    if (name === undefined) {
+      throw Error("Invalid path");
+    }
+    tree.entries.delete(name);
   }
 
   async readBlob(

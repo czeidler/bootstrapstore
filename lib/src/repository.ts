@@ -174,6 +174,10 @@ export class Repository {
     });
   }
 
+  async deleteEntry(path: string[]): Promise<void> {
+    await this.treeBuilder.deleteEntry(this.indexRepo, path);
+  }
+
   async createSnapshot(timestamp: Date): Promise<void> {
     const head = await this.indexRepo.readLatestSnapshot(this.config.branch);
     const treeHash = await this.treeBuilder.finalize(this.indexRepo);
