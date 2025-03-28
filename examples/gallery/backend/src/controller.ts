@@ -6,6 +6,7 @@ import { storeGetter } from "./service";
 import cors from "cors";
 import { Readable } from "stream";
 import { authValidation } from "./auth";
+import { syncRepo, syncRepoStatus } from "./trustedService";
 
 const upload = multer();
 const s = initServer();
@@ -97,12 +98,19 @@ export const buildApp = (config: AppConfig) => {
   if (config.isLocal) {
     const trustedRouter = s.router(trustedContract, {
       syncRepoStatus: {
-        handler: async () => {
-          return { status: 200, body: { changes: [] } };
+        handler: async ({ body }) => {
+          const entry = await syncRepoStatus(body);
+          return {
+            status: 201,
+            body: {
+              changes: entry.map((it) => ({ path: it.path, status: it.type })),
+            },
+          };
         },
       },
       syncRepo: {
-        handler: async () => {
+        handler: async ({ body }) => {
+          await syncRepo(body);
           return { status: 200, body: {} };
         },
       },

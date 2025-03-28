@@ -84,21 +84,31 @@ export const contract = c.router({
 /** Endpoints for a trusted server, e.g. when run locally. */
 export const trustedContract = c.router({
   syncRepo: {
-    method: "GET",
+    method: "POST",
     path: "/sync-repo",
+    body: z.object({
+      keyBase64: z.string(),
+      repoId: z.string(),
+      checkoutPath: z.array(z.string()),
+    }),
     responses: {
-      200: z.object({}),
+      201: z.object({}),
     },
   },
   syncRepoStatus: {
-    method: "GET",
+    method: "POST",
     path: "/sync-repo-status",
+    body: z.object({
+      keyBase64: z.string(),
+      repoId: z.string(),
+      checkoutPath: z.array(z.string()),
+    }),
     responses: {
-      200: z.object({
+      201: z.object({
         changes: z.array(
           z.object({
-            path: z.string(),
-            status: z.enum(["new", "deleted", "changed"]),
+            path: z.array(z.string()),
+            status: z.enum(["Added", "Deleted", "Changed"]),
           })
         ),
       }),

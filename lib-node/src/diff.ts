@@ -1,4 +1,6 @@
-import { DirEntry } from "lib/src/repository";
+import { readdirSync, statSync } from "node:fs";
+import path from "path";
+import { DirEntry, Repository } from "lib/src/repository";
 
 export interface DirReader {
   list(path: string[]): Promise<DirEntry[]>;
@@ -111,3 +113,33 @@ export const diffWalk = async (
     }
   }
 };
+
+export class FSDirReader implements DirReader {
+  constructor(private basePath: string[]) {}
+  async list(p: string[]): Promise<DirEntry[]> {
+    const content = readdirSync(path.join(...this.basePath, ...p));
+    return content.map((name) => {
+      const stats = statSync(path.join(...this.basePath, ...p, name));
+      return stats.isDirectory()
+        ? ({
+            type: "dir",
+            name,
+          } satisfies DirEntry)
+        : ({
+            type: "file",
+            name,
+            size: stats.size,
+            creationTime: Math.floor(stats.ctimeMs),
+            modificationTime: Math.floor(stats.mtimeMs),
+          } satisfies DirEntry);
+    });
+  }
+}
+
+export class RepoDirReader implements DirReader {
+  constructor(private repo: Repository) {}
+  async list(path: string[]): Promise<DirEntry[]> {
+    const content = await this.repo.listDirectory(path);
+    return content ?? [];
+  }
+}
