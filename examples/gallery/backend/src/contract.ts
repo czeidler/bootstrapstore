@@ -87,9 +87,9 @@ export const trustedContract = c.router({
     method: "POST",
     path: "/sync-repo",
     body: z.object({
-      keyBase64: z.string(),
+      encKey: z.string(),
       repoId: z.string(),
-      checkoutPath: z.array(z.string()),
+      checkoutPath: z.string(),
     }),
     responses: {
       201: z.object({}),
@@ -99,9 +99,9 @@ export const trustedContract = c.router({
     method: "POST",
     path: "/sync-repo-status",
     body: z.object({
-      keyBase64: z.string(),
+      encKey: z.string(),
       repoId: z.string(),
-      checkoutPath: z.array(z.string()),
+      checkoutPath: z.string(),
     }),
     responses: {
       201: z.object({

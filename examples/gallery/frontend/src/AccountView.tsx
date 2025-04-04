@@ -26,6 +26,7 @@ import {
 } from "./account-hooks";
 import { RepositoryInfo } from "lib/src/main-repo";
 import { arrayToHex } from "lib/src/utils";
+import { trustedTsr } from "./tsr";
 
 // TEMP
 function create16ByteBuffer(str: string): Buffer {
@@ -201,6 +202,9 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
   const [openCreateCheckoutDialog, setOpenCreateCheckoutDialog] =
     useState(false);
 
+  const { mutateAsync: syncStatus } = trustedTsr.syncRepoStatus.useMutation();
+  const { mutateAsync: sync } = trustedTsr.syncRepo.useMutation();
+
   if (accountData === undefined || metadataRepo === undefined) {
     return (
       <OpenAccount
@@ -231,11 +235,51 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
         ))}
         <Divider />
         <Typography>Checkouts</Typography>
-        {checkouts?.map((it) => (
-          <Stack flexDirection={"row"}>
+        {checkouts?.map((it, i) => (
+          <Stack key={`checkout_${i}`} flexDirection={"row"}>
             <Typography>Id: {it.id}</Typography>
             <Typography>Path: {it.path}</Typography>
             <Typography>Repo: {it.repoId}</Typography>
+            <Button
+              onClick={async () => {
+                const repo = repositories?.find(
+                  (repo) => repo.id === it.repoId
+                );
+                if (repo === undefined) {
+                  return;
+                }
+                const result = await syncStatus({
+                  body: {
+                    repoId: it.repoId,
+                    encKey: repo.encKey,
+                    checkoutPath: it.path,
+                  },
+                });
+                console.log(result.body.changes);
+              }}
+            >
+              Sync status
+            </Button>
+            <Button
+              onClick={async () => {
+                const repo = repositories?.find(
+                  (repo) => repo.id === it.repoId
+                );
+                if (repo === undefined) {
+                  return;
+                }
+                const result = await sync({
+                  body: {
+                    repoId: it.repoId,
+                    encKey: repo.encKey,
+                    checkoutPath: it.path,
+                  },
+                });
+                console.log(result);
+              }}
+            >
+              Sync
+            </Button>
           </Stack>
         ))}
         <Divider />

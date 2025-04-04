@@ -1,0 +1,82 @@
+import { Repository } from "lib";
+import {
+  BetterSqliteSerializableDB,
+  DiffEntry,
+  diffWalk,
+  FSDirReader,
+  RepoDirReader,
+} from "lib-node";
+import { storeGetter } from "./service";
+import fs from "fs/promises";
+import path from "path";
+
+export const syncRepoStatus = async ({
+  repoId,
+  checkoutPath,
+  encKey,
+}: {
+  repoId: string;
+  checkoutPath: string;
+  encKey: string;
+}): Promise<DiffEntry[]> => {
+  const output: DiffEntry[] = [];
+  const repo = await Repository.open(
+    repoId,
+    BetterSqliteSerializableDB,
+    storeGetter,
+    { key: Buffer.from(encKey, "base64"), branch: "main", inlined: false }
+  );
+  await diffWalk(
+    new FSDirReader([checkoutPath]),
+    new RepoDirReader(repo),
+    (entry) => output.push(entry)
+  );
+  return output;
+};
+
+export const syncRepo = async ({
+  repoId,
+  checkoutPath,
+  encKey,
+}: {
+  repoId: string;
+  checkoutPath: string;
+  encKey: string;
+}) => {
+  const output: DiffEntry[] = [];
+  const repo = await Repository.open(
+    repoId,
+    BetterSqliteSerializableDB,
+    storeGetter,
+    { key: Buffer.from(encKey, "base64"), branch: "main", inlined: false }
+  );
+  await diffWalk(
+    new FSDirReader([checkoutPath]),
+    new RepoDirReader(repo),
+    (entry) => output.push(entry)
+  );
+
+  for (const out of output) {
+    const fsPath = `${path.join(...checkoutPath, ...out.path)}`;
+    switch (out.type) {
+      case "Added":
+      case "Changed": {
+        const stat = await fs.stat(fsPath);
+        const blob = await fs.readFile(fsPath);
+        await repo.insertFile(
+          out.path,
+          blob,
+          Math.floor(stat.ctimeMs),
+          Math.floor(stat.mtimeMs)
+        );
+        break;
+      }
+      case "Deleted":
+        await repo.deleteEntry(out.path);
+        break;
+    }
+  }
+  if (output.length > 0) {
+    await repo.createSnapshot(new Date());
+  }
+};

@@ -79,6 +79,8 @@ export type AppConfig = {
 
 export const buildApp = (config: AppConfig) => {
   const app = express();
+  app.use(express.json());
+
   app.use(
     cors({
       methods: ["POST", "GET", "OPTIONS"],
