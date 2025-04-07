@@ -60,7 +60,7 @@ export const Admin = () => {
 
   return (
     <Stack height="100%">
-      <Typography>Admin</Typography>
+      <Typography variant="h4">Admin</Typography>
 
       {isLoading ? (
         <Stack height="100%" justifyContent={"center"} alignItems={"center"}>

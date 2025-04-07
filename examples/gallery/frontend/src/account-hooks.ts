@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AccountData } from "lib/src/account";
 import { queryClient } from "./main";
 import {
   CheckoutInfo,
@@ -21,22 +20,20 @@ export const useCreateChildRepo = (
   });
 
 export const useRepositories = (
-  metadataRepo: MetadataRepository | undefined,
-  accountData: AccountData | undefined
+  metadataRepo: MetadataRepository,
+  remoteId: string
 ) =>
   useQuery({
-    queryKey: ["remotes", accountData?.remoteId, "repositories"],
+    queryKey: ["remotes", remoteId, "repositories"],
     queryFn: async () => {
-      const remoteId = accountData?.remoteId ?? "";
-      const repoList = await metadataRepo?.listRepositories(remoteId);
+      const repoList = await metadataRepo.listRepositories(remoteId);
       const repos = await Promise.all(
         repoList
           ?.filter((it) => it !== undefined)
-          .map((it) => metadataRepo?.readRepository(remoteId, it.name)) ?? []
+          .map((it) => metadataRepo.readRepository(remoteId, it.name)) ?? []
       );
       return repos.filter((it): it is RepositoryInfo => it !== undefined);
     },
-    enabled: metadataRepo !== undefined && accountData !== undefined,
   });
 
 export const useCreateCheckout = (
@@ -55,20 +52,18 @@ export const useCreateCheckout = (
   });
 
 export const useCheckouts = (
-  metadataRepo: MetadataRepository | undefined,
-  accountData: AccountData | undefined
+  metadataRepo: MetadataRepository,
+  remoteId: string
 ) =>
   useQuery({
-    queryKey: ["remotes", accountData?.remoteId, "checkouts"],
+    queryKey: ["remotes", remoteId, "checkouts"],
     queryFn: async () => {
-      const remoteId = accountData?.remoteId ?? "";
-      const repoList = await metadataRepo?.listCheckouts(remoteId);
+      const repoList = await metadataRepo.listCheckouts(remoteId);
       const repos = await Promise.all(
         repoList
           ?.filter((it) => it !== undefined)
-          .map((it) => metadataRepo?.readCheckout(remoteId, it.name)) ?? []
+          .map((it) => metadataRepo.readCheckout(remoteId, it.name)) ?? []
       );
       return repos.filter((it): it is CheckoutInfo => it !== undefined);
     },
-    enabled: metadataRepo !== undefined && accountData !== undefined,
   });
