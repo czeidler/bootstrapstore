@@ -13,11 +13,21 @@ export type RepositoryInfo = {
   name?: string;
 };
 
-type RemoteInfo = {
+export type RemoteInfo = {
   id: string;
   name?: string;
   description?: string;
   machineId?: string;
+  access?: Record<
+    string,
+    {
+      type: "sftp";
+      host: string;
+      user: string;
+      keyPem: string;
+      path: string;
+    }
+  >;
 };
 
 export type CheckoutInfo = {

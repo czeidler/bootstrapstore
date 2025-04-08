@@ -159,11 +159,19 @@ export const RemoteView = ({
   return (
     <>
       <Stack>
-        <Typography>{`Remote: ${remoteId}`}</Typography>
-        <Button onClick={() => setOpenCreateRepoDialog(true)}>Add Repo</Button>
-        <Button onClick={() => setOpenCreateCheckoutDialog(true)}>
-          Add Checkout
-        </Button>
+        <Stack direction={"row"} alignItems={"center"}>
+          <Typography>{`Remote: ${remoteId}`}</Typography>
+          <Button>Details</Button>
+        </Stack>
+        <Stack direction={"row"}>
+          <Button onClick={() => setOpenCreateRepoDialog(true)}>
+            Add Repo
+          </Button>
+          <Button onClick={() => setOpenCreateCheckoutDialog(true)}>
+            Add Checkout
+          </Button>
+        </Stack>
+
         <Divider />
         <Typography>Repository</Typography>
         {repositories?.map((it) => (
