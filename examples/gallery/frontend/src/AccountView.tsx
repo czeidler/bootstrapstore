@@ -22,7 +22,7 @@ import { SqlocalSerializableDB } from "./sqlite";
 import { AccountData } from "lib/src/account";
 import { RemoteView } from "./RemoteView";
 import { useCreateRemote, useRemotes } from "./account-hooks";
-import { arrayToHex } from "lib/src/utils";
+import { shortId } from "lib/src/utils";
 
 // TEMP
 function create16ByteBuffer(str: string): Buffer {
@@ -84,7 +84,7 @@ const AddRemoteDialog = ({
   const { mutateAsync } = useCreateRemote(metadataRepo);
   const create = async () => {
     await mutateAsync({
-      id: arrayToHex(crypto.getRandomValues(new Uint8Array(12))),
+      id: shortId(),
       name: remoteName,
     });
 

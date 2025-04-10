@@ -1,7 +1,7 @@
 import { BlobStoreGetter } from "./blob-store";
 import { DirEntry, Repository } from "./repository";
 import { SerializableDB } from "./sqlite";
-import { arrayToHex } from "./utils";
+import { shortId } from "./utils";
 
 export type RepositoryInfo = {
   id: string;
@@ -18,16 +18,14 @@ export type RemoteInfo = {
   name?: string;
   description?: string;
   machineId?: string;
-  access?: Record<
-    string,
-    {
-      type: "sftp";
-      host: string;
-      user: string;
-      keyPem: string;
-      path: string;
-    }
-  >;
+};
+
+export type RemoteConnection = {
+  id: string;
+  type: "sftp";
+  host: string;
+  user: string;
+  keyPem: string;
 };
 
 export type CheckoutInfo = {
@@ -42,6 +40,18 @@ export type CheckoutInfo = {
 
 const remoteDir = "remotes";
 const remotePath = (remoteId: string) => [remoteDir, remoteId];
+const remoteConnectionsBasePath = (remoteId: string) => [
+  remoteDir,
+  remoteId,
+  "connections",
+];
+const remoteConnectionsPath = (remoteId: string, connectionId: string) => [
+  remoteDir,
+  remoteId,
+  "connections",
+  connectionId,
+  "connection.json",
+];
 const repositoryBasePath = (remoteId: string) => [
   remoteDir,
   remoteId,
@@ -142,6 +152,31 @@ export class MetadataRepository {
     return this.read<RemoteInfo>([...remotePath(remoteId), "remote.json"]);
   }
 
+  // connections
+  async listConnections(remoteId: string): Promise<DirEntry[]> {
+    const entries = await this.metaRepo.listDirectory(
+      remoteConnectionsBasePath(remoteId)
+    );
+    return entries ?? [];
+  }
+
+  async readConnection(
+    remoteId: string,
+    connectionId: string
+  ): Promise<RemoteConnection | undefined> {
+    return this.read<RemoteConnection>(
+      remoteConnectionsPath(remoteId, connectionId)
+    );
+  }
+
+  async writeConnection(remoteId: string, remoteConnection: RemoteConnection) {
+    await this.write(
+      remoteConnectionsPath(remoteId, remoteConnection.id),
+      remoteConnection
+    );
+  }
+
+  // repositories
   async listRepositories(remoteId: string): Promise<DirEntry[]> {
     const entries = await this.metaRepo.listDirectory(
       repositoryBasePath(remoteId)
@@ -149,15 +184,15 @@ export class MetadataRepository {
     return entries ?? [];
   }
 
-  async writeRepository(remoteId: string, repoInfo: RepositoryInfo) {
-    await this.write(repositoryInfoPath(remoteId, repoInfo.id), repoInfo);
-  }
-
   async readRepository(
     remoteId: string,
     repoId: string
   ): Promise<RepositoryInfo | undefined> {
     return this.read<RepositoryInfo>(repositoryInfoPath(remoteId, repoId));
+  }
+
+  async writeRepository(remoteId: string, repoInfo: RepositoryInfo) {
+    await this.write(repositoryInfoPath(remoteId, repoInfo.id), repoInfo);
   }
 
   async listCheckouts(remoteId: string): Promise<DirEntry[]> {
@@ -183,7 +218,7 @@ export class MetadataRepository {
   }
 
   async createChild(remoteId: string, repoName?: string): Promise<Repository> {
-    const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
+    const repoId = shortId();
     const key = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
     await Repository.create(repoId, this.serializeDb, this.storeGetter, key);
     const repo = Repository.open(repoId, this.serializeDb, this.storeGetter, {

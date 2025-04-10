@@ -3,6 +3,7 @@ import { queryClient } from "./main";
 import {
   CheckoutInfo,
   MetadataRepository,
+  RemoteConnection,
   RemoteInfo,
   RepositoryInfo,
 } from "lib/src/main-repo";
@@ -32,6 +33,38 @@ export const useRemotes = (metadataRepo: MetadataRepository | undefined) =>
       return repos.filter((it): it is RemoteInfo => it !== undefined);
     },
     enabled: metadataRepo !== undefined,
+  });
+
+export const useConnections = (
+  metadataRepo: MetadataRepository,
+  remoteId: string
+) =>
+  useQuery({
+    queryKey: ["remotes", remoteId, "connections"],
+    queryFn: async () => {
+      const repoList = await metadataRepo.listConnections(remoteId);
+      const repos = await Promise.all(
+        repoList
+          ?.filter((it) => it !== undefined)
+          .map((it) => metadataRepo.readConnection(remoteId, it.name)) ?? []
+      );
+      return repos.filter((it) => it !== undefined);
+    },
+  });
+
+export const useCreateConnection = (
+  metadataRepo: MetadataRepository,
+  remoteId: string
+) =>
+  useMutation({
+    mutationFn: async (connection: RemoteConnection) => {
+      await metadataRepo.writeConnection(remoteId, connection);
+      await metadataRepo.snapshot();
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["remotes", remoteId, "connections"],
+      }),
   });
 
 export const useCreateChildRepo = (

@@ -12,17 +12,99 @@ import {
   Typography,
 } from "@mui/material";
 import { MetadataRepository } from "lib";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FileBrowser } from "./FileBrowser";
 import {
   useCheckouts,
+  useConnections,
   useCreateCheckout,
   useCreateChildRepo,
+  useCreateConnection,
   useRepositories,
 } from "./account-hooks";
-import { RepositoryInfo } from "lib/src/main-repo";
-import { arrayToHex } from "lib/src/utils";
+import { RemoteConnection, RepositoryInfo } from "lib/src/main-repo";
 import { trustedTsr } from "./tsr";
+import { shortId } from "lib/src/utils";
+
+const CreateConnectionDialog = ({
+  open,
+  onClose,
+  remoteId,
+  metadataRepo,
+}: {
+  open: boolean;
+  onClose: () => void;
+  remoteId: string;
+  metadataRepo: MetadataRepository;
+}) => {
+  const [connection, setConnection] = useState<RemoteConnection | undefined>();
+  const [host, setHost] = useState<string | undefined>();
+  const [user, setUser] = useState<string | undefined>();
+  const [keyPem, setKeyPem] = useState<string | undefined>();
+  useEffect(() => {
+    if (host && user && keyPem) {
+      setConnection({
+        id: shortId(),
+        type: "sftp",
+        host,
+        user,
+        keyPem,
+      } satisfies RemoteConnection);
+    } else {
+      setConnection(undefined);
+    }
+  }, [host, keyPem, user]);
+  const { mutate: createConnection } = useCreateConnection(
+    metadataRepo,
+    remoteId
+  );
+  const create = async () => {
+    if (connection) {
+      await createConnection(connection);
+    }
+    onClose();
+  };
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle id="alert-dialog-title">Create sFTP Connection</DialogTitle>
+      <DialogContent>
+        <TextField
+          value={host}
+          autoFocus
+          margin="dense"
+          label="Host"
+          fullWidth
+          variant="standard"
+          onChange={(event) => setHost(event.target.value)}
+        />
+        <TextField
+          value={user}
+          autoFocus
+          margin="dense"
+          label="User"
+          fullWidth
+          variant="standard"
+          onChange={(event) => setUser(event.target.value)}
+        />
+        <TextField
+          value={keyPem}
+          autoFocus
+          margin="dense"
+          label="Key Pem"
+          fullWidth
+          variant="standard"
+          onChange={(event) => setKeyPem(event.target.value)}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={create} autoFocus disabled={connection === undefined}>
+          Create
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 const CreateRepoDialog = ({
   open,
@@ -92,7 +174,7 @@ const CreateCheckoutDialog = ({
       return;
     }
     await mutateAsync({
-      id: arrayToHex(crypto.getRandomValues(new Uint8Array(12))),
+      id: shortId(),
       type: "repo",
       path,
       repoId,
@@ -147,10 +229,13 @@ export const RemoteView = ({
   remoteId: string;
   metadataRepo: MetadataRepository;
 }) => {
+  const { data: connections } = useConnections(metadataRepo, remoteId);
   const { data: repositories } = useRepositories(metadataRepo, remoteId);
   const { data: checkouts } = useCheckouts(metadataRepo, remoteId);
   const [openCreateRepoDialog, setOpenCreateRepoDialog] = useState(false);
   const [openCreateCheckoutDialog, setOpenCreateCheckoutDialog] =
+    useState(false);
+  const [openCreateConnectionDialog, setOpenCreateConnectionDialog] =
     useState(false);
 
   const { mutateAsync: syncStatus } = trustedTsr.syncRepoStatus.useMutation();
@@ -164,6 +249,9 @@ export const RemoteView = ({
           <Button>Details</Button>
         </Stack>
         <Stack direction={"row"}>
+          <Button onClick={() => setOpenCreateConnectionDialog(true)}>
+            Add Connection
+          </Button>
           <Button onClick={() => setOpenCreateRepoDialog(true)}>
             Add Repo
           </Button>
@@ -172,6 +260,14 @@ export const RemoteView = ({
           </Button>
         </Stack>
 
+        <Divider />
+        <Typography>Connections</Typography>
+        {connections?.map((it) => (
+          <Stack flexDirection={"row"}>
+            <Typography>Id: {it.id}</Typography>
+            <Typography>Type: {it.type}</Typography>
+          </Stack>
+        ))}
         <Divider />
         <Typography>Repository</Typography>
         {repositories?.map((it) => (
@@ -235,6 +331,12 @@ export const RemoteView = ({
         <Divider />
         <FileBrowser repo={metadataRepo.metaRepo} />
       </Stack>
+      <CreateConnectionDialog
+        remoteId={remoteId}
+        metadataRepo={metadataRepo}
+        open={openCreateConnectionDialog}
+        onClose={() => setOpenCreateConnectionDialog(false)}
+      />
       <CreateRepoDialog
         remoteId={remoteId}
         metadataRepo={metadataRepo}

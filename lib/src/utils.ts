@@ -9,6 +9,9 @@ export function arrayToHex(buffer: Uint8Array) {
     .join("");
 }
 
+export function shortId() {
+  return arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
+}
 export class ExhaustiveCheckError extends Error {
   constructor(variant: never) {
     super(`Unexpected variant: ${variant}`);

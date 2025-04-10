@@ -3,7 +3,7 @@ import { AESGCMEncryption, Encryption } from "./encryption";
 import { MetadataRepository } from "./main-repo";
 import { Repository } from "./repository";
 import { SerializableDB } from "./sqlite";
-import { arrayToHex } from "./utils";
+import { shortId } from "./utils";
 
 export type AccountFile = {
   encDataBase64: string;
@@ -71,7 +71,7 @@ export class Account {
   ): Promise<Account> {
     const enc: Encryption = new AESGCMEncryption();
 
-    const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
+    const repoId = shortId();
     const repoKey = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
     await Repository.create(repoId, serializeDb, storeGetter, repoKey);
 
@@ -81,7 +81,7 @@ export class Account {
       serializeDb,
       repoKey
     );
-    const remoteId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
+    const remoteId = shortId();
     await metadataRepo.addRemote({
       id: remoteId,
     });
