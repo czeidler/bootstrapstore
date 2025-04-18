@@ -10,6 +10,8 @@ import {
   Stack,
   TextField,
   Typography,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import { MetadataRepository } from "lib";
 import { useEffect, useState } from "react";
@@ -20,9 +22,15 @@ import {
   useCreateCheckout,
   useCreateChildRepo,
   useCreateConnection,
+  useCreateSync,
   useRepositories,
+  useSyncs,
 } from "./account-hooks";
-import { RemoteConnection, RepositoryInfo } from "lib/src/main-repo";
+import {
+  CheckoutInfo,
+  RemoteConnection,
+  RepositoryInfo,
+} from "lib/src/main-repo";
 import { trustedTsr } from "./tsr";
 import { shortId } from "lib/src/utils";
 
@@ -177,7 +185,6 @@ const CreateCheckoutDialog = ({
       id: shortId(),
       type: "repo",
       path,
-      repoId,
     });
     onClose();
   };
@@ -196,17 +203,20 @@ const CreateCheckoutDialog = ({
           variant="standard"
           onChange={(event) => setPath(event.target.value)}
         />
-        <Select
-          value={repoId}
-          label="Repository"
-          onChange={(e) => setRepoId(e.target.value)}
-        >
-          {repositories.map((repo) => (
-            <MenuItem key={repo.id} value={repo.id}>
-              {repo.name ?? repo.id}
-            </MenuItem>
-          ))}
-        </Select>
+        <FormControl fullWidth>
+          <InputLabel>Repository</InputLabel>
+          <Select
+            value={repoId}
+            label="Repository"
+            onChange={(e) => setRepoId(e.target.value)}
+          >
+            {repositories.map((repo) => (
+              <MenuItem key={repo.id} value={repo.id}>
+                {repo.name ?? repo.id}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
@@ -214,6 +224,123 @@ const CreateCheckoutDialog = ({
           onClick={create}
           autoFocus
           disabled={path === undefined || repoId === undefined}
+        >
+          Create
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+const SyncEntryCheckout = ({
+  checkouts,
+  checkoutId,
+  setCheckoutId,
+}: {
+  checkouts: CheckoutInfo[];
+  checkoutId: string | undefined;
+  setCheckoutId: (checkoutId: string) => void;
+}) => {
+  return (
+    <FormControl fullWidth>
+      <InputLabel>Checkout</InputLabel>
+      <Select
+        value={checkoutId}
+        label="Checkout"
+        onChange={(e) => setCheckoutId(e.target.value)}
+      >
+        {checkouts.map((checkout) => (
+          <MenuItem key={checkout.id} value={checkout.id}>
+            {checkout.path ?? checkout.id}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+};
+
+const SyncEntryRepo = ({
+  repositories,
+  repoId,
+  setRepoId,
+}: {
+  repositories: RepositoryInfo[];
+  repoId: string | null;
+  setRepoId: (repoId: string | null) => void;
+}) => {
+  return (
+    <FormControl fullWidth>
+      <InputLabel>Repository</InputLabel>
+      <Select
+        value={repoId}
+        label="Repository"
+        onChange={(e) => setRepoId(e.target.value)}
+      >
+        {repositories.map((repo) => (
+          <MenuItem key={repo.id} value={repo.id}>
+            {repo.name ?? repo.id}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+};
+
+const CreateSyncDialog = ({
+  open,
+  onClose,
+  remoteId,
+  metadataRepo,
+  checkouts,
+  repositories,
+}: {
+  open: boolean;
+  onClose: () => void;
+  remoteId: string;
+  metadataRepo: MetadataRepository;
+  checkouts: CheckoutInfo[];
+  repositories: RepositoryInfo[];
+}) => {
+  const [checkoutId, setCheckoutId] = useState<string | undefined>();
+  const [repoId, setRepoId] = useState<string | null>(null);
+  const { mutateAsync } = useCreateSync(metadataRepo, remoteId);
+  const create = async () => {
+    if (checkoutId === undefined || repoId === null) {
+      return;
+    }
+    await mutateAsync({
+      id: shortId(),
+      type: "repo",
+      checkoutId,
+      repository: {
+        id: repoId,
+      },
+    });
+    onClose();
+  };
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle id="alert-dialog-title">Create Sync</DialogTitle>
+      <DialogContent>
+        <Typography>Entry 1</Typography>
+        <SyncEntryCheckout
+          checkouts={checkouts}
+          checkoutId={checkoutId}
+          setCheckoutId={setCheckoutId}
+        />
+        <Typography>Entry 2</Typography>
+        <SyncEntryRepo
+          repositories={repositories}
+          repoId={repoId}
+          setRepoId={setRepoId}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button
+          onClick={create}
+          autoFocus
+          disabled={checkoutId === undefined || repoId === undefined}
         >
           Create
         </Button>
@@ -232,11 +359,13 @@ export const RemoteView = ({
   const { data: connections } = useConnections(metadataRepo, remoteId);
   const { data: repositories } = useRepositories(metadataRepo, remoteId);
   const { data: checkouts } = useCheckouts(metadataRepo, remoteId);
+  const { data: syncs } = useSyncs(metadataRepo, remoteId);
   const [openCreateRepoDialog, setOpenCreateRepoDialog] = useState(false);
   const [openCreateCheckoutDialog, setOpenCreateCheckoutDialog] =
     useState(false);
   const [openCreateConnectionDialog, setOpenCreateConnectionDialog] =
     useState(false);
+  const [openCreateSyncDialog, setOpenCreateSyncDialog] = useState(false);
 
   const { mutateAsync: syncStatus } = trustedTsr.syncRepoStatus.useMutation();
   const { mutateAsync: sync } = trustedTsr.syncRepo.useMutation();
@@ -257,6 +386,9 @@ export const RemoteView = ({
           </Button>
           <Button onClick={() => setOpenCreateCheckoutDialog(true)}>
             Add Checkout
+          </Button>
+          <Button onClick={() => setOpenCreateSyncDialog(true)}>
+            Add Sync
           </Button>
         </Stack>
 
@@ -282,50 +414,74 @@ export const RemoteView = ({
           <Stack key={`checkout_${i}`} flexDirection={"row"}>
             <Typography>Id: {it.id}</Typography>
             <Typography>Path: {it.path}</Typography>
-            <Typography>
-              Repo:{" "}
-              {repositories?.find((r) => (r.id = it.repoId))?.name ?? it.repoId}
-            </Typography>
-            <Button
-              onClick={async () => {
-                const repo = repositories?.find(
-                  (repo) => repo.id === it.repoId
-                );
-                if (repo === undefined) {
-                  return;
-                }
-                const result = await syncStatus({
-                  body: {
-                    repoId: it.repoId,
-                    encKey: repo.encKey,
-                    checkoutPath: it.path,
-                  },
-                });
-                console.log(result.body.changes);
-              }}
-            >
-              Sync status
-            </Button>
-            <Button
-              onClick={async () => {
-                const repo = repositories?.find(
-                  (repo) => repo.id === it.repoId
-                );
-                if (repo === undefined) {
-                  return;
-                }
-                const result = await sync({
-                  body: {
-                    repoId: it.repoId,
-                    encKey: repo.encKey,
-                    checkoutPath: it.path,
-                  },
-                });
-                console.log(result);
-              }}
-            >
-              Sync
-            </Button>
+          </Stack>
+        ))}
+        <Divider />
+        <Typography>Syncs</Typography>
+        {syncs?.map((it) => (
+          <Stack flexDirection={"row"}>
+            <Typography>Id: {it.id}</Typography>
+            <Typography>Type: {it.type}</Typography>
+            {it.type === "repo" ? (
+              <>
+                <Typography>
+                  Repo:{" "}
+                  {repositories?.find((repo) => repo.id === it.repository.id)
+                    ?.name ??
+                    repositories?.find((repo) => repo.id === it.repository.id)
+                      ?.id}
+                </Typography>
+                <Typography>
+                  Checkout:{" "}
+                  {checkouts?.find((c) => c.id === it.checkoutId)?.path}
+                </Typography>
+
+                <Button
+                  onClick={async () => {
+                    const repo = repositories?.find(
+                      (repo) => repo.id === it.repository.id
+                    );
+                    if (repo === undefined) {
+                      return;
+                    }
+                    const result = await syncStatus({
+                      body: {
+                        repoId: it.repository.id,
+                        encKey: repo.encKey,
+                        checkoutPath:
+                          checkouts?.find((c) => c.id === it.checkoutId)
+                            ?.path ?? "",
+                      },
+                    });
+                    console.log(result.body.changes);
+                  }}
+                >
+                  Sync status
+                </Button>
+                <Button
+                  onClick={async () => {
+                    const repo = repositories?.find(
+                      (repo) => repo.id === it.repository.id
+                    );
+                    if (repo === undefined) {
+                      return;
+                    }
+                    const result = await sync({
+                      body: {
+                        repoId: it.repository.id,
+                        encKey: repo.encKey,
+                        checkoutPath:
+                          checkouts?.find((c) => c.id === it.checkoutId)
+                            ?.path ?? "",
+                      },
+                    });
+                    console.log(result);
+                  }}
+                >
+                  Sync
+                </Button>
+              </>
+            ) : null}
           </Stack>
         ))}
         <Divider />
@@ -348,6 +504,14 @@ export const RemoteView = ({
         metadataRepo={metadataRepo}
         open={openCreateCheckoutDialog}
         onClose={() => setOpenCreateCheckoutDialog(false)}
+        repositories={repositories ?? []}
+      />
+      <CreateSyncDialog
+        remoteId={remoteId}
+        metadataRepo={metadataRepo}
+        open={openCreateSyncDialog}
+        onClose={() => setOpenCreateSyncDialog(false)}
+        checkouts={checkouts ?? []}
         repositories={repositories ?? []}
       />
     </>

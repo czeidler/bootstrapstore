@@ -1,7 +1,6 @@
 import { BlobStoreGetter } from "./blob-store";
 import { DirEntry, Repository } from "./repository";
 import { SerializableDB } from "./sqlite";
-import { shortId } from "./utils";
 
 export type RepositoryInfo = {
   id: string;
@@ -35,8 +34,27 @@ export type CheckoutInfo = {
    * Path to the source directory
    */
   path: string;
-  repoId: string;
 };
+
+export type SyncConfig =
+  | {
+      id: string;
+      type: "repo";
+      checkoutId: string;
+      repository: {
+        id: string;
+        remoteId?: string;
+      };
+    }
+  | {
+      id: string;
+      type: "checkout";
+      checkoutId: string;
+      checkout2: {
+        id: string;
+        remoteId?: string;
+      };
+    };
 
 const remoteDir = "remotes";
 const remotePath = (remoteId: string) => [remoteDir, remoteId];
@@ -75,6 +93,14 @@ const checkoutInfoPath = (remoteId: string, checkoutId: string) => [
   "checkouts",
   checkoutId,
   "checkout.json",
+];
+const syncBasePath = (remoteId: string) => [remoteDir, remoteId, "sync"];
+const syncInfoPath = (remoteId: string, syncId: string) => [
+  remoteDir,
+  remoteId,
+  "sync",
+  syncId,
+  "sync.json",
 ];
 
 /**
@@ -211,6 +237,22 @@ export class MetadataRepository {
     checkoutId: string
   ): Promise<CheckoutInfo | undefined> {
     return this.read<CheckoutInfo>(checkoutInfoPath(remoteId, checkoutId));
+  }
+
+  async listSyncs(remoteId: string): Promise<DirEntry[]> {
+    const entries = await this.metaRepo.listDirectory(syncBasePath(remoteId));
+    return entries ?? [];
+  }
+
+  async writeSync(remoteId: string, syncConfig: SyncConfig) {
+    await this.write(syncInfoPath(remoteId, syncConfig.id), syncConfig);
+  }
+
+  async readSync(
+    remoteId: string,
+    syncId: string
+  ): Promise<SyncConfig | undefined> {
+    return this.read<SyncConfig>(syncInfoPath(remoteId, syncId));
   }
 
   async snapshot() {

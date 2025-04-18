@@ -6,6 +6,7 @@ import {
   RemoteConnection,
   RemoteInfo,
   RepositoryInfo,
+  SyncConfig,
 } from "lib/src/main-repo";
 
 export const useCreateRemote = (metadataRepo: MetadataRepository) =>
@@ -126,5 +127,34 @@ export const useCheckouts = (
           .map((it) => metadataRepo.readCheckout(remoteId, it.name)) ?? []
       );
       return repos.filter((it): it is CheckoutInfo => it !== undefined);
+    },
+  });
+
+export const useCreateSync = (
+  metadataRepo: MetadataRepository,
+  remoteId: string
+) =>
+  useMutation({
+    mutationFn: async (syncInfo: SyncConfig) => {
+      await metadataRepo.writeSync(remoteId, syncInfo);
+      await metadataRepo.snapshot();
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["remotes", remoteId, "syncs"],
+      }),
+  });
+
+export const useSyncs = (metadataRepo: MetadataRepository, remoteId: string) =>
+  useQuery({
+    queryKey: ["remotes", remoteId, "syncs"],
+    queryFn: async () => {
+      const repoList = await metadataRepo.listSyncs(remoteId);
+      const repos = await Promise.all(
+        repoList
+          ?.filter((it) => it !== undefined)
+          .map((it) => metadataRepo.readSync(remoteId, it.name)) ?? []
+      );
+      return repos.filter((it): it is SyncConfig => it !== undefined);
     },
   });
