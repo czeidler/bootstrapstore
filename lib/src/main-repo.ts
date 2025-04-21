@@ -1,6 +1,7 @@
 import { BlobStoreGetter } from "./blob-store";
 import { DirEntry, Repository } from "./repository";
 import { SerializableDB } from "./sqlite";
+import { shortId } from "./utils";
 
 export type RepositoryInfo = {
   id: string;
