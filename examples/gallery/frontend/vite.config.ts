@@ -6,7 +6,7 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 export default defineConfig({
   plugins: [react(), nodePolyfills()],
   optimizeDeps: {
-    exclude: ["sqlocal"],
+    exclude: ["sqlocal", "brotli-wasm"],
   },
   worker: {
     format: "es",

@@ -1,4 +1,4 @@
-import brotli from "brotli";
+import brotli from "brotli-wasm";
 
 export interface Compression {
   compress(plain: Buffer): Promise<Buffer>;
@@ -14,7 +14,7 @@ type CompressionType =
  */
 export class AnnotatedCompression implements Compression {
   async compress(plain: Buffer): Promise<Buffer> {
-    const deflated = brotli.compress(plain);
+    const deflated = (await brotli).compress(plain);
     return Buffer.concat([Uint8Array.from(["b".charCodeAt(0)]), deflated]);
   }
 
@@ -26,7 +26,7 @@ export class AnnotatedCompression implements Compression {
     const compressionType = String.fromCharCode(firstByte) as CompressionType;
     switch (compressionType) {
       case "b": {
-        return Buffer.from(brotli.decompress(data.subarray(1)));
+        return Buffer.from((await brotli).decompress(data.subarray(1)));
       }
       default: {
         throw Error(`Compression type ${compressionType} not supported`);
