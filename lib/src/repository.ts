@@ -7,6 +7,7 @@ import { AESGCMEncryption, Encryption, sha256 } from "./encryption";
 import { IndexRepository, TreeEntryType } from "./index-repository";
 import { BlobInfo, TreeBuilder } from "./tree-builder";
 import { bufferToHex, ExhaustiveCheckError } from "./utils";
+import { AnnotatedCompression } from "./compression";
 
 export type DirEntry =
   | {
@@ -78,9 +79,9 @@ export class Repository {
     await migrateToLatest(kysely as Kysely<unknown>);
 
     const buffer = await instance.serialize();
-
+    const zipped = await new AnnotatedCompression().compress(buffer);
     const encryption: Encryption = new AESGCMEncryption();
-    const cipher = await encryption.encrypt(buffer, key);
+    const cipher = await encryption.encrypt(zipped, key);
     const store = storeGetter.get(repoId);
     await store.write(["index"], cipher);
   }
@@ -95,7 +96,8 @@ export class Repository {
     const buffer = await store.read(["index"]);
     const encryption: Encryption = new AESGCMEncryption();
     const plain = await encryption.decrypt(buffer, config.key);
-    const instance = await serializeDb.create(plain);
+    const decompressed = await new AnnotatedCompression().decompress(plain);
+    const instance = await serializeDb.create(decompressed);
     const kysely = new Kysely<DB>({
       dialect: instance.dialect,
     });
@@ -188,7 +190,8 @@ export class Repository {
       this.config.branch
     );
     const plain = await this.instance.serialize();
-    const cipher = await this.encryption.encrypt(plain, this.config.key);
+    const zipped = await new AnnotatedCompression().compress(plain);
+    const cipher = await this.encryption.encrypt(zipped, this.config.key);
     await this.store.write(["index"], cipher);
   }
 
