@@ -7,11 +7,6 @@ import { SqlocalSerializableDB } from "./sqlite";
 import { storeGetter } from "./utils";
 import { FileBrowser } from "./FileBrowser";
 
-export type PathStackEntry = {
-  repo: Repository;
-  repoPath: string[];
-  path: string[];
-};
 export const Home = () => {
   const [searchParams] = useSearchParams();
   const keyParam = searchParams.get("key");

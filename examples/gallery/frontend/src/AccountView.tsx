@@ -23,6 +23,7 @@ import { AccountData } from "lib/src/account";
 import { RemoteView } from "./RemoteView";
 import { useCreateRemote, useRemotes } from "./account-hooks";
 import { shortId } from "lib/src/utils";
+import HomeTwoToneIcon from "@mui/icons-material/HomeTwoTone";
 
 // TEMP
 function create16ByteBuffer(str: string): Buffer {
@@ -143,9 +144,12 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
   return (
     <>
       <Stack height={"100%"}>
-        <Typography
-          alignSelf={"start"}
-        >{`Open: repo: ${accountData.repoId}, local remote: ${accountData.remoteId}`}</Typography>
+        <Stack direction={"row"}>
+          <HomeTwoToneIcon />
+          <Typography
+            alignSelf={"start"}
+          >{`Open: repo: ${accountData.repoId}, local remote: ${accountData.remoteId}`}</Typography>
+        </Stack>
         <Divider />
         <Stack direction={"row"} height={"100%"}>
           <Stack justifyContent={"space-between"}>

@@ -5,9 +5,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { tsr, trustedTsr } from "./tsr";
 import { Home } from "./Home";
-import { AdminAuth } from "./Auth";
+import { AdminAuth } from "./AdminAuth";
 import { Admin } from "./Admin";
-import { queryClient } from "./main";
+
+import { queryClient } from "./account-hooks";
 
 const App = () => {
   return (

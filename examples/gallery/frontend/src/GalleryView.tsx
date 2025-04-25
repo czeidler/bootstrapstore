@@ -4,14 +4,19 @@ import { useCallback, useEffect, useState } from "react";
 import { ImageDialog } from "./ImageDialog";
 import { Image } from "./Image";
 import { Pagination, Stack } from "@mui/material";
-import { DirEntry } from "lib/src/repository";
+import { DirEntry, Repository } from "lib/src/repository";
 import { imageExtensions } from "./utils";
-import { PathStackEntry } from "./Home";
 
 const baseWidth = 800;
 const baseHeight = 600;
 
 type RepoPhoto = { src: string; path: string[]; width: number; height: number };
+
+type PathStackEntry = {
+  repo: Repository;
+  repoPath: string[];
+  path: string[];
+};
 
 export default function GalleryView({
   path,

@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { queryClient } from "./main";
 import {
   CheckoutInfo,
   MetadataRepository,
@@ -8,6 +7,10 @@ import {
   RepositoryInfo,
   SyncConfig,
 } from "lib/src/main-repo";
+
+import { QueryClient } from "@tanstack/react-query";
+
+export const queryClient = new QueryClient();
 
 export const useCreateRemote = (metadataRepo: MetadataRepository) =>
   useMutation({
