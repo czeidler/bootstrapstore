@@ -12,6 +12,7 @@ import {
   ListSubheader,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
@@ -24,6 +25,7 @@ import { RemoteView } from "./RemoteView";
 import { useCreateRemote, useRemotes } from "./account-hooks";
 import { shortId } from "lib/src/utils";
 import HomeTwoToneIcon from "@mui/icons-material/HomeTwoTone";
+import { MainLayout } from "./MainLayout";
 
 // TEMP
 function create16ByteBuffer(str: string): Buffer {
@@ -59,16 +61,24 @@ const OpenAccount = ({
   });
 
   return (
-    <>
-      <Typography>Open Account</Typography>
-      <TextField
-        label="Password"
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <Button disabled={!password} onClick={() => openAccount()}>
-        Open
-      </Button>
-    </>
+    <MainLayout
+      Header={
+        <Typography padding={0.5} variant="h5">
+          Open Account
+        </Typography>
+      }
+      Content={
+        <>
+          <TextField
+            label="Password"
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Button disabled={!password} onClick={() => openAccount()}>
+            Open
+          </Button>
+        </>
+      }
+    />
   );
 };
 
@@ -142,63 +152,76 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
   }
 
   return (
-    <>
-      <Stack height={"100%"}>
-        <Stack direction={"row"}>
-          <HomeTwoToneIcon />
-          <Typography
-            alignSelf={"start"}
-          >{`Open: repo: ${accountData.repoId}, local remote: ${accountData.remoteId}`}</Typography>
-        </Stack>
-        <Divider />
-        <Stack direction={"row"} height={"100%"}>
-          <Stack justifyContent={"space-between"}>
-            <List
-              subheader={
-                <ListSubheader sx={{ textAlign: "start" }}>
-                  <Stack direction={"row"} justifyContent={"space-between"}>
-                    Remotes:{" "}
-                    <Button onClick={() => setOpenAddRemoteDialog(true)}>
-                      Add
-                    </Button>
-                  </Stack>
-                </ListSubheader>
-              }
-            >
-              <ListItem>
-                <ListItemButton
-                  selected={selectedRemote === accountData.remoteId}
-                  onClick={() => setSelectedRemote(accountData.remoteId)}
-                >
-                  <ListItemText primary={`${accountData.remoteId} (Local)`} />
-                </ListItemButton>
-              </ListItem>
-              {remotes
-                ?.filter((remote) => remote.id !== accountData.remoteId)
-                .map((remote) => (
-                  <ListItem>
-                    <ListItemButton
-                      selected={selectedRemote === remote.id}
-                      onClick={() => setSelectedRemote(remote.id)}
+    <MainLayout
+      Header={
+        <>
+          <Tooltip
+            title={`Open: repo: ${accountData.repoId}, local remote: ${accountData.remoteId}`}
+          >
+            <HomeTwoToneIcon sx={{ alignSelf: "center" }} />
+          </Tooltip>
+          <Typography padding={0.5} variant="h5">
+            Account
+          </Typography>
+        </>
+      }
+      Content={
+        <>
+          <Stack direction={"row"} height={"100%"} marginRight={1}>
+            <Stack justifyContent={"space-between"} minWidth="400px">
+              <List
+                subheader={
+                  <ListSubheader sx={{ textAlign: "start" }}>
+                    <Stack
+                      paddingLeft={1}
+                      direction={"row"}
+                      justifyContent={"space-between"}
+                      alignItems={"center"}
                     >
-                      <ListItemText primary={remote.name ?? remote.id} />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-            </List>
+                      <Typography>Remotes:</Typography>
+                      <Button onClick={() => setOpenAddRemoteDialog(true)}>
+                        Add
+                      </Button>
+                    </Stack>
+                  </ListSubheader>
+                }
+              >
+                <Divider />
+                <ListItem disablePadding={true} divider={true} dense={true}>
+                  <ListItemButton
+                    selected={selectedRemote === accountData.remoteId}
+                    onClick={() => setSelectedRemote(accountData.remoteId)}
+                  >
+                    <ListItemText primary={`${accountData.remoteId} (Local)`} />
+                  </ListItemButton>
+                </ListItem>
+                {remotes
+                  ?.filter((remote) => remote.id !== accountData.remoteId)
+                  .map((remote) => (
+                    <ListItem disablePadding={true} divider={true} dense={true}>
+                      <ListItemButton
+                        selected={selectedRemote === remote.id}
+                        onClick={() => setSelectedRemote(remote.id)}
+                      >
+                        <ListItemText primary={remote.name ?? remote.id} />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+              </List>
+            </Stack>
+            <Divider orientation="vertical" sx={{ marginRight: 1 }} />
+            <RemoteView
+              remoteId={selectedRemote ?? accountData.remoteId}
+              metadataRepo={metadataRepo}
+            />
           </Stack>
-
-          <RemoteView
-            remoteId={selectedRemote ?? accountData.remoteId}
+          <AddRemoteDialog
+            open={openAddRemoteDialog}
+            onClose={() => setOpenAddRemoteDialog(false)}
             metadataRepo={metadataRepo}
           />
-        </Stack>
-      </Stack>
-      <AddRemoteDialog
-        open={openAddRemoteDialog}
-        onClose={() => setOpenAddRemoteDialog(false)}
-        metadataRepo={metadataRepo}
-      />
-    </>
+        </>
+      }
+    />
   );
 };

@@ -9,33 +9,37 @@ import { AdminAuth } from "./AdminAuth";
 import { Admin } from "./Admin";
 
 import { queryClient } from "./account-hooks";
+import { ThemeProvider } from "@mui/material";
+import { theme } from "./theme";
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <tsr.ReactQueryProvider>
-        <trustedTsr.ReactQueryProvider>
-          <BrowserRouter
-            future={{
-              v7_relativeSplatPath: true,
-              v7_startTransition: true,
-            }}
-          >
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route
-                path="admin"
-                element={
-                  <AdminAuth>
-                    <Admin />
-                  </AdminAuth>
-                }
-              />
-            </Routes>
-          </BrowserRouter>
-        </trustedTsr.ReactQueryProvider>
-      </tsr.ReactQueryProvider>
-    </QueryClientProvider>
+    <ThemeProvider theme={theme}>
+      <QueryClientProvider client={queryClient}>
+        <tsr.ReactQueryProvider>
+          <trustedTsr.ReactQueryProvider>
+            <BrowserRouter
+              future={{
+                v7_relativeSplatPath: true,
+                v7_startTransition: true,
+              }}
+            >
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route
+                  path="admin"
+                  element={
+                    <AdminAuth>
+                      <Admin />
+                    </AdminAuth>
+                  }
+                />
+              </Routes>
+            </BrowserRouter>
+          </trustedTsr.ReactQueryProvider>
+        </tsr.ReactQueryProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 };
 export default App;

@@ -369,10 +369,11 @@ export const RemoteView = ({
 
   const { mutateAsync: syncStatus } = trustedTsr.syncRepoStatus.useMutation();
   const { mutateAsync: sync } = trustedTsr.syncRepo.useMutation();
+  const { mutate: copy } = trustedTsr.copy.useMutation();
 
   return (
     <>
-      <Stack>
+      <Stack width="100%">
         <Stack direction={"row"} alignItems={"center"}>
           <Typography>{`Remote: ${remoteId}`}</Typography>
           <Button>Details</Button>
@@ -390,12 +391,14 @@ export const RemoteView = ({
           <Button onClick={() => setOpenCreateSyncDialog(true)}>
             Add Sync
           </Button>
+
+          <Button onClick={() => copy({ body: {} })}>RClone test</Button>
         </Stack>
 
         <Divider />
         <Typography>Connections</Typography>
         {connections?.map((it) => (
-          <Stack flexDirection={"row"}>
+          <Stack key={it.id} flexDirection={"row"}>
             <Typography>Id: {it.id}</Typography>
             <Typography>Type: {it.type}</Typography>
           </Stack>
@@ -403,7 +406,7 @@ export const RemoteView = ({
         <Divider />
         <Typography>Repository</Typography>
         {repositories?.map((it) => (
-          <Stack flexDirection={"row"}>
+          <Stack key={it.id} flexDirection={"row"}>
             <Typography>Id: {it.id}</Typography>
             <Typography>Name: {it.name}</Typography>
           </Stack>
@@ -419,7 +422,7 @@ export const RemoteView = ({
         <Divider />
         <Typography>Syncs</Typography>
         {syncs?.map((it) => (
-          <Stack flexDirection={"row"}>
+          <Stack key={it.id} flexDirection={"row"}>
             <Typography>Id: {it.id}</Typography>
             <Typography>Type: {it.type}</Typography>
             {it.type === "repo" ? (

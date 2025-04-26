@@ -114,4 +114,12 @@ export const trustedContract = c.router({
       }),
     },
   },
+  copy: {
+    method: "POST",
+    path: "/copy",
+    body: z.object({}),
+    responses: {
+      201: z.object({}),
+    },
+  },
 });

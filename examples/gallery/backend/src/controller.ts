@@ -7,6 +7,7 @@ import cors from "cors";
 import { Readable } from "stream";
 import { authValidation } from "./auth";
 import { syncRepo, syncRepoStatus } from "./trustedService";
+import { rclone } from "lib-node";
 
 const upload = multer();
 const s = initServer();
@@ -113,6 +114,12 @@ export const buildApp = (config: AppConfig) => {
       syncRepo: {
         handler: async ({ body }) => {
           await syncRepo(body);
+          return { status: 200, body: {} };
+        },
+      },
+      copy: {
+        handler: async ({ body }) => {
+          await rclone("", []);
           return { status: 200, body: {} };
         },
       },

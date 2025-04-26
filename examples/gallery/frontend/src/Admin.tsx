@@ -11,6 +11,7 @@ import { storeGetter } from "./utils";
 import { useState } from "react";
 import { SqlocalSerializableDB } from "./sqlite";
 import { AccountView } from "./AccountView";
+import { MainLayout } from "./MainLayout";
 
 // TEMP
 function create16ByteBuffer(str: string): Buffer {
@@ -36,16 +37,20 @@ const AccountCreation = () => {
     },
   });
   return (
-    <>
-      <Typography>Create Account</Typography>
-      <TextField
-        label="Password"
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <Button disabled={!password} onClick={() => onClick()}>
-        Create
-      </Button>
-    </>
+    <MainLayout
+      Header={<Typography>Create Account</Typography>}
+      Content={
+        <>
+          <TextField
+            label="Password"
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Button disabled={!password} onClick={() => onClick()}>
+            Create
+          </Button>
+        </>
+      }
+    />
   );
 };
 
@@ -59,9 +64,7 @@ export const Admin = () => {
   });
 
   return (
-    <Stack height="100%">
-      <Typography variant="h4">Admin</Typography>
-
+    <>
       {isLoading ? (
         <Stack height="100%" justifyContent={"center"} alignItems={"center"}>
           <CircularProgress />
@@ -71,6 +74,6 @@ export const Admin = () => {
       ) : (
         <AccountView accountFile={accountFile} />
       )}
-    </Stack>
+    </>
   );
 };
