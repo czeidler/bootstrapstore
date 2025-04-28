@@ -114,7 +114,7 @@ export const findOrDownloadRclone = async (force?: boolean) => {
   return rclonePath;
 };
 
-export async function rclone(command: string, args: string[]) {
+export async function rclone(command: string, args: string[]): Promise<string> {
   const rcloneBin = await findOrDownloadRclone();
   if (rcloneBin === undefined) {
     throw Error("rclone not found");
@@ -124,7 +124,9 @@ export async function rclone(command: string, args: string[]) {
       `${rcloneBin} ${command}${args.length > 0 ? " " : ""}${args.join(" ")}`
     );
     console.log(result);
+    return result.stdout;
   } catch (e) {
     console.error(e);
+    throw e;
   }
 }

@@ -12,10 +12,11 @@ import {
   Typography,
   FormControl,
   InputLabel,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import { MetadataRepository } from "lib";
 import { useEffect, useState } from "react";
-import { FileBrowser } from "./FileBrowser";
 import {
   useCheckouts,
   useConnections,
@@ -62,7 +63,7 @@ const CreateConnectionDialog = ({
       setConnection(undefined);
     }
   }, [host, keyPem, user]);
-  const { mutate: createConnection } = useCreateConnection(
+  const { mutateAsync: createConnection } = useCreateConnection(
     metadataRepo,
     remoteId
   );
@@ -101,6 +102,7 @@ const CreateConnectionDialog = ({
           label="Key Pem"
           fullWidth
           variant="standard"
+          multiline={true}
           onChange={(event) => setKeyPem(event.target.value)}
         />
       </DialogContent>
@@ -370,125 +372,163 @@ export const RemoteView = ({
   const { mutateAsync: syncStatus } = trustedTsr.syncRepoStatus.useMutation();
   const { mutateAsync: sync } = trustedTsr.syncRepo.useMutation();
   const { mutate: copy } = trustedTsr.copy.useMutation();
+  type TabValue = "data" | "sync" | "connection";
+  const [tabValue, setTabValue] = useState<TabValue>("data");
 
   return (
     <>
-      <Stack width="100%">
-        <Stack direction={"row"} alignItems={"center"}>
-          <Typography>{`Remote: ${remoteId}`}</Typography>
-          <Button>Details</Button>
-        </Stack>
-        <Stack direction={"row"}>
-          <Button onClick={() => setOpenCreateConnectionDialog(true)}>
-            Add Connection
-          </Button>
-          <Button onClick={() => setOpenCreateRepoDialog(true)}>
-            Add Repo
-          </Button>
-          <Button onClick={() => setOpenCreateCheckoutDialog(true)}>
-            Add Checkout
-          </Button>
-          <Button onClick={() => setOpenCreateSyncDialog(true)}>
-            Add Sync
-          </Button>
+      <Stack width="100%" height={"100%"}>
+        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
+          <Tab
+            value={"data" satisfies TabValue}
+            label="Data"
+            sx={{ padding: "8px", minHeight: 0 }}
+          />
+          <Tab
+            value={"sync" satisfies TabValue}
+            label="Sync"
+            sx={{ padding: "8px", minHeight: 0 }}
+          />
+          <Tab
+            value={"connection" satisfies TabValue}
+            label="Connection"
+            sx={{ padding: "8px", minHeight: 0 }}
+          />
+        </Tabs>
+        {tabValue === "data" ? (
+          <Stack height={"100%"}>
+            <Stack direction={"row"}>
+              <Button onClick={() => setOpenCreateRepoDialog(true)}>
+                Add Repo
+              </Button>
+              <Button onClick={() => setOpenCreateCheckoutDialog(true)}>
+                Add Checkout
+              </Button>
+            </Stack>
 
-          <Button onClick={() => copy({ body: {} })}>RClone test</Button>
-        </Stack>
+            <Divider />
+            <Typography>Repository</Typography>
+            {repositories?.map((it) => (
+              <Stack key={it.id} flexDirection={"row"}>
+                <Typography>Id: {it.id}</Typography>
+                <Typography>Name: {it.name}</Typography>
+              </Stack>
+            ))}
+            <Divider />
+            <Typography>Checkouts</Typography>
+            {checkouts?.map((it, i) => (
+              <Stack key={`checkout_${i}`} flexDirection={"row"}>
+                <Typography>Id: {it.id}</Typography>
+                <Typography>Path: {it.path}</Typography>
+              </Stack>
+            ))}
+          </Stack>
+        ) : null}
+        {tabValue === "sync" ? (
+          <Stack height={"100%"}>
+            <Stack direction={"row"}>
+              <Button onClick={() => setOpenCreateSyncDialog(true)}>
+                Add Sync
+              </Button>
+            </Stack>
+            <Divider />
+            <Typography>Syncs</Typography>
+            {syncs?.map((it) => (
+              <Stack key={it.id} flexDirection={"row"}>
+                <Typography>Id: {it.id}</Typography>
+                <Typography>Type: {it.type}</Typography>
+                {it.type === "repo" ? (
+                  <>
+                    <Typography>
+                      Repo:{" "}
+                      {repositories?.find(
+                        (repo) => repo.id === it.repository.id
+                      )?.name ??
+                        repositories?.find(
+                          (repo) => repo.id === it.repository.id
+                        )?.id}
+                    </Typography>
+                    <Typography>
+                      Checkout:{" "}
+                      {checkouts?.find((c) => c.id === it.checkoutId)?.path}
+                    </Typography>
 
-        <Divider />
-        <Typography>Connections</Typography>
-        {connections?.map((it) => (
-          <Stack key={it.id} flexDirection={"row"}>
-            <Typography>Id: {it.id}</Typography>
-            <Typography>Type: {it.type}</Typography>
+                    <Button
+                      onClick={async () => {
+                        const repo = repositories?.find(
+                          (repo) => repo.id === it.repository.id
+                        );
+                        if (repo === undefined) {
+                          return;
+                        }
+                        const result = await syncStatus({
+                          body: {
+                            repoId: it.repository.id,
+                            encKey: repo.encKey,
+                            checkoutPath:
+                              checkouts?.find((c) => c.id === it.checkoutId)
+                                ?.path ?? "",
+                          },
+                        });
+                        console.log(result.body.changes);
+                      }}
+                    >
+                      Sync status
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        const repo = repositories?.find(
+                          (repo) => repo.id === it.repository.id
+                        );
+                        if (repo === undefined) {
+                          return;
+                        }
+                        const result = await sync({
+                          body: {
+                            repoId: it.repository.id,
+                            encKey: repo.encKey,
+                            checkoutPath:
+                              checkouts?.find((c) => c.id === it.checkoutId)
+                                ?.path ?? "",
+                          },
+                        });
+                        console.log(result);
+                      }}
+                    >
+                      Sync
+                    </Button>
+                  </>
+                ) : null}
+              </Stack>
+            ))}
           </Stack>
-        ))}
-        <Divider />
-        <Typography>Repository</Typography>
-        {repositories?.map((it) => (
-          <Stack key={it.id} flexDirection={"row"}>
-            <Typography>Id: {it.id}</Typography>
-            <Typography>Name: {it.name}</Typography>
-          </Stack>
-        ))}
-        <Divider />
-        <Typography>Checkouts</Typography>
-        {checkouts?.map((it, i) => (
-          <Stack key={`checkout_${i}`} flexDirection={"row"}>
-            <Typography>Id: {it.id}</Typography>
-            <Typography>Path: {it.path}</Typography>
-          </Stack>
-        ))}
-        <Divider />
-        <Typography>Syncs</Typography>
-        {syncs?.map((it) => (
-          <Stack key={it.id} flexDirection={"row"}>
-            <Typography>Id: {it.id}</Typography>
-            <Typography>Type: {it.type}</Typography>
-            {it.type === "repo" ? (
-              <>
-                <Typography>
-                  Repo:{" "}
-                  {repositories?.find((repo) => repo.id === it.repository.id)
-                    ?.name ??
-                    repositories?.find((repo) => repo.id === it.repository.id)
-                      ?.id}
-                </Typography>
-                <Typography>
-                  Checkout:{" "}
-                  {checkouts?.find((c) => c.id === it.checkoutId)?.path}
-                </Typography>
-
+        ) : null}
+        {tabValue === "connection" ? (
+          <Stack height={"100%"}>
+            <Stack direction={"row"}>
+              <Button onClick={() => setOpenCreateConnectionDialog(true)}>
+                Add Connection
+              </Button>
+            </Stack>
+            <Divider />
+            <Typography>Connections</Typography>
+            {connections?.map((it) => (
+              <Stack key={it.id} flexDirection={"row"}>
+                <Typography>Id: {it.id}</Typography>
+                <Typography>Type: {it.type}</Typography>
                 <Button
-                  onClick={async () => {
-                    const repo = repositories?.find(
-                      (repo) => repo.id === it.repository.id
-                    );
-                    if (repo === undefined) {
-                      return;
-                    }
-                    const result = await syncStatus({
-                      body: {
-                        repoId: it.repository.id,
-                        encKey: repo.encKey,
-                        checkoutPath:
-                          checkouts?.find((c) => c.id === it.checkoutId)
-                            ?.path ?? "",
-                      },
-                    });
-                    console.log(result.body.changes);
-                  }}
+                  onClick={() =>
+                    copy({
+                      body: { host: it.host, user: it.user, keyPem: it.keyPem },
+                    })
+                  }
                 >
-                  Sync status
+                  RClone test
                 </Button>
-                <Button
-                  onClick={async () => {
-                    const repo = repositories?.find(
-                      (repo) => repo.id === it.repository.id
-                    );
-                    if (repo === undefined) {
-                      return;
-                    }
-                    const result = await sync({
-                      body: {
-                        repoId: it.repository.id,
-                        encKey: repo.encKey,
-                        checkoutPath:
-                          checkouts?.find((c) => c.id === it.checkoutId)
-                            ?.path ?? "",
-                      },
-                    });
-                    console.log(result);
-                  }}
-                >
-                  Sync
-                </Button>
-              </>
-            ) : null}
+              </Stack>
+            ))}
           </Stack>
-        ))}
-        <Divider />
-        <FileBrowser repo={metadataRepo.metaRepo} />
+        ) : null}
       </Stack>
       <CreateConnectionDialog
         remoteId={remoteId}
