@@ -117,15 +117,16 @@ export const buildApp = (config: AppConfig) => {
           return { status: 200, body: {} };
         },
       },
-      copy: {
+      ls: {
         handler: async ({ body }) => {
-          const { host, user, keyPem } = body;
-          await rclone("ls", [
+          const { host, user, keyPem, path } = body;
+          await rclone("lsjson", [
+            //"-R",
             "--config=/dev/null",
             `:sftp,host=${host},user=${user},key_pem="${keyPem.replace(
               /\n/g,
               "\\n"
-            )}":/home`,
+            )}":${path}`,
           ]);
           return { status: 200, body: {} };
         },

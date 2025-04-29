@@ -114,13 +114,14 @@ export const trustedContract = c.router({
       }),
     },
   },
-  copy: {
+  ls: {
     method: "POST",
-    path: "/copy",
+    path: "/ls",
     body: z.object({
       host: z.string(),
       user: z.string(),
       keyPem: z.string(),
+      path: z.string(),
     }),
     responses: {
       201: z.object({}),

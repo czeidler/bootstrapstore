@@ -371,7 +371,7 @@ export const RemoteView = ({
 
   const { mutateAsync: syncStatus } = trustedTsr.syncRepoStatus.useMutation();
   const { mutateAsync: sync } = trustedTsr.syncRepo.useMutation();
-  const { mutate: copy } = trustedTsr.copy.useMutation();
+  const { mutate: ls } = trustedTsr.ls.useMutation();
   type TabValue = "data" | "sync" | "connection";
   const [tabValue, setTabValue] = useState<TabValue>("data");
 
@@ -518,8 +518,13 @@ export const RemoteView = ({
                 <Typography>Type: {it.type}</Typography>
                 <Button
                   onClick={() =>
-                    copy({
-                      body: { host: it.host, user: it.user, keyPem: it.keyPem },
+                    ls({
+                      body: {
+                        host: it.host,
+                        user: it.user,
+                        keyPem: it.keyPem,
+                        path: "",
+                      },
                     })
                   }
                 >
