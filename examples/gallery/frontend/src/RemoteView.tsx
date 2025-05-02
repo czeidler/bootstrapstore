@@ -22,7 +22,7 @@ import {
   useConnections,
   useCreateCheckout,
   useCreateChildRepo,
-  useCreateConnection,
+  useUpsertConnection,
   useCreateSync,
   useRepositories,
   useSyncs,
@@ -41,75 +41,99 @@ const CreateConnectionDialog = ({
   remoteId,
   metadataRepo,
 }: {
-  open: boolean;
+  open: { connection?: RemoteConnection } | undefined;
   onClose: () => void;
   remoteId: string;
   metadataRepo: MetadataRepository;
 }) => {
-  const [connection, setConnection] = useState<RemoteConnection | undefined>();
-  const [host, setHost] = useState<string | undefined>();
-  const [user, setUser] = useState<string | undefined>();
-  const [keyPem, setKeyPem] = useState<string | undefined>();
+  const [connection, setConnection] = useState<
+    Partial<RemoteConnection> | undefined
+  >();
+
   useEffect(() => {
-    if (host && user && keyPem) {
-      setConnection({
-        id: shortId(),
-        type: "sftp",
-        host,
-        user,
-        keyPem,
-      } satisfies RemoteConnection);
-    } else {
-      setConnection(undefined);
+    if (connection === undefined) {
+      setConnection(open?.connection);
     }
-  }, [host, keyPem, user]);
-  const { mutateAsync: createConnection } = useCreateConnection(
+  }, [connection, open?.connection]);
+
+  const { mutateAsync: upsertConnection } = useUpsertConnection(
     metadataRepo,
     remoteId
   );
-  const create = async () => {
-    if (connection) {
-      await createConnection(connection);
-    }
+  const close = () => {
+    setConnection(undefined);
     onClose();
   };
+  const create = async () => {
+    if (connection === undefined) {
+      return;
+    }
+    const { host, keyPem, user } = connection;
+    if (host !== undefined && keyPem !== undefined && user !== undefined) {
+      await upsertConnection({
+        id: connection.id ?? shortId(),
+        type: "sftp",
+        host,
+        keyPem,
+        user,
+      });
+    }
+    close();
+  };
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open !== undefined} onClose={close}>
       <DialogTitle id="alert-dialog-title">Create sFTP Connection</DialogTitle>
       <DialogContent>
+        {connection?.id !== undefined ? (
+          <TextField
+            value={connection.id}
+            autoFocus
+            margin="dense"
+            label="Id"
+            fullWidth
+            variant="standard"
+            disabled
+          />
+        ) : null}
         <TextField
-          value={host}
+          value={connection?.host ?? ""}
           autoFocus
           margin="dense"
           label="Host"
           fullWidth
           variant="standard"
-          onChange={(event) => setHost(event.target.value)}
+          onChange={(event) =>
+            setConnection((prev) => ({ ...prev, host: event.target.value }))
+          }
         />
         <TextField
-          value={user}
+          value={connection?.user ?? ""}
           autoFocus
           margin="dense"
           label="User"
           fullWidth
           variant="standard"
-          onChange={(event) => setUser(event.target.value)}
+          onChange={(event) =>
+            setConnection((prev) => ({ ...prev, user: event.target.value }))
+          }
         />
         <TextField
-          value={keyPem}
+          value={connection?.keyPem ?? ""}
           autoFocus
           margin="dense"
           label="Key Pem"
           fullWidth
           variant="standard"
           multiline={true}
-          onChange={(event) => setKeyPem(event.target.value)}
+          onChange={(event) =>
+            setConnection((prev) => ({ ...prev, keyPem: event.target.value }))
+          }
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={close}>Cancel</Button>
         <Button onClick={create} autoFocus disabled={connection === undefined}>
-          Create
+          {connection?.id !== undefined ? "Save" : "Create"}
         </Button>
       </DialogActions>
     </Dialog>
@@ -365,8 +389,9 @@ export const RemoteView = ({
   const [openCreateRepoDialog, setOpenCreateRepoDialog] = useState(false);
   const [openCreateCheckoutDialog, setOpenCreateCheckoutDialog] =
     useState(false);
-  const [openCreateConnectionDialog, setOpenCreateConnectionDialog] =
-    useState(false);
+  const [openCreateConnectionDialog, setOpenCreateConnectionDialog] = useState<
+    { connection?: RemoteConnection } | undefined
+  >(undefined);
   const [openCreateSyncDialog, setOpenCreateSyncDialog] = useState(false);
 
   const { mutateAsync: syncStatus } = trustedTsr.syncRepoStatus.useMutation();
@@ -506,7 +531,7 @@ export const RemoteView = ({
         {tabValue === "connection" ? (
           <Stack height={"100%"}>
             <Stack direction={"row"}>
-              <Button onClick={() => setOpenCreateConnectionDialog(true)}>
+              <Button onClick={() => setOpenCreateConnectionDialog({})}>
                 Add Connection
               </Button>
             </Stack>
@@ -530,6 +555,13 @@ export const RemoteView = ({
                 >
                   RClone test
                 </Button>
+                <Button
+                  onClick={() =>
+                    setOpenCreateConnectionDialog({ connection: it })
+                  }
+                >
+                  Edit Connection
+                </Button>
               </Stack>
             ))}
           </Stack>
@@ -539,7 +571,7 @@ export const RemoteView = ({
         remoteId={remoteId}
         metadataRepo={metadataRepo}
         open={openCreateConnectionDialog}
-        onClose={() => setOpenCreateConnectionDialog(false)}
+        onClose={() => setOpenCreateConnectionDialog(undefined)}
       />
       <CreateRepoDialog
         remoteId={remoteId}

@@ -56,7 +56,7 @@ export const useConnections = (
     },
   });
 
-export const useCreateConnection = (
+export const useUpsertConnection = (
   metadataRepo: MetadataRepository,
   remoteId: string
 ) =>
