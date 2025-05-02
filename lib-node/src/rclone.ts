@@ -177,7 +177,10 @@ const startServer = async (rcloneBin: string): Promise<RunningRClone> => {
   return runningRClone;
 };
 
-export async function rclone(command: string, args: string[]): Promise<string> {
+export async function rcloneRC(
+  command: string,
+  args: string[]
+): Promise<string> {
   const rcloneBin = await findOrDownloadRclone();
   if (rcloneBin === undefined) {
     throw Error("rclone not found");
@@ -187,12 +190,16 @@ export async function rclone(command: string, args: string[]): Promise<string> {
     const start = Date.now();
     const result = await exec(
       //`${rcloneBin} ${command}${args.length > 0 ? " " : ""}${args.join(" ")}`
-      `${rcloneBin} rc core/command --json '${JSON.stringify({
+
+      /*`${rcloneBin} rc core/command --json '${JSON.stringify({
         command,
         arg: args,
       })}' --rc-user ${rCloneServer.user} --rc-pass ${
         rCloneServer.password
-      } --rc-addr ${rCloneServer.host}`
+      } --rc-addr ${rCloneServer.host}`*/
+      `${rcloneBin} rc ${command} ${args.join(" ")} --rc-user ${
+        rCloneServer.user
+      } --rc-pass ${rCloneServer.password} --rc-addr ${rCloneServer.host}`
     );
     console.log(`> rclone command finished in ${Date.now() - start}ms`);
     console.log(result);

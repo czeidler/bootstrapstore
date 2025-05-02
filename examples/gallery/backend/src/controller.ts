@@ -7,7 +7,7 @@ import cors from "cors";
 import { Readable } from "stream";
 import { authValidation } from "./auth";
 import { syncRepo, syncRepoStatus } from "./trustedService";
-import { rclone } from "lib-node";
+import { rcloneRC } from "lib-node";
 
 const upload = multer();
 const s = initServer();
@@ -120,15 +120,18 @@ export const buildApp = (config: AppConfig) => {
       ls: {
         handler: async ({ body }) => {
           const { host, user, keyPem, path } = body;
-          await rclone("lsjson", [
+          await rcloneRC("operations/list", [
             //"-R",
             "--config=/dev/null",
-            `:sftp,host=${host},user=${user},key_pem="${keyPem.replace(
+            `fs=:sftp,host=${host},user=${user},key_pem="${keyPem.replace(
               /\n/g,
               "\\n"
             )}":${path}`,
+            `remote=""`,
+            "--max-depth",
+            "1",
           ]);
-          return { status: 200, body: {} };
+          return { status: 201, body: {} };
         },
       },
     });
