@@ -5,6 +5,9 @@ import fetch from "node-fetch";
 import { exec as execRaw } from "child_process";
 import JSZip from "jszip";
 import { Agent } from "node:https";
+import { ChildProcess, spawn } from "node:child_process";
+import { shortId } from "lib/src/utils";
+
 const exec = util.promisify(execRaw);
 
 async function isRcloneInstalledOnHost(): Promise<boolean> {
@@ -114,18 +117,91 @@ export const findOrDownloadRclone = async (force?: boolean) => {
   return rclonePath;
 };
 
+type RunningRClone = {
+  process: ChildProcess;
+  user: string;
+  password: string;
+  host: string;
+};
+let runningRClone: Promise<RunningRClone> | undefined;
+const startServer = async (rcloneBin: string): Promise<RunningRClone> => {
+  if (runningRClone !== undefined) {
+    return runningRClone;
+  }
+  const user = "bsuser";
+  const password = shortId();
+  console.info(`> Start rclone rcd`);
+  const process = spawn(
+    rcloneBin,
+    ["rcd", "--rc-user", user, "--rc-pass", password],
+    {
+      stdio: "pipe",
+      detached: false,
+      windowsHide: true,
+    }
+  );
+
+  runningRClone = new Promise((res, rej) => {
+    const timeout = setTimeout(() => {
+      process.kill("SIGKILL");
+      runningRClone = undefined;
+      rej(Error("Timeout starting rclone server"));
+    }, 10000);
+    process.stdio[2].on("data", (data: Buffer) => {
+      const line = data.toString();
+      const match = /Serving remote control on (.*)/.exec(line);
+      if (match !== null) {
+        const address = match[1];
+        const url = URL.parse(address);
+        if (url?.host === undefined) {
+          rej(Error("Unexpected local rclone server url"));
+          return;
+        }
+        clearTimeout(timeout);
+        console.info(`> rclone local server started at: ${url.host}`);
+        res({
+          process,
+          user,
+          password,
+          host: url.host,
+        });
+      }
+    });
+    process.on("close", () => {
+      runningRClone = undefined;
+    });
+    process.on("exit", () => {
+      runningRClone = undefined;
+    });
+  });
+  return runningRClone;
+};
+
 export async function rclone(command: string, args: string[]): Promise<string> {
   const rcloneBin = await findOrDownloadRclone();
   if (rcloneBin === undefined) {
     throw Error("rclone not found");
   }
+  const rCloneServer = await startServer(rcloneBin);
   try {
+    const start = Date.now();
     const result = await exec(
-      `${rcloneBin} ${command}${args.length > 0 ? " " : ""}${args.join(" ")}`
+      //`${rcloneBin} ${command}${args.length > 0 ? " " : ""}${args.join(" ")}`
+      `${rcloneBin} rc core/command --json '${JSON.stringify({
+        command,
+        arg: args,
+      })}' --rc-user ${rCloneServer.user} --rc-pass ${
+        rCloneServer.password
+      } --rc-addr ${rCloneServer.host}`
     );
+    console.log(`> rclone command finished in ${Date.now() - start}ms`);
     console.log(result);
     return result.stdout;
-  } catch (e) {
+  } catch (e: unknown) {
+    if ((e as Error).message.includes("connection failed")) {
+      console.warn("Reset rclone server");
+      runningRClone = undefined;
+    }
     console.error(e);
     throw e;
   }
