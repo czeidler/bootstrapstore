@@ -195,7 +195,7 @@ export async function rcloneRC(
         rCloneServer.user
       } --rc-pass ${rCloneServer.password} --rc-addr ${rCloneServer.host}`
     );
-    console.log(`> rclone command finished in ${Date.now() - start}ms`);
+    console.log(`> rclone rc ${command} finished in ${Date.now() - start}ms`);
     return result.stdout;
   } catch (e: unknown) {
     if ((e as Error).message.includes("connection failed")) {
