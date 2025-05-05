@@ -6,7 +6,9 @@ import { exec as execRaw } from "child_process";
 import JSZip from "jszip";
 import { Agent } from "node:https";
 import { ChildProcess, spawn } from "node:child_process";
-import { shortId } from "lib/src/utils";
+import { ExhaustiveCheckError, shortId } from "lib/src/utils";
+import { DirEntry } from "lib/src/repository";
+import { RemoteConnection } from "lib/src/main-repo";
 
 const exec = util.promisify(execRaw);
 
@@ -189,20 +191,11 @@ export async function rcloneRC(
   try {
     const start = Date.now();
     const result = await exec(
-      //`${rcloneBin} ${command}${args.length > 0 ? " " : ""}${args.join(" ")}`
-
-      /*`${rcloneBin} rc core/command --json '${JSON.stringify({
-        command,
-        arg: args,
-      })}' --rc-user ${rCloneServer.user} --rc-pass ${
-        rCloneServer.password
-      } --rc-addr ${rCloneServer.host}`*/
       `${rcloneBin} rc ${command} ${args.join(" ")} --rc-user ${
         rCloneServer.user
       } --rc-pass ${rCloneServer.password} --rc-addr ${rCloneServer.host}`
     );
     console.log(`> rclone command finished in ${Date.now() - start}ms`);
-    console.log(result);
     return result.stdout;
   } catch (e: unknown) {
     if ((e as Error).message.includes("connection failed")) {
@@ -211,5 +204,74 @@ export async function rcloneRC(
     }
     console.error(e);
     throw e;
+  }
+}
+
+type FSDirEntry = Exclude<DirEntry, { type: "repo" }>;
+type FSRemoteConnection = Omit<RemoteConnection, "id">;
+
+interface FSInterface {
+  ls(
+    path: string,
+    remote: FSRemoteConnection | undefined
+  ): Promise<FSDirEntry[]>;
+  //copy();
+}
+
+function remoteToRClone(remote: FSRemoteConnection | undefined): string {
+  if (remote === undefined) {
+    return "";
+  }
+  switch (remote.type) {
+    case "sftp": {
+      const { host, user, keyPem } = remote;
+      return `:sftp,host=${host},user=${user},key_pem="${keyPem.replace(
+        /\n/g,
+        "\\n"
+      )}":`;
+    }
+    default:
+      throw new ExhaustiveCheckError(remote.type);
+  }
+}
+
+type RCloneLsResponse = {
+  list: {
+    IsDir: boolean;
+    MimeType: string;
+    ModTime: string;
+    Name: string;
+    Path: string;
+    Size: number;
+  }[];
+};
+
+export class RCloneFSInterface implements FSInterface {
+  async ls(
+    path: string,
+    remote: FSRemoteConnection | undefined
+  ): Promise<FSDirEntry[]> {
+    const result = await rcloneRC("operations/list", [
+      "--config=/dev/null",
+      `fs=${remoteToRClone(remote)}${path}`,
+      `remote=""`,
+      "--max-depth",
+      "1",
+    ]);
+    const response = JSON.parse(result) as RCloneLsResponse;
+    return response.list.map((it) => {
+      return it.IsDir
+        ? {
+            type: "dir",
+            name: it.Name,
+          }
+        : {
+            type: "file",
+            name: it.Name,
+            size: it.Size,
+            creationTime: 0,
+            modificationTime: new Date(it.ModTime).getTime(),
+          };
+    });
   }
 }

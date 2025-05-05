@@ -8,6 +8,7 @@ import { Readable } from "stream";
 import { authValidation } from "./auth";
 import { syncRepo, syncRepoStatus } from "./trustedService";
 import { rcloneRC } from "lib-node";
+import { RCloneFSInterface } from "lib-node/src/rclone";
 
 const upload = multer();
 const s = initServer();
@@ -119,19 +120,9 @@ export const buildApp = (config: AppConfig) => {
       },
       ls: {
         handler: async ({ body }) => {
-          const { host, user, keyPem, path } = body;
-          await rcloneRC("operations/list", [
-            //"-R",
-            "--config=/dev/null",
-            `fs=:sftp,host=${host},user=${user},key_pem="${keyPem.replace(
-              /\n/g,
-              "\\n"
-            )}":${path}`,
-            `remote=""`,
-            "--max-depth",
-            "1",
-          ]);
-          return { status: 201, body: {} };
+          const { remote, path } = body;
+          const entries = await new RCloneFSInterface().ls(path, remote);
+          return { status: 201, body: { entries } };
         },
       },
     });

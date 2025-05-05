@@ -545,9 +545,12 @@ export const RemoteView = ({
                   onClick={() =>
                     ls({
                       body: {
-                        host: it.host,
-                        user: it.user,
-                        keyPem: it.keyPem,
+                        remote: {
+                          type: it.type,
+                          host: it.host,
+                          user: it.user,
+                          keyPem: it.keyPem,
+                        },
                         path: "",
                       },
                     })

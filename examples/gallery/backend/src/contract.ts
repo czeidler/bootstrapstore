@@ -118,13 +118,34 @@ export const trustedContract = c.router({
     method: "POST",
     path: "/ls",
     body: z.object({
-      host: z.string(),
-      user: z.string(),
-      keyPem: z.string(),
+      remote: z
+        .object({
+          type: z.enum(["sftp"]),
+          host: z.string(),
+          user: z.string(),
+          keyPem: z.string(),
+        })
+        .optional(),
       path: z.string(),
     }),
     responses: {
-      201: z.object({}),
+      201: z.object({
+        entries: z.array(
+          z.discriminatedUnion("type", [
+            z.object({
+              type: z.literal("dir"),
+              name: z.string(),
+            }),
+            z.object({
+              type: z.literal("file"),
+              name: z.string(),
+              size: z.number().int(),
+              creationTime: z.number().int(),
+              modificationTime: z.number().int(),
+            }),
+          ])
+        ),
+      }),
     },
   },
 });
