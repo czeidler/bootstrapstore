@@ -246,6 +246,46 @@ type RCloneLsResponse = {
   }[];
 };
 
+type RCloneJob = { jobid: number };
+
+type RCloneJobStats = {
+  bytes: number;
+  checks: number;
+  deletedDirs: number;
+  deletes: number;
+  elapsedTime: number;
+  errors: number;
+  eta: number | null;
+  fatalError: boolean;
+  renames: number;
+  retryError: boolean;
+  serverSideCopies: number;
+  serverSideCopyBytes: number;
+  serverSideMoveBytes: number;
+  serverSideMoves: number;
+  speed: number;
+  totalBytes: number;
+  totalChecks: number;
+  totalTransfers: number;
+  transferTime: number;
+  transfers: number;
+  transferring?: {
+    bytes: number;
+    /** Destination path */
+    dstFs: string;
+    eta: number | null;
+    group: string;
+    /** File name */
+    name: string;
+    percentage: number;
+    size: number;
+    speed: number;
+    speedAvg: number;
+    /** Source path */
+    srcFs: string;
+  }[];
+};
+
 export class RCloneFSInterface implements FSInterface {
   async ls(
     path: string,
@@ -273,5 +313,28 @@ export class RCloneFSInterface implements FSInterface {
             modificationTime: new Date(it.ModTime).getTime(),
           };
     });
+  }
+
+  async copyAsync(
+    src: { path: string; remote: FSRemoteConnection | undefined },
+    destination: { path: string; remote: FSRemoteConnection | undefined }
+  ): Promise<RCloneJob> {
+    const result = await rcloneRC("sync/copy", [
+      "--config=/dev/null",
+      `srcFs=${remoteToRClone(src.remote)}${src.path}`,
+      `srcRemote=""`,
+      `dstFs=${remoteToRClone(destination.remote)}${destination.path}`,
+      `dstRemote=""`,
+      "_async=true",
+    ]);
+    return JSON.parse(result) as RCloneJob;
+  }
+
+  async jobStatus(job: number): Promise<RCloneJobStats> {
+    const result = await rcloneRC("core/stats", [
+      "--config=/dev/null",
+      `group=job/${job}`,
+    ]);
+    return JSON.parse(result) as RCloneJobStats;
   }
 }
