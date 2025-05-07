@@ -286,6 +286,17 @@ type RCloneJobStats = {
   }[];
 };
 
+type RCloneCheck = {
+  differ: unknown[];
+  error: unknown[];
+  hashType: "md5";
+  // Missing paths
+  missingOnDst: string[];
+  missingOnSrc: string[];
+  status: string;
+  success: boolean;
+};
+
 export class RCloneFSInterface implements FSInterface {
   async ls(
     path: string,
@@ -313,6 +324,20 @@ export class RCloneFSInterface implements FSInterface {
             modificationTime: new Date(it.ModTime).getTime(),
           };
     });
+  }
+
+  async operationsCheck(
+    src: { path: string; remote: FSRemoteConnection | undefined },
+    destination: { path: string; remote: FSRemoteConnection | undefined }
+  ) {
+    const result = await rcloneRC("operations/check", [
+      "--config=/dev/null",
+      `srcFs=${remoteToRClone(src.remote)}${src.path}`,
+      `srcRemote=""`,
+      `dstFs=${remoteToRClone(destination.remote)}${destination.path}`,
+      `dstRemote=""`,
+    ]);
+    return JSON.parse(result) as RCloneCheck;
   }
 
   async copyAsync(
