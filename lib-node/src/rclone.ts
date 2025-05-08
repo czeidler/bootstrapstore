@@ -223,6 +223,7 @@ function remoteToRClone(remote: FSRemoteConnection | undefined): string {
     return "";
   }
   switch (remote.type) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     case "sftp": {
       const { host, user, keyPem } = remote;
       return `:sftp,host=${host},user=${user},key_pem="${keyPem.replace(
@@ -297,6 +298,18 @@ type RCloneCheck = {
   success: boolean;
 };
 
+type RCloneJobStatus<Output = Record<string, unknown>> = {
+  duration: number;
+  endTime: string;
+  error: string;
+  finished: boolean;
+  group: `job/${number}`;
+  id: number;
+  output: Output;
+  startTime: string;
+  success: boolean;
+};
+
 export class RCloneFSInterface implements FSInterface {
   async ls(
     path: string,
@@ -355,11 +368,19 @@ export class RCloneFSInterface implements FSInterface {
     return JSON.parse(result) as RCloneJob;
   }
 
-  async jobStatus(job: number): Promise<RCloneJobStats> {
+  async jobStats(job: number): Promise<RCloneJobStats> {
     const result = await rcloneRC("core/stats", [
       "--config=/dev/null",
       `group=job/${job}`,
     ]);
     return JSON.parse(result) as RCloneJobStats;
+  }
+
+  async jobStatus(job: number): Promise<RCloneJobStatus> {
+    const result = await rcloneRC("job/status", [
+      "--config=/dev/null",
+      `jobid=${job}`,
+    ]);
+    return JSON.parse(result) as RCloneJobStatus;
   }
 }
