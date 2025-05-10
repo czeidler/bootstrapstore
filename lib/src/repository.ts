@@ -227,7 +227,13 @@ export class Repository {
   }
 
   async listDirectory(path: string[]): Promise<DirEntry[] | undefined> {
-    const directory = await this.treeBuilder.loadTree(this.indexRepo, path);
+    const directory = await this.treeBuilder.loadTree(this.indexRepo, path, {
+      createMissingDirs: false,
+      writeable: false,
+    });
+    if (typeof directory === "string") {
+      throw Error(directory);
+    }
     return Array.from(directory.entries.entries()).map((it) => {
       const [name, entry] = it;
       switch (entry.type) {

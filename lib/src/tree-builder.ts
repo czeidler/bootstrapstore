@@ -113,17 +113,28 @@ function entryToHashable(
 export class TreeBuilder {
   constructor(private root: Tree) {}
 
-  async loadTree(loader: TreeLoader, dirPath: string[]): Promise<Tree> {
+  async loadTree(
+    loader: TreeLoader,
+    dirPath: string[],
+    {
+      createMissingDirs,
+      writeable,
+    }: { createMissingDirs: boolean; writeable: boolean }
+  ): Promise<Tree | string> {
     let tree: Tree = this.root;
     for (const p of dirPath) {
       const e = tree.entries.get(p);
       if (e === undefined) {
+        if (!createMissingDirs) {
+          return "Tree does not exit";
+        }
         const newTree: Tree = { entries: new Map() };
         tree.entries.set(p, {
           type: "mutateTree",
           data: newTree,
         });
         tree = newTree;
+
         continue;
       }
       if (e.type === TreeEntryType.Tree) {
@@ -136,16 +147,18 @@ export class TreeBuilder {
         }
 
         // mark the entry as dirty
-        tree.entries.set(p, {
-          type: "mutateTree",
-          data: t,
-        });
+        if (writeable) {
+          tree.entries.set(p, {
+            type: "mutateTree",
+            data: t,
+          });
+        }
 
         tree = t;
       } else if (e.type === "mutateTree") {
         tree = e.data;
       } else {
-        throw Error("Invalid type");
+        return "Path does not point to a tree";
       }
     }
     return tree;
@@ -156,7 +169,13 @@ export class TreeBuilder {
     path: string[],
     blob: BlobEntry | RepoLinkEntry
   ) {
-    const tree = await this.loadTree(loader, path.slice(0, -1));
+    const tree = await this.loadTree(loader, path.slice(0, -1), {
+      createMissingDirs: true,
+      writeable: true,
+    });
+    if (typeof tree === "string") {
+      throw Error(tree);
+    }
     const name = path.at(path.length - 1);
     if (name === undefined) {
       throw Error("Invalid path");
@@ -165,7 +184,13 @@ export class TreeBuilder {
   }
 
   async deleteEntry(loader: TreeLoader, path: string[]) {
-    const tree = await this.loadTree(loader, path.slice(0, -1));
+    const tree = await this.loadTree(loader, path.slice(0, -1), {
+      createMissingDirs: false,
+      writeable: true,
+    });
+    if (typeof tree === "string") {
+      throw Error(tree);
+    }
     const name = path.at(path.length - 1);
     if (name === undefined) {
       throw Error("Invalid path");
@@ -177,7 +202,13 @@ export class TreeBuilder {
     loader: TreeLoader,
     path: string[]
   ): Promise<BlobEntry | undefined> {
-    const tree = await this.loadTree(loader, path.slice(0, -1));
+    const tree = await this.loadTree(loader, path.slice(0, -1), {
+      createMissingDirs: false,
+      writeable: false,
+    });
+    if (typeof tree === "string") {
+      return undefined;
+    }
     const file = tree.entries.get(path[path.length - 1]);
     if (file === undefined) {
       return undefined;
@@ -192,7 +223,13 @@ export class TreeBuilder {
     loader: TreeLoader,
     path: string[]
   ): Promise<RepoLinkEntry | undefined> {
-    const tree = await this.loadTree(loader, path.slice(0, -1));
+    const tree = await this.loadTree(loader, path.slice(0, -1), {
+      createMissingDirs: false,
+      writeable: true,
+    });
+    if (typeof tree === "string") {
+      return undefined;
+    }
     const repoLink = tree.entries.get(path[path.length - 1]);
     if (repoLink === undefined) {
       return undefined;

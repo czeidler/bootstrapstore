@@ -155,6 +155,36 @@ const buildTest = (name: string, config: RepoConfig) => {
       assert.equal(await repo2.readRepoLink(path), "repoId");
     });
 
+    test("should be able to do invalid read and then write trees", async () => {
+      const storeGetter = new RepoBlobStoreGetter(new FileBlobStore(testDir));
+      const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
+      await Repository.create(
+        repoId,
+        BetterSqliteSerializableDB,
+        storeGetter,
+        config.key
+      );
+      const repo = await Repository.open(
+        repoId,
+        BetterSqliteSerializableDB,
+        storeGetter,
+        config
+      );
+      await repo.readFile(["invalid", "file"]);
+      const path = ["link1"];
+      await repo.insertRepoLink(path, "repoId");
+      await repo.createSnapshot(new Date());
+      assert.equal(await repo.readRepoLink(path), "repoId");
+
+      const repo2 = await Repository.open(
+        repo.repoId,
+        BetterSqliteSerializableDB,
+        storeGetter,
+        config
+      );
+      assert.equal(await repo2.readRepoLink(path), "repoId");
+    });
+
     afterAll(() => {
       fs.rmSync(path.join(...testDir), { recursive: true, force: true });
     });
