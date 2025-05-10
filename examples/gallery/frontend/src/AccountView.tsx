@@ -198,7 +198,12 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
                 {remotes
                   ?.filter((remote) => remote.id !== accountData.remoteId)
                   .map((remote) => (
-                    <ListItem disablePadding={true} divider={true} dense={true}>
+                    <ListItem
+                      key={remote.id}
+                      disablePadding={true}
+                      divider={true}
+                      dense={true}
+                    >
                       <ListItemButton
                         selected={selectedRemote === remote.id}
                         onClick={() => setSelectedRemote(remote.id)}

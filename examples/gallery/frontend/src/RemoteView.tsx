@@ -203,6 +203,11 @@ const CreateCheckoutDialog = ({
   const [path, setPath] = useState<string | undefined>();
   const [repoId, setRepoId] = useState<string | null>(null);
   const { mutateAsync } = useCreateCheckout(metadataRepo, remoteId);
+  const close = () => {
+    setPath(undefined);
+    setRepoId(null);
+    onClose();
+  };
   const create = async () => {
     if (path === undefined || repoId === null) {
       return;
@@ -212,10 +217,10 @@ const CreateCheckoutDialog = ({
       type: "repo",
       path,
     });
-    onClose();
+    close();
   };
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={close}>
       <DialogTitle id="alert-dialog-title">Create Checkout</DialogTitle>
       <DialogContent>
         <TextField
@@ -245,7 +250,7 @@ const CreateCheckoutDialog = ({
         </FormControl>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={close}>Cancel</Button>
         <Button
           onClick={create}
           autoFocus
