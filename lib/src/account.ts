@@ -1,8 +1,7 @@
 import { BlobStore, BlobStoreGetter } from "./blob-store";
 import { AESGCMEncryption, Encryption } from "./encryption";
 import { MetadataRepository } from "./main-repo";
-import { Repository } from "./repository";
-import { SerializableDB } from "./sqlite";
+import { RepoIOConfig, Repository } from "./repository";
 import { shortId } from "./utils";
 
 export type AccountFile = {
@@ -44,13 +43,13 @@ async function writeAccountFile(
 export class Account {
   private constructor(
     private storeGetter: BlobStoreGetter,
-    private serializeDb: SerializableDB,
+    private ioConfig: RepoIOConfig,
     public accountData: AccountData
   ) {}
 
   static async openAccount(
     storeGetter: BlobStoreGetter,
-    serializeDb: SerializableDB,
+    ioConfig: RepoIOConfig,
     key: Buffer,
     file: AccountFile
   ): Promise<Account> {
@@ -60,25 +59,25 @@ export class Account {
       key
     );
     const data = JSON.parse(plain.toString()) as AccountData;
-    return new Account(storeGetter, serializeDb, data);
+    return new Account(storeGetter, ioConfig, data);
   }
 
   static async createAccount(
     store: BlobStore,
     storeGetter: BlobStoreGetter,
-    serializeDb: SerializableDB,
+    ioConfig: RepoIOConfig,
     key: Buffer
   ): Promise<Account> {
     const enc: Encryption = new AESGCMEncryption();
 
     const repoId = shortId();
     const repoKey = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
-    await Repository.create(repoId, serializeDb, storeGetter, repoKey);
+    await Repository.create(repoId, ioConfig, storeGetter, repoKey);
 
     const metadataRepo = await MetadataRepository.open(
       repoId,
       storeGetter,
-      serializeDb,
+      ioConfig,
       repoKey
     );
     const remoteId = shortId();
@@ -102,14 +101,14 @@ export class Account {
     };
 
     await writeAccountFile(store, file);
-    return new Account(storeGetter, serializeDb, accountData);
+    return new Account(storeGetter, ioConfig, accountData);
   }
 
   openMetadataRepo(): Promise<MetadataRepository> {
     return MetadataRepository.open(
       this.accountData.repoId,
       this.storeGetter,
-      this.serializeDb,
+      this.ioConfig,
       Buffer.from(this.accountData.repoKeyBase64, "base64")
     );
   }

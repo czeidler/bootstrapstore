@@ -1,6 +1,5 @@
 import { BlobStoreGetter } from "./blob-store";
-import { DirEntry, Repository } from "./repository";
-import { SerializableDB } from "./sqlite";
+import { DirEntry, RepoIOConfig, Repository } from "./repository";
 import { shortId } from "./utils";
 
 export type RepositoryInfo = {
@@ -122,30 +121,30 @@ export class MetadataRepository {
   private constructor(
     public metaRepo: Repository,
     private storeGetter: BlobStoreGetter,
-    private serializeDb: SerializableDB
+    private ioConfig: RepoIOConfig
   ) {}
 
   static async open(
     repoId: string,
     storeGetter: BlobStoreGetter,
-    serializeDb: SerializableDB,
+    ioConfig: RepoIOConfig,
     key: Buffer
   ): Promise<MetadataRepository> {
-    const metaRepo = await Repository.open(repoId, serializeDb, storeGetter, {
+    const metaRepo = await Repository.open(repoId, ioConfig, storeGetter, {
       key,
       branch: ".metadata",
       inlined: true,
     });
-    return new MetadataRepository(metaRepo, storeGetter, serializeDb);
+    return new MetadataRepository(metaRepo, storeGetter, ioConfig);
   }
 
   static async fromRepo(
     repo: Repository,
     storeGetter: BlobStoreGetter,
-    serializeDb: SerializableDB
+    ioConfig: RepoIOConfig
   ): Promise<MetadataRepository> {
     const metaRepo = await repo.branch(".metadata", true);
-    return new MetadataRepository(metaRepo, storeGetter, serializeDb);
+    return new MetadataRepository(metaRepo, storeGetter, ioConfig);
   }
 
   private async write(path: string[], obj: object) {
@@ -263,8 +262,8 @@ export class MetadataRepository {
   async createChild(remoteId: string, repoName?: string): Promise<Repository> {
     const repoId = shortId();
     const key = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
-    await Repository.create(repoId, this.serializeDb, this.storeGetter, key);
-    const repo = Repository.open(repoId, this.serializeDb, this.storeGetter, {
+    await Repository.create(repoId, this.ioConfig, this.storeGetter, key);
+    const repo = Repository.open(repoId, this.ioConfig, this.storeGetter, {
       key,
       branch: "main",
       inlined: false,
@@ -289,7 +288,7 @@ export class MetadataRepository {
     if (repoInfo === undefined) {
       return undefined;
     }
-    const repo = Repository.open(repoId, this.serializeDb, this.storeGetter, {
+    const repo = Repository.open(repoId, this.ioConfig, this.storeGetter, {
       key: Buffer.from(repoInfo.encKey, "base64"),
       branch: "main",
       inlined: false,

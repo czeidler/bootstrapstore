@@ -19,13 +19,13 @@ import { useMutation } from "@tanstack/react-query";
 import { AccountFile, Account, MetadataRepository } from "lib";
 import { storeGetter } from "./utils";
 import { useEffect, useState } from "react";
-import { SqlocalSerializableDB } from "./sqlite";
 import { AccountData } from "lib/src/account";
 import { RemoteView } from "./RemoteView";
 import { useCreateRemote, useRemotes } from "./account-hooks";
 import { shortId } from "lib/src/utils";
 import HomeTwoToneIcon from "@mui/icons-material/HomeTwoTone";
 import { MainLayout } from "./MainLayout";
+import { getRepoIOConfig } from "./io-config";
 
 // TEMP
 function create16ByteBuffer(str: string): Buffer {
@@ -50,7 +50,7 @@ const OpenAccount = ({
       }
       const account = await Account.openAccount(
         storeGetter,
-        SqlocalSerializableDB,
+        getRepoIOConfig(),
         create16ByteBuffer(password),
         accountFile
       );

@@ -1,12 +1,12 @@
 import { describe, test, assert, afterAll } from "vitest";
 import { Repository } from "lib";
 import { FileBlobStore } from "./file-blob-store";
-import { BetterSqliteSerializableDB } from "./better-sqlite";
 import * as fs from "node:fs";
 import path from "node:path";
 import { RepoConfig } from "lib/src/repository";
 import { arrayToHex } from "lib/src/utils";
 import { RepoBlobStoreGetter } from "lib/src/blob-store";
+import { getRepoIOConfig } from "./io-config";
 
 const buildTest = (name: string, config: RepoConfig) => {
   describe(name, () => {
@@ -16,13 +16,13 @@ const buildTest = (name: string, config: RepoConfig) => {
       const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
       await Repository.create(
         repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config.key
       );
       const repo = await Repository.open(
         repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config
       );
@@ -35,7 +35,7 @@ const buildTest = (name: string, config: RepoConfig) => {
 
       const repo2 = await Repository.open(
         repo.repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config
       );
@@ -50,13 +50,13 @@ const buildTest = (name: string, config: RepoConfig) => {
       const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
       await Repository.create(
         repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config.key
       );
       const repo = await Repository.open(
         repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config
       );
@@ -82,7 +82,7 @@ const buildTest = (name: string, config: RepoConfig) => {
 
       const repo2 = await Repository.open(
         repo.repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config
       );
@@ -97,13 +97,13 @@ const buildTest = (name: string, config: RepoConfig) => {
       const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
       await Repository.create(
         repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config.key
       );
       const repo = await Repository.open(
         repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config
       );
@@ -119,7 +119,7 @@ const buildTest = (name: string, config: RepoConfig) => {
 
       const repo2 = await Repository.open(
         repo.repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config
       );
@@ -131,13 +131,13 @@ const buildTest = (name: string, config: RepoConfig) => {
       const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
       await Repository.create(
         repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config.key
       );
       const repo = await Repository.open(
         repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config
       );
@@ -148,7 +148,7 @@ const buildTest = (name: string, config: RepoConfig) => {
 
       const repo2 = await Repository.open(
         repo.repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config
       );
@@ -160,13 +160,13 @@ const buildTest = (name: string, config: RepoConfig) => {
       const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
       await Repository.create(
         repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config.key
       );
       const repo = await Repository.open(
         repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config
       );
@@ -178,7 +178,7 @@ const buildTest = (name: string, config: RepoConfig) => {
 
       const repo2 = await Repository.open(
         repo.repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         config
       );

@@ -7,7 +7,7 @@ import { AESGCMEncryption, Encryption, sha256 } from "./encryption";
 import { IndexRepository, TreeEntryType } from "./index-repository";
 import { BlobInfo, TreeBuilder } from "./tree-builder";
 import { bufferToHex, ExhaustiveCheckError } from "./utils";
-import { AnnotatedCompression } from "./compression";
+import { AnnotatedCompression, Compression } from "./compression";
 
 export type DirEntry =
   | {
@@ -35,12 +35,18 @@ export type RepoConfig = {
   inlined: boolean;
 };
 
+export type RepoIOConfig = {
+  serializeDb: SerializableDB;
+  compression: Compression;
+};
+
 export class Repository {
   private constructor(
     public repoId: string,
     private store: BlobStore,
     private encryption: Encryption,
 
+    private ioConfig: RepoIOConfig,
     private instance: SerializableDBInstance,
     private config: RepoConfig
   ) {}
@@ -68,7 +74,7 @@ export class Repository {
 
   static async create(
     repoId: string,
-    serializeDb: SerializableDB,
+    { serializeDb, compression }: RepoIOConfig,
     storeGetter: BlobStoreGetter,
     key: Buffer
   ): Promise<void> {
@@ -79,7 +85,7 @@ export class Repository {
     await migrateToLatest(kysely as Kysely<unknown>);
 
     const buffer = await instance.serialize();
-    const zipped = await new AnnotatedCompression().compress(buffer);
+    const zipped = await new AnnotatedCompression(compression).compress(buffer);
     const encryption: Encryption = new AESGCMEncryption();
     const cipher = await encryption.encrypt(zipped, key);
     const store = storeGetter.get(repoId);
@@ -88,22 +94,32 @@ export class Repository {
 
   static async open(
     repoId: string,
-    serializeDb: SerializableDB,
+    repoIOConfig: RepoIOConfig,
     storeGetter: BlobStoreGetter,
     config: RepoConfig
   ): Promise<Repository> {
+    const { serializeDb, compression } = repoIOConfig;
     const store = storeGetter.get(repoId);
     const buffer = await store.read(["index"]);
     const encryption: Encryption = new AESGCMEncryption();
     const plain = await encryption.decrypt(buffer, config.key);
-    const decompressed = await new AnnotatedCompression().decompress(plain);
+    const decompressed = await new AnnotatedCompression(compression).decompress(
+      plain
+    );
     const instance = await serializeDb.create(decompressed);
     const kysely = new Kysely<DB>({
       dialect: instance.dialect,
     });
     await migrateToLatest(kysely as Kysely<unknown>);
 
-    const repo = new Repository(repoId, store, encryption, instance, config);
+    const repo = new Repository(
+      repoId,
+      store,
+      encryption,
+      repoIOConfig,
+      instance,
+      config
+    );
     await repo.init();
     return repo;
   }
@@ -113,6 +129,7 @@ export class Repository {
       this.repoId,
       this.store,
       this.encryption,
+      this.ioConfig,
       this.instance,
       {
         ...this.config,
@@ -190,7 +207,9 @@ export class Repository {
       this.config.branch
     );
     const plain = await this.instance.serialize();
-    const zipped = await new AnnotatedCompression().compress(plain);
+    const zipped = await new AnnotatedCompression(
+      this.ioConfig.compression
+    ).compress(plain);
     const cipher = await this.encryption.encrypt(zipped, this.config.key);
     await this.store.write(["index"], cipher);
   }
