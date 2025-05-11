@@ -26,6 +26,10 @@ const buildTest = (name: string, config: RepoConfig) => {
         storeGetter,
         config
       );
+
+      // should be able to do invalid read and then write trees (previous bug)
+      await repo.readFile(["invalid", "file"]);
+
       const now = Date.now();
       await repo.insertFile(["file1"], Buffer.from("filedata1"), now, now);
       await repo.createSnapshot(new Date());
@@ -43,6 +47,41 @@ const buildTest = (name: string, config: RepoConfig) => {
       assert.equal(list2?.length, 1);
       const content = await repo2.readFile(["file1"]);
       assert.equal(content?.toString(), "filedata1");
+
+      // should be able to create empty directory
+      await repo2.insertDirs(["emptyDir"]);
+      assert.isDefined(
+        (await repo2.listDirectory([]))?.find(
+          (it) => it.name === "emptyDir" && it.type === "dir"
+        )
+      );
+      assert.equal((await repo2.listDirectory(["emptyDir"]))?.length, 0);
+      await repo2.insertDirs(["emptyDir2", "subDir"]);
+      assert.isDefined(
+        (await repo2.listDirectory(["emptyDir2"]))?.find(
+          (it) => it.name === "subDir" && it.type === "dir"
+        )
+      );
+      assert.equal(
+        (await repo2.listDirectory(["emptyDir2", "subDir"]))?.length,
+        0
+      );
+      // should be able to delete directory
+      await repo2.deleteEntry(["emptyDir2", "subDir"]);
+      assert.equal((await repo2.listDirectory(["emptyDir2"]))?.length, 0);
+      assert.isDefined(
+        (await repo2.listDirectory([]))?.find(
+          (it) => it.name === "emptyDir2" && it.type === "dir"
+        )
+      );
+      assert.equal((await repo2.listDirectory(["emptyDir2"]))?.length, 0);
+      // should be able to delete directory from root
+      await repo2.deleteEntry(["emptyDir2"]);
+      assert.isUndefined(
+        (await repo2.listDirectory([]))?.find(
+          (it) => it.name === "emptyDir2" && it.type === "dir"
+        )
+      );
     });
 
     test("should do handle sub directories", async () => {
@@ -141,36 +180,6 @@ const buildTest = (name: string, config: RepoConfig) => {
         storeGetter,
         config
       );
-      const path = ["link1"];
-      await repo.insertRepoLink(path, "repoId");
-      await repo.createSnapshot(new Date());
-      assert.equal(await repo.readRepoLink(path), "repoId");
-
-      const repo2 = await Repository.open(
-        repo.repoId,
-        getRepoIOConfig(),
-        storeGetter,
-        config
-      );
-      assert.equal(await repo2.readRepoLink(path), "repoId");
-    });
-
-    test("should be able to do invalid read and then write trees", async () => {
-      const storeGetter = new RepoBlobStoreGetter(new FileBlobStore(testDir));
-      const repoId = arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
-      await Repository.create(
-        repoId,
-        getRepoIOConfig(),
-        storeGetter,
-        config.key
-      );
-      const repo = await Repository.open(
-        repoId,
-        getRepoIOConfig(),
-        storeGetter,
-        config
-      );
-      await repo.readFile(["invalid", "file"]);
       const path = ["link1"];
       await repo.insertRepoLink(path, "repoId");
       await repo.createSnapshot(new Date());

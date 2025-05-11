@@ -37,7 +37,8 @@ export type RepoLinkEntry = {
 
 export type TreeEntry = {
   type: typeof TreeEntryType.Tree;
-  hash: DBHash;
+  /** undefined if tree is empty*/
+  hash: DBHash | undefined;
   /** When loaded */
   data: Tree | undefined;
 };
@@ -91,7 +92,7 @@ function entryToHashable(
       ? [
           {
             key: "h",
-            value: entry.hash[1],
+            value: entry.hash?.[1] ?? "",
           },
         ]
       : [];
@@ -140,7 +141,7 @@ export class TreeBuilder {
       if (e.type === TreeEntryType.Tree) {
         let t;
         if (!e.data) {
-          t = await loader.readTree(e.hash);
+          t = e.hash ? await loader.readTree(e.hash) : { entries: new Map() };
           e.data = t;
         } else {
           t = e.data;
@@ -167,7 +168,7 @@ export class TreeBuilder {
   async insertEntry(
     loader: TreeLoader,
     path: string[],
-    blob: BlobEntry | RepoLinkEntry
+    blob: BlobEntry | RepoLinkEntry | TreeEntry
   ) {
     const tree = await this.loadTree(loader, path.slice(0, -1), {
       createMissingDirs: true,
@@ -240,14 +241,17 @@ export class TreeBuilder {
     return repoLink;
   }
 
-  async finalize(writer: TreeWriter): Promise<DBHash> {
+  async finalize(writer: TreeWriter): Promise<DBHash | undefined> {
     return TreeBuilder.finalizeTree(writer, this.root);
   }
 
   private static async finalizeTree(
     writer: TreeWriter,
     tree: Tree
-  ): Promise<DBHash> {
+  ): Promise<DBHash | undefined> {
+    if (tree.entries.size === 0) {
+      return undefined;
+    }
     const entries = Array.from(tree.entries.entries()).sort(([a], [b]) =>
       a.localeCompare(b)
     );

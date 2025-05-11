@@ -34,7 +34,7 @@ export interface Commit {
   id: Generated<number>;
   parents: string;
   timestamp: number;
-  tree_content_id: number;
+  tree_content_id: number | null;
 }
 
 export interface Content {

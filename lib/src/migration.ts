@@ -36,7 +36,7 @@ const migrations: Record<string, Migration> = {
         .addColumn("size", "integer")
         .addColumn("creation_time", "integer")
         .addColumn("modification_time", "integer")
-        // The content blob id. Can be null for links
+        // The content blob id. Can be null for links or empty directories
         .addColumn("content_id", "integer", (col) =>
           col.references("content.id")
         )
@@ -81,9 +81,9 @@ const migrations: Record<string, Migration> = {
           col.primaryKey().notNull().autoIncrement()
         )
         .addColumn("hash256", "blob", (col) => col.notNull())
-        // root tree hash
+        // root tree hash, if null its an empty directory
         .addColumn("tree_content_id", "integer", (col) =>
-          col.references("content.id").notNull()
+          col.references("content.id")
         )
         .addColumn("timestamp", "integer", (col) => col.notNull())
         .addColumn("parents", "text", (col) => col.notNull())

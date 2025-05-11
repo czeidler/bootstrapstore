@@ -29,7 +29,8 @@ type EncryptedBlobInfoWriter = {
 
 type Snapshot = {
   hash256: Hash;
-  tree: DBHash;
+  /** If undefined it points to an empty directory */
+  tree: DBHash | undefined;
   timestamp: Date;
   parents: string[];
 };
@@ -76,10 +77,10 @@ export class IndexRepository
           repoId: cur.link ?? "",
         });
       } else if (cur.type === TreeEntryType.Tree) {
-        if (cur.hash265 === null) {
-          throw Error("Missing entry hash value");
-        }
-        const hash: [number, Buffer] = [Number(cur.content_id), cur.hash265];
+        const hash: [number, Buffer] | undefined =
+          cur.hash265 !== null
+            ? [Number(cur.content_id), cur.hash265]
+            : undefined;
         prev.set(cur.name, {
           type: TreeEntryType.Tree,
           hash,
@@ -137,7 +138,7 @@ export class IndexRepository
             name: entry.name,
             tree_id: treeDBHash[0],
             type: TreeEntryType.Tree,
-            content_id: entry.entry.hash[0],
+            content_id: entry.entry.hash?.[0] ?? null,
           };
         }
         default: {
@@ -251,7 +252,7 @@ export class IndexRepository
     const data = await this.db
       .selectFrom("commit")
       .innerJoin("branch", "branch.commit_id", "commit.id")
-      .innerJoin("content", "commit.tree_content_id", "content.id")
+      .leftJoin("content", "commit.tree_content_id", "content.id")
       .selectAll("commit")
       .select("content.hash265 as treeHash")
       .where("branch.name", "=", branch)
@@ -261,20 +262,23 @@ export class IndexRepository
     }
     return {
       hash256: data.hash256,
-      tree: [data.tree_content_id, data.treeHash],
+      tree:
+        data.tree_content_id !== null && data.treeHash !== null
+          ? [data.tree_content_id, data.treeHash]
+          : undefined,
       timestamp: new Date(data.timestamp),
       parents: JSON.parse(data.parents) as string[],
     };
   }
 
   async writeSnapshot(
-    tree: DBHash,
+    tree: DBHash | undefined,
     timestamp: Date,
     parents: Hash[],
     branch: string
   ) {
     const snapshotHash = await hashParts([
-      { key: "t", value: tree[1] },
+      { key: "t", value: tree?.[1] ?? "" },
       { key: "ts", value: timestamp },
       ...parents.map((it) => ({ key: "p", value: it })),
     ]);
@@ -282,7 +286,7 @@ export class IndexRepository
       .insertInto("commit")
       .values({
         hash256: snapshotHash,
-        tree_content_id: tree[0],
+        tree_content_id: tree?.[0],
         timestamp: timestamp.getTime(),
         parents: JSON.stringify(parents.map((it) => bufferToHex(it))),
       })

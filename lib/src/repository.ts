@@ -67,7 +67,9 @@ export class Repository {
       this.treeBuilder = new TreeBuilder({ entries: new Map() });
     } else {
       this.treeBuilder = new TreeBuilder(
-        await this.indexRepo.readTree(snapshot.tree)
+        snapshot.tree
+          ? await this.indexRepo.readTree(snapshot.tree)
+          : { entries: new Map() }
       );
     }
   }
@@ -190,6 +192,14 @@ export class Repository {
     await this.treeBuilder.insertEntry(this.indexRepo, path, {
       type: TreeEntryType.RepoLink,
       repoId,
+    });
+  }
+
+  async insertDirs(path: string[]): Promise<void> {
+    await this.treeBuilder.insertEntry(this.indexRepo, path, {
+      type: TreeEntryType.Tree,
+      hash: undefined,
+      data: { entries: new Map() },
     });
   }
 
