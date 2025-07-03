@@ -1,10 +1,10 @@
 import { Repository } from "lib";
 import {
-  BetterSqliteSerializableDB,
   DiffEntry,
   diffWalk,
   FSDirReader,
   RepoDirReader,
+  getRepoIOConfig,
 } from "lib-node";
 import { storeGetter } from "./service";
 import fs from "fs/promises";
@@ -20,12 +20,11 @@ export const syncRepoStatus = async ({
   encKey: string;
 }): Promise<DiffEntry[]> => {
   const output: DiffEntry[] = [];
-  const repo = await Repository.open(
-    repoId,
-    BetterSqliteSerializableDB,
-    storeGetter,
-    { key: Buffer.from(encKey, "base64"), branch: "main", inlined: false }
-  );
+  const repo = await Repository.open(repoId, getRepoIOConfig(), storeGetter, {
+    key: Buffer.from(encKey, "base64"),
+    branch: "main",
+    inlined: false,
+  });
   await diffWalk(
     new FSDirReader([checkoutPath]),
     new RepoDirReader(repo),
@@ -44,12 +43,11 @@ export const syncRepo = async ({
   encKey: string;
 }) => {
   const output: DiffEntry[] = [];
-  const repo = await Repository.open(
-    repoId,
-    BetterSqliteSerializableDB,
-    storeGetter,
-    { key: Buffer.from(encKey, "base64"), branch: "main", inlined: false }
-  );
+  const repo = await Repository.open(repoId, getRepoIOConfig(), storeGetter, {
+    key: Buffer.from(encKey, "base64"),
+    branch: "main",
+    inlined: false,
+  });
   await diffWalk(
     new FSDirReader([checkoutPath]),
     new RepoDirReader(repo),
