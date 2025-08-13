@@ -1,11 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
-  CheckoutInfo,
   MetadataRepository,
   RemoteConnection,
   RemoteInfo,
-  RepositoryInfo,
+  LocationInfo,
   SyncConfig,
+  DirectoryLocationInfo,
 } from "lib/src/main-repo";
 
 import { QueryClient } from "@tanstack/react-query";
@@ -80,24 +80,24 @@ export const useCreateChildRepo = (
     mutationFn: () => metadataRepo.createChild(remoteId, repoName),
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: ["remotes", remoteId, "repositories"],
+        queryKey: ["remotes", remoteId, "locations"],
       }),
   });
 
-export const useRepositories = (
+export const useLocations = (
   metadataRepo: MetadataRepository,
   remoteId: string
 ) =>
   useQuery({
-    queryKey: ["remotes", remoteId, "repositories"],
+    queryKey: ["remotes", remoteId, "locations"],
     queryFn: async () => {
-      const repoList = await metadataRepo.listRepositories(remoteId);
+      const repoList = await metadataRepo.listLocations(remoteId);
       const repos = await Promise.all(
         repoList
           ?.filter((it) => it !== undefined)
-          .map((it) => metadataRepo.readRepository(remoteId, it.name)) ?? []
+          .map((it) => metadataRepo.readLocation(remoteId, it.name)) ?? []
       );
-      return repos.filter((it): it is RepositoryInfo => it !== undefined);
+      return repos.filter((it): it is LocationInfo => it !== undefined);
     },
   });
 
@@ -106,31 +106,14 @@ export const useCreateCheckout = (
   remoteId: string
 ) =>
   useMutation({
-    mutationFn: async (checkoutInfo: CheckoutInfo) => {
-      await metadataRepo.writeCheckout(remoteId, checkoutInfo);
+    mutationFn: async (checkoutInfo: DirectoryLocationInfo) => {
+      await metadataRepo.writeLocation(remoteId, checkoutInfo);
       await metadataRepo.snapshot();
     },
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: ["remotes", remoteId, "checkouts"],
+        queryKey: ["remotes", remoteId, "locations"],
       }),
-  });
-
-export const useCheckouts = (
-  metadataRepo: MetadataRepository,
-  remoteId: string
-) =>
-  useQuery({
-    queryKey: ["remotes", remoteId, "checkouts"],
-    queryFn: async () => {
-      const repoList = await metadataRepo.listCheckouts(remoteId);
-      const repos = await Promise.all(
-        repoList
-          ?.filter((it) => it !== undefined)
-          .map((it) => metadataRepo.readCheckout(remoteId, it.name)) ?? []
-      );
-      return repos.filter((it): it is CheckoutInfo => it !== undefined);
-    },
   });
 
 export const useCreateSync = (

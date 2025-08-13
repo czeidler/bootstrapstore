@@ -2,16 +2,6 @@ import { BlobStoreGetter } from "./blob-store";
 import { DirEntry, RepoIOConfig, Repository } from "./repository";
 import { shortId } from "./utils";
 
-export type RepositoryInfo = {
-  id: string;
-  encKey: string;
-  /**
-   * If not set the "default" search path is used
-   */
-  path?: string;
-  name?: string;
-};
-
 export type RemoteInfo = {
   id: string;
   name?: string;
@@ -27,14 +17,22 @@ export type RemoteConnection = {
   keyPem: string;
 };
 
-export type CheckoutInfo = {
+export type DirectoryLocationInfo = {
   id: string;
-  type: "repo";
-  /**
-   * Path to the source directory
-   */
+  type: "directory";
   path: string;
 };
+export type RepositoryLocationInfo = {
+  id: string;
+  type: "repository";
+  encKey: string;
+  /**
+   * If not set the "default" search path is used
+   */
+  path?: string;
+  name?: string;
+};
+export type LocationInfo = DirectoryLocationInfo | RepositoryLocationInfo;
 
 export type SyncConfig =
   | {
@@ -70,30 +68,19 @@ const remoteConnectionsPath = (remoteId: string, connectionId: string) => [
   connectionId,
   "connection.json",
 ];
-const repositoryBasePath = (remoteId: string) => [
+const locationBasePath = (remoteId: string) => [
   remoteDir,
   remoteId,
-  "repositories",
+  "locations",
 ];
-const repositoryInfoPath = (remoteId: string, repoId: string) => [
+const locationInfoPath = (remoteId: string, locationId: string) => [
   remoteDir,
   remoteId,
-  "repositories",
-  repoId,
-  "repo.json",
+  "locations",
+  locationId,
+  "location.json",
 ];
-const checkoutBasePath = (remoteId: string) => [
-  remoteDir,
-  remoteId,
-  "checkouts",
-];
-const checkoutInfoPath = (remoteId: string, checkoutId: string) => [
-  remoteDir,
-  remoteId,
-  "checkouts",
-  checkoutId,
-  "checkout.json",
-];
+
 const syncBasePath = (remoteId: string) => [remoteDir, remoteId, "sync"];
 const syncInfoPath = (remoteId: string, syncId: string) => [
   remoteDir,
@@ -202,41 +189,23 @@ export class MetadataRepository {
     );
   }
 
-  // repositories
-  async listRepositories(remoteId: string): Promise<DirEntry[]> {
+  // locations
+  async listLocations(remoteId: string): Promise<DirEntry[]> {
     const entries = await this.metaRepo.listDirectory(
-      repositoryBasePath(remoteId)
+      locationBasePath(remoteId)
     );
     return entries ?? [];
   }
 
-  async readRepository(
+  async readLocation(
     remoteId: string,
     repoId: string
-  ): Promise<RepositoryInfo | undefined> {
-    return this.read<RepositoryInfo>(repositoryInfoPath(remoteId, repoId));
+  ): Promise<LocationInfo | undefined> {
+    return this.read<LocationInfo>(locationInfoPath(remoteId, repoId));
   }
 
-  async writeRepository(remoteId: string, repoInfo: RepositoryInfo) {
-    await this.write(repositoryInfoPath(remoteId, repoInfo.id), repoInfo);
-  }
-
-  async listCheckouts(remoteId: string): Promise<DirEntry[]> {
-    const entries = await this.metaRepo.listDirectory(
-      checkoutBasePath(remoteId)
-    );
-    return entries ?? [];
-  }
-
-  async writeCheckout(remoteId: string, checkoutInfo: CheckoutInfo) {
-    await this.write(checkoutInfoPath(remoteId, checkoutInfo.id), checkoutInfo);
-  }
-
-  async readCheckout(
-    remoteId: string,
-    checkoutId: string
-  ): Promise<CheckoutInfo | undefined> {
-    return this.read<CheckoutInfo>(checkoutInfoPath(remoteId, checkoutId));
+  async writeLocation(remoteId: string, locationInfo: LocationInfo) {
+    await this.write(locationInfoPath(remoteId, locationInfo.id), locationInfo);
   }
 
   async listSyncs(remoteId: string): Promise<DirEntry[]> {
@@ -269,8 +238,9 @@ export class MetadataRepository {
       inlined: false,
     });
 
-    await this.writeRepository(remoteId, {
+    await this.writeLocation(remoteId, {
       id: repoId,
+      type: "repository",
       encKey: key.toString("base64"),
       name: repoName,
     });
@@ -284,8 +254,8 @@ export class MetadataRepository {
     remoteId: string,
     repoId: string
   ): Promise<Repository | undefined> {
-    const repoInfo = await this.readRepository(remoteId, repoId);
-    if (repoInfo === undefined) {
+    const repoInfo = await this.readLocation(remoteId, repoId);
+    if (repoInfo?.type !== "repository") {
       return undefined;
     }
     const repo = Repository.open(repoId, this.ioConfig, this.storeGetter, {

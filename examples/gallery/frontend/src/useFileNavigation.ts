@@ -1,8 +1,8 @@
 import { MetadataRepository, Repository } from "lib";
 import { DirEntry } from "lib/src/repository";
 import { useCallback, useEffect, useState } from "react";
-import { SqlocalSerializableDB } from "./sqlite";
 import { BlobStoreGetter } from "lib/src/blob-store";
+import { getRepoIOConfig } from "./io-config";
 
 export type PathStackEntry = {
   repo: Repository;
@@ -76,7 +76,7 @@ export const useFileNavigation = (
         const mRepo = MetadataRepository.fromRepo(
           currentPath.repo,
           storeGetter,
-          SqlocalSerializableDB
+          getRepoIOConfig()
         );
         const child = await (await mRepo).openChild("default", row.repoId);
         if (child === undefined) {

@@ -2,10 +2,10 @@ import { useSearchParams } from "react-router-dom";
 import { Stack } from "@mui/material";
 import { useEffect, useState } from "react";
 import { Repository } from "lib";
-import { SqlocalSerializableDB } from "./sqlite";
 
 import { storeGetter } from "./utils";
 import { FileBrowser } from "./FileBrowser";
+import { getRepoIOConfig } from "./io-config";
 
 export const Home = () => {
   const [searchParams] = useSearchParams();
@@ -19,7 +19,7 @@ export const Home = () => {
       const key = Buffer.from(keyParam ?? "", "hex");
       const repo = await Repository.open(
         repoId,
-        SqlocalSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         {
           key,

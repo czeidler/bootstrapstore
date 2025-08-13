@@ -18,19 +18,18 @@ import {
 import { MetadataRepository } from "lib";
 import { useEffect, useState } from "react";
 import {
-  useCheckouts,
+  useLocations,
   useConnections,
   useCreateCheckout,
   useCreateChildRepo,
   useUpsertConnection,
   useCreateSync,
-  useRepositories,
   useSyncs,
 } from "./account-hooks";
 import {
-  CheckoutInfo,
+  DirectoryLocationInfo,
   RemoteConnection,
-  RepositoryInfo,
+  RepositoryLocationInfo,
 } from "lib/src/main-repo";
 import { trustedTsr } from "./tsr";
 import { shortId } from "lib/src/utils";
@@ -198,7 +197,7 @@ const CreateCheckoutDialog = ({
   onClose: () => void;
   remoteId: string;
   metadataRepo: MetadataRepository;
-  repositories: RepositoryInfo[];
+  repositories: RepositoryLocationInfo[];
 }) => {
   const [path, setPath] = useState<string | undefined>();
   const [repoId, setRepoId] = useState<string | null>(null);
@@ -214,7 +213,7 @@ const CreateCheckoutDialog = ({
     }
     await mutateAsync({
       id: shortId(),
-      type: "repo",
+      type: "directory",
       path,
     });
     close();
@@ -254,7 +253,7 @@ const CreateCheckoutDialog = ({
         <Button
           onClick={create}
           autoFocus
-          disabled={path === undefined || repoId === undefined}
+          disabled={path === undefined || repoId === null}
         >
           Create
         </Button>
@@ -268,7 +267,7 @@ const SyncEntryCheckout = ({
   checkoutId,
   setCheckoutId,
 }: {
-  checkouts: CheckoutInfo[];
+  checkouts: DirectoryLocationInfo[];
   checkoutId: string | undefined;
   setCheckoutId: (checkoutId: string) => void;
 }) => {
@@ -295,7 +294,7 @@ const SyncEntryRepo = ({
   repoId,
   setRepoId,
 }: {
-  repositories: RepositoryInfo[];
+  repositories: RepositoryLocationInfo[];
   repoId: string | null;
   setRepoId: (repoId: string | null) => void;
 }) => {
@@ -329,8 +328,8 @@ const CreateSyncDialog = ({
   onClose: () => void;
   remoteId: string;
   metadataRepo: MetadataRepository;
-  checkouts: CheckoutInfo[];
-  repositories: RepositoryInfo[];
+  checkouts: DirectoryLocationInfo[];
+  repositories: RepositoryLocationInfo[];
 }) => {
   const [checkoutId, setCheckoutId] = useState<string | undefined>();
   const [repoId, setRepoId] = useState<string | null>(null);
@@ -388,8 +387,7 @@ export const RemoteView = ({
   metadataRepo: MetadataRepository;
 }) => {
   const { data: connections } = useConnections(metadataRepo, remoteId);
-  const { data: repositories } = useRepositories(metadataRepo, remoteId);
-  const { data: checkouts } = useCheckouts(metadataRepo, remoteId);
+  const { data: locations } = useLocations(metadataRepo, remoteId);
   const { data: syncs } = useSyncs(metadataRepo, remoteId);
   const [openCreateRepoDialog, setOpenCreateRepoDialog] = useState(false);
   const [openCreateCheckoutDialog, setOpenCreateCheckoutDialog] =
@@ -405,6 +403,8 @@ export const RemoteView = ({
   type TabValue = "data" | "sync" | "connection";
   const [tabValue, setTabValue] = useState<TabValue>("data");
 
+  const repositories = locations?.filter((it) => it.type === "repository");
+  const checkouts = locations?.filter((it) => it.type === "directory");
   return (
     <>
       <Stack width="100%" height={"100%"}>
@@ -442,6 +442,7 @@ export const RemoteView = ({
               <Stack key={it.id} flexDirection={"row"}>
                 <Typography>Id: {it.id}</Typography>
                 <Typography>Name: {it.name}</Typography>
+                <Typography>Path: {it.path}</Typography>
               </Stack>
             ))}
             <Divider />

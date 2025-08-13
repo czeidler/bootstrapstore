@@ -9,9 +9,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { readAccountFile, Account } from "lib";
 import { storeGetter } from "./utils";
 import { useState } from "react";
-import { SqlocalSerializableDB } from "./sqlite";
 import { AccountView } from "./AccountView";
 import { MainLayout } from "./MainLayout";
+import { getRepoIOConfig } from "./io-config";
 
 // TEMP
 function create16ByteBuffer(str: string): Buffer {
@@ -31,7 +31,7 @@ const AccountCreation = () => {
       Account.createAccount(
         store,
         storeGetter,
-        SqlocalSerializableDB,
+        getRepoIOConfig(),
         create16ByteBuffer(password)
       );
     },

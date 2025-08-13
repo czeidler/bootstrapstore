@@ -85,8 +85,9 @@ export class Account {
       id: remoteId,
     });
     const repoKeyBase64 = repoKey.toString("base64");
-    await metadataRepo.writeRepository(remoteId, {
+    await metadataRepo.writeLocation(remoteId, {
       id: repoId,
+      type: "repository",
       encKey: repoKeyBase64,
     });
     await metadataRepo.snapshot();
