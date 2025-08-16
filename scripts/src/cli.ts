@@ -1,6 +1,6 @@
 import { program } from "commander";
-import { MainRepository } from "lib";
-import { BetterSqliteSerializableDB, FileBlobStore } from "lib-node";
+import { MetadataRepository } from "lib";
+import { FileBlobStore, getRepoIOConfig } from "lib-node";
 import { RepoBlobStoreGetter, arrayToHex, Repository } from "lib";
 import { snapshotDirWithThumbnails } from "./snapshot";
 
@@ -10,7 +10,7 @@ async function initRepo(keyHex: string) {
   const storeGetter = new RepoBlobStoreGetter(
     new FileBlobStore([".storage", "repos"])
   );
-  await Repository.create(repoId, BetterSqliteSerializableDB, storeGetter, key);
+  await Repository.create(repoId, getRepoIOConfig(), storeGetter, key);
   console.log(`Repo created: ${repoId}`);
 }
 
@@ -38,7 +38,7 @@ repo
       );
       const repo = await Repository.open(
         arg.repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         {
           key,
@@ -66,7 +66,7 @@ repo
       );
       const repo = await Repository.open(
         arg.repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         {
           key: Buffer.from(arg.keyHex, "hex"),
@@ -74,11 +74,13 @@ repo
           inlined: false,
         }
       );
-      const mainRepo = await MainRepository.init(repo);
-      const child = await mainRepo.createChild(
-        BetterSqliteSerializableDB,
-        storeGetter
+      const mainRepo = await MetadataRepository.fromRepo(
+        repo,
+        storeGetter,
+        getRepoIOConfig()
       );
+      // TODO handle remoteId:
+      const child = await mainRepo.createChild("default");
       console.log(`Child repo id: ${child.repoId}`);
       await repo.insertRepoLink(arg.childTargetPath.split("/"), child.repoId);
       await repo.createSnapshot(new Date());
@@ -104,7 +106,7 @@ repo
       );
       const repo = await Repository.open(
         arg.repoId,
-        BetterSqliteSerializableDB,
+        getRepoIOConfig(),
         storeGetter,
         {
           key,
@@ -112,9 +114,10 @@ repo
           inlined: false,
         }
       );
+      // TODO handle remoteId:
       const child1 = await (
-        await MainRepository.init(repo)
-      ).openChild(arg.childRepoId, BetterSqliteSerializableDB, storeGetter);
+        await MetadataRepository.fromRepo(repo, storeGetter, getRepoIOConfig())
+      ).openChild("default", arg.childRepoId);
       if (child1 === undefined) {
         console.error(`Can't find child repo`);
         return;
