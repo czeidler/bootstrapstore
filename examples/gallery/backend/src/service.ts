@@ -1,5 +1,5 @@
 import { FileBlobStore } from "lib-node";
-import { BlobStore, RepoBlobStoreGetter } from "lib/src/blob-store";
+import { BlobStore, RepoBlobStoreGetter } from "lib";
 import { argv } from "node:process";
 
 const repoDir = argv[2] ?? "testRepo";

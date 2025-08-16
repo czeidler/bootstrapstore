@@ -6,9 +6,7 @@ import { exec as execRaw } from "child_process";
 import JSZip from "jszip";
 import { Agent } from "node:https";
 import { ChildProcess, spawn } from "node:child_process";
-import { ExhaustiveCheckError, shortId } from "lib/src/utils";
-import { DirEntry } from "lib/src/repository";
-import { RemoteConnection } from "lib/src/main-repo";
+import { ExhaustiveCheckError, shortId, DirEntry, RemoteConnection } from "lib";
 
 const exec = util.promisify(execRaw);
 

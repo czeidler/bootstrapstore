@@ -1,24 +1,38 @@
 import { useEffect, useState } from "react";
 import { DataGrid, GridRowParams } from "@mui/x-data-grid";
-import { DirEntry } from "lib/src/repository";
 import FolderTwoToneIcon from "@mui/icons-material/FolderTwoTone";
 import InsertDriveFileTwoToneIcon from "@mui/icons-material/InsertDriveFileTwoTone";
 import DriveFileMoveTwoToneIcon from "@mui/icons-material/DriveFileMoveTwoTone";
+import { VFSEntry } from "lib/src/vfs";
+
+type ViewEntry = {
+  entry: VFSEntry;
+  stats?: {
+    size: number;
+    creationTime: number;
+    modificationTime: number;
+  };
+};
 
 export default function FileView({
   content,
   onDirEntryClicked,
 }: {
-  onDirEntryClicked: (row: DirEntry) => Promise<void>;
+  onDirEntryClicked: (row: VFSEntry) => Promise<void>;
   // current dir entries
-  content: DirEntry[];
+  content: VFSEntry[];
 }) {
-  const [dirEntries, setDirEntries] = useState<(DirEntry & { id: string })[]>(
-    []
-  );
+  const [dirEntries, setDirEntries] = useState<ViewEntry[]>([]);
   useEffect(() => {
     (async () => {
-      setDirEntries(content?.map((it) => ({ id: it.name, ...it })) ?? []);
+      const viewEntries = content.map(async (entry) => {
+        if (entry.type === "file") {
+          const stats = await entry.content.stats();
+          return { entry, stats };
+        }
+        return { entry };
+      });
+      setDirEntries(await Promise.all(viewEntries));
     })();
   }, [content]);
 
@@ -31,7 +45,7 @@ export default function FileView({
           headerName: "",
           width: 30,
           renderCell: (params) => {
-            const type = params.row.type;
+            const type = params.row.entry.type;
             if (type === "dir") {
               return <FolderTwoToneIcon />;
             }
@@ -56,27 +70,17 @@ export default function FileView({
           field: "creationTime",
           headerName: "Created",
           width: 170,
-          valueGetter: (_value, row) =>
-            `${
-              row.type === "file"
-                ? new Date(row.creationTime).toLocaleString()
-                : ""
-            }`,
+          valueGetter: (_value, row) => `${row.stats?.creationTime ?? ""}`,
         },
         {
           field: "modificationTime",
           headerName: "Last modified",
           width: 170,
-          valueGetter: (_value, row) =>
-            `${
-              row.type === "file"
-                ? new Date(row.modificationTime).toLocaleString()
-                : ""
-            }`,
+          valueGetter: (_value, row) => `${row.stats?.modificationTime ?? ""}`,
         },
       ]}
-      onRowClick={async (params: GridRowParams<DirEntry>) => {
-        onDirEntryClicked(params.row);
+      onRowClick={async (params: GridRowParams<ViewEntry>) => {
+        onDirEntryClicked(params.row.entry);
       }}
       sx={{
         border: 0,

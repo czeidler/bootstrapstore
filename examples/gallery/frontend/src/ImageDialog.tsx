@@ -1,11 +1,9 @@
 import Dialog from "@mui/material/Dialog";
-import { Repository } from "lib";
 import { Image } from "./Image";
+import { VFSFile } from "lib/src/vfs";
 
 export interface ImageDialogProps {
-  repo: Repository | undefined;
-  images: { src: string; path: string[]; width: number; height: number }[];
-  selected: { src: string; path: string[] } | undefined;
+  selected: { file: VFSFile; path: string[] } | undefined;
   onClose: () => void;
 }
 
@@ -28,9 +26,9 @@ export function ImageDialog(props: ImageDialogProps) {
       }}
     >
       <Image
-        repo={props.repo}
+        file={selected?.file}
         path={selected?.path ?? []}
-        src={selected?.src ?? ""}
+        src={selected?.path.join("/") ?? ""}
         thumbnail={false}
         style={{
           width: "100%",

@@ -1,6 +1,6 @@
 import { describe, test, assert } from "vitest";
 
-import { DirEntry } from "lib/src/repository";
+import { DirEntry } from "lib";
 import { DiffEntry, diffWalk, DirReader } from "./diff";
 
 // [mTime]

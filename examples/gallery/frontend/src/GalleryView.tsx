@@ -4,67 +4,83 @@ import { useCallback, useEffect, useState } from "react";
 import { ImageDialog } from "./ImageDialog";
 import { Image } from "./Image";
 import { Pagination, Stack } from "@mui/material";
-import { DirEntry, Repository } from "lib/src/repository";
 import { imageExtensions } from "./utils";
+import { VFSEntry, VFSFile } from "lib/src/vfs";
+import { useFileNavigation } from "./useFileNavigation";
 
 const baseWidth = 800;
 const baseHeight = 600;
 
-type RepoPhoto = { src: string; path: string[]; width: number; height: number };
-
-type PathStackEntry = {
-  repo: Repository;
-  repoPath: string[];
+type RepoPhoto = {
+  file: VFSFile;
+  src: string;
   path: string[];
+  width: number;
+  height: number;
 };
 
 export default function GalleryView({
-  path,
+  dirPath,
   content,
 }: {
-  path: PathStackEntry;
-  content: DirEntry[];
+  dirPath: string[];
+  content: VFSEntry[];
 }) {
-  const [images, setImages] = useState<RepoPhoto[] | undefined>(undefined);
+  // selected full image
+  const [selected, setSelected] = useState<
+    { file: VFSFile; path: string[] } | undefined
+  >(undefined);
+
+  const thumbnailDir = content.find((it) => it.name === ".thumbnails");
+  const { dirEntries: thumbnailDirEntries } = useFileNavigation(
+    thumbnailDir?.type === "dir" ? thumbnailDir?.content : undefined
+  );
+  const thumbnailFiles = thumbnailDirEntries
+    .filter((it) => it.type === "file")
+    .filter((it) => content.some((c) => c.name === it.name));
+
+  const [thumbnailPhotos, setThumbnailPhotos] = useState<
+    RepoPhoto[] | undefined
+  >(undefined);
 
   useEffect(() => {
     (async () => {
-      setImages(
-        content
-          ?.filter((it) =>
+      setThumbnailPhotos(
+        thumbnailFiles
+          ?.filter((it) => it.type === "file")
+          .filter((it) =>
             imageExtensions.some((ext) =>
               it.name.toLocaleLowerCase().endsWith(ext)
             )
           )
           .map((it) => ({
-            src: [...path.repoPath, it.name].join("/"),
-            path: [...path.repoPath, it.name],
+            file: it.content,
+            src: [...dirPath, it.name].join("/"),
+            path: [...dirPath, it.name],
             width: baseWidth,
             height: baseHeight,
           })) ?? []
       );
     })();
-  }, [path, content]);
+  }, [dirPath, thumbnailFiles]);
   // Update image dimensions
   const onLoaded = useCallback(
     (index: number, image: { width: number; height: number }) => {
-      const newImages = [...(images ?? [])];
+      const newImages = [...(thumbnailPhotos ?? [])];
       newImages[index].width = image.width;
       newImages[index].height = image.height;
-      setImages(newImages);
+      setThumbnailPhotos(newImages);
     },
-    [images]
+    [thumbnailPhotos]
   );
 
-  const [selected, setSelected] = useState<
-    { src: string; path: string[] } | undefined
-  >(undefined);
   const [page, setPage] = useState(0);
   const imagesPerPage = 25;
-  const imagesOnPage = images?.slice(
+  const imagesOnPage = thumbnailPhotos?.slice(
     page * imagesPerPage,
     page * imagesPerPage + imagesPerPage
   );
+
   return (
     <>
       <Stack overflow={"auto"}>
@@ -75,11 +91,19 @@ export default function GalleryView({
           }}
           defaultContainerWidth={1000}
           photos={imagesOnPage ?? []}
-          onClick={(e) => setSelected(e.photo)}
+          onClick={(e) => {
+            const name = e.photo.path[e.photo.path.length - 1];
+            const image = content.find((it) => it.name === name);
+            setSelected(
+              image?.type === "file"
+                ? { path: [...dirPath, name], file: image.content }
+                : undefined
+            );
+          }}
           render={{
             image: (props, context) => (
               <Image
-                repo={path.repo}
+                file={context.photo.file}
                 path={context.photo.path}
                 {...props}
                 onLoaded={(image) =>
@@ -92,7 +116,7 @@ export default function GalleryView({
         />
       </Stack>
       <Pagination
-        count={Math.ceil((images?.length ?? 0) / imagesPerPage)}
+        count={Math.ceil((thumbnailPhotos?.length ?? 0) / imagesPerPage)}
         page={page + 1}
         onChange={(_, value) => {
           setPage(value - 1);
@@ -101,8 +125,6 @@ export default function GalleryView({
       />
 
       <ImageDialog
-        repo={path.repo}
-        images={images ?? []}
         onClose={() => {
           setSelected(undefined);
         }}

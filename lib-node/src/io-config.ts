@@ -1,4 +1,4 @@
-import { RepoIOConfig } from "lib/src/repository";
+import { RepoIOConfig } from "lib";
 import { BrotliCompression } from "./compression-node";
 import { BetterSqliteSerializableDB } from "./better-sqlite";
 

@@ -1,8 +1,7 @@
 import { program } from "commander";
-import { MainRepository, Repository } from "lib";
+import { MainRepository } from "lib";
 import { BetterSqliteSerializableDB, FileBlobStore } from "lib-node";
-import { RepoBlobStoreGetter } from "lib/src/blob-store";
-import { arrayToHex } from "lib/src/utils";
+import { RepoBlobStoreGetter, arrayToHex, Repository } from "lib";
 import { snapshotDirWithThumbnails } from "./snapshot";
 
 async function initRepo(keyHex: string) {

@@ -1,30 +1,18 @@
 import { RenderImageProps } from "react-photo-album";
-import { Repository } from "lib";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CircularProgress } from "@mui/material";
+import { VFSFile } from "lib/src/vfs";
 
-const useLoadImage = (
-  repo: Repository | undefined,
-  path: string[],
-  thumbnails: boolean
-) => {
+const useLoadImage = (file: VFSFile | undefined, path: string[]) => {
   return useQuery({
     queryKey: [...path],
     queryFn: async () => {
-      if (repo === undefined) {
-        return;
-      }
-      const fileName = path[path.length - 1];
-      const file = await repo?.readFile([
-        ...path.slice(0, -1),
-        ...(thumbnails ? [".thumbnails"] : []),
-        fileName,
-      ]);
       if (file === undefined) {
         return;
       }
-      const blob = new Blob([file]);
+      const data = await file.read();
+      const blob = new Blob([data]);
 
       const bitmap = await createImageBitmap(blob);
       // Create a URL for the Blob
@@ -35,18 +23,14 @@ const useLoadImage = (
 };
 
 export type ImageProps = {
-  repo: Repository | undefined;
-  thumbnail: boolean;
+  file: VFSFile | undefined;
   path: string[];
+  thumbnail: boolean;
   onLoaded?: (image: { width: number; height: number }) => void;
 } & RenderImageProps;
 
 export function Image(props: ImageProps) {
-  const { data, isLoading } = useLoadImage(
-    props.repo,
-    props.path,
-    props.thumbnail
-  );
+  const { data, isLoading } = useLoadImage(props.file, props.path);
   const [isLoaded, setIsLoaded] = useState(false);
   useEffect(() => {
     if (isLoaded || data === undefined) {

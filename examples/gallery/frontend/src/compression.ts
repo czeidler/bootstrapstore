@@ -1,4 +1,4 @@
-import { Compression } from "lib/src/compression";
+import { Compression } from "lib";
 
 import brotli from "brotli-wasm";
 

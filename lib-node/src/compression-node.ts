@@ -1,5 +1,5 @@
 import { BrotliWasmType } from "brotli-wasm";
-import { Compression } from "lib/src/compression";
+import { Compression } from "lib";
 
 // IMPORTANT: we need to use require otherwise the web version of brotli is selected!
 // eslint-disable-next-line @typescript-eslint/no-require-imports

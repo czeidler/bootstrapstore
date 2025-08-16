@@ -3,8 +3,7 @@ import { Repository, MetadataRepository } from "lib";
 import { FileBlobStore } from "./file-blob-store";
 import * as fs from "node:fs";
 import path from "node:path";
-import { arrayToHex } from "lib/src/utils";
-import { RepoBlobStoreGetter } from "lib/src/blob-store";
+import { RepoBlobStoreGetter, arrayToHex } from "lib";
 import { getRepoIOConfig } from "./io-config";
 
 describe("Main repo test", () => {

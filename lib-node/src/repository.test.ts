@@ -1,11 +1,9 @@
 import { describe, test, assert, afterAll } from "vitest";
-import { Repository } from "lib";
+import { Repository, RepoBlobStoreGetter } from "lib";
 import { FileBlobStore } from "./file-blob-store";
 import * as fs from "node:fs";
 import path from "node:path";
-import { RepoConfig } from "lib/src/repository";
-import { arrayToHex } from "lib/src/utils";
-import { RepoBlobStoreGetter } from "lib/src/blob-store";
+import { RepoConfig, arrayToHex } from "lib";
 import { getRepoIOConfig } from "./io-config";
 
 const buildTest = (name: string, config: RepoConfig) => {
@@ -35,7 +33,7 @@ const buildTest = (name: string, config: RepoConfig) => {
       await repo.createSnapshot(new Date());
 
       const list = await repo.listDirectory([]);
-      assert.equal(list?.length, 1);
+      assert.equal(list.length, 1);
 
       const repo2 = await Repository.open(
         repo.repoId,
@@ -44,41 +42,41 @@ const buildTest = (name: string, config: RepoConfig) => {
         config
       );
       const list2 = await repo2.listDirectory([]);
-      assert.equal(list2?.length, 1);
+      assert.equal(list2.length, 1);
       const content = await repo2.readFile(["file1"]);
       assert.equal(content?.toString(), "filedata1");
 
       // should be able to create empty directory
       await repo2.insertDirs(["emptyDir"]);
       assert.isDefined(
-        (await repo2.listDirectory([]))?.find(
+        (await repo2.listDirectory([])).find(
           (it) => it.name === "emptyDir" && it.type === "dir"
         )
       );
-      assert.equal((await repo2.listDirectory(["emptyDir"]))?.length, 0);
+      assert.equal((await repo2.listDirectory(["emptyDir"])).length, 0);
       await repo2.insertDirs(["emptyDir2", "subDir"]);
       assert.isDefined(
-        (await repo2.listDirectory(["emptyDir2"]))?.find(
+        (await repo2.listDirectory(["emptyDir2"])).find(
           (it) => it.name === "subDir" && it.type === "dir"
         )
       );
       assert.equal(
-        (await repo2.listDirectory(["emptyDir2", "subDir"]))?.length,
+        (await repo2.listDirectory(["emptyDir2", "subDir"])).length,
         0
       );
       // should be able to delete directory
       await repo2.deleteEntry(["emptyDir2", "subDir"]);
-      assert.equal((await repo2.listDirectory(["emptyDir2"]))?.length, 0);
+      assert.equal((await repo2.listDirectory(["emptyDir2"])).length, 0);
       assert.isDefined(
-        (await repo2.listDirectory([]))?.find(
+        (await repo2.listDirectory([])).find(
           (it) => it.name === "emptyDir2" && it.type === "dir"
         )
       );
-      assert.equal((await repo2.listDirectory(["emptyDir2"]))?.length, 0);
+      assert.equal((await repo2.listDirectory(["emptyDir2"])).length, 0);
       // should be able to delete directory from root
       await repo2.deleteEntry(["emptyDir2"]);
       assert.isUndefined(
-        (await repo2.listDirectory([]))?.find(
+        (await repo2.listDirectory([])).find(
           (it) => it.name === "emptyDir2" && it.type === "dir"
         )
       );
@@ -115,9 +113,9 @@ const buildTest = (name: string, config: RepoConfig) => {
       await repo.createSnapshot(new Date());
 
       const list = await repo.listDirectory([]);
-      assert.equal(list?.length, 1);
+      assert.equal(list.length, 1);
       const subDirList = await repo.listDirectory(["subdir"]);
-      assert.equal(subDirList?.length, 2);
+      assert.equal(subDirList.length, 2);
 
       const repo2 = await Repository.open(
         repo.repoId,
@@ -126,7 +124,7 @@ const buildTest = (name: string, config: RepoConfig) => {
         config
       );
       const list2 = await repo2.listDirectory([]);
-      assert.equal(list2?.length, 1);
+      assert.equal(list2.length, 1);
       const content = await repo2.readFile(["subdir", "file1"]);
       assert.equal(content?.toString(), "filedata1");
     });

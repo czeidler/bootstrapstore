@@ -1,7 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import { Stack } from "@mui/material";
 import { useEffect, useState } from "react";
-import { Repository } from "lib";
+import { MetadataRepository, Repository } from "lib";
 
 import { storeGetter } from "./utils";
 import { FileBrowser } from "./FileBrowser";
@@ -12,7 +12,10 @@ export const Home = () => {
   const keyParam = searchParams.get("key");
   const repoId = searchParams.get("repoId") ?? "";
 
-  const [repo, setRepo] = useState<Repository>();
+  const [repo, setRepo] = useState<{
+    repo: Repository;
+    metadataRepository: MetadataRepository;
+  }>();
 
   useEffect(() => {
     (async () => {
@@ -27,13 +30,18 @@ export const Home = () => {
           inlined: false,
         }
       );
-      setRepo(repo);
+      const metadataRepository = await MetadataRepository.fromRepo(
+        repo,
+        storeGetter,
+        getRepoIOConfig()
+      );
+      setRepo({ repo, metadataRepository });
     })();
   }, [repoId, keyParam]);
 
   return (
     <Stack style={{ width: "100%", height: "100%" }} gap={1}>
-      <FileBrowser repo={repo} />
+      <FileBrowser repo={repo?.repo} metadataRepo={repo?.metadataRepository} />
     </Stack>
   );
 };

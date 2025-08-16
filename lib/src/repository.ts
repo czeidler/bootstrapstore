@@ -255,7 +255,7 @@ export class Repository {
     return entry.repoId;
   }
 
-  async listDirectory(path: string[]): Promise<DirEntry[] | undefined> {
+  async listDirectory(path: string[]): Promise<DirEntry[]> {
     const directory = await this.treeBuilder.loadTree(this.indexRepo, path, {
       createMissingDirs: false,
       writeable: false,

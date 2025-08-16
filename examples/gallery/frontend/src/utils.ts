@@ -1,5 +1,5 @@
 import { HttpBlobStore } from "./HttpBlobStore";
-import { BlobStore, BlobStoreGetter } from "lib/src/blob-store";
+import { BlobStore, BlobStoreGetter } from "lib";
 
 export const imageExtensions = [".jpg", ".png"];
 

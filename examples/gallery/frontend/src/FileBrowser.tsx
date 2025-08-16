@@ -14,29 +14,35 @@ import CollectionsTwoToneIcon from "@mui/icons-material/CollectionsTwoTone";
 import FolderTwoToneIcon from "@mui/icons-material/FolderTwoTone";
 import DriveFolderUploadTwoToneIcon from "@mui/icons-material/DriveFolderUploadTwoTone";
 import { useEffect, useState } from "react";
-import { Repository } from "lib";
+import { MetadataRepository, Repository } from "lib";
 
 import FileView from "./FileView";
-import { imageExtensions, storeGetter } from "./utils";
+import { imageExtensions } from "./utils";
 import { useFileNavigation } from "./useFileNavigation";
-import { DirEntry } from "lib/src/repository";
+import { VFSEntry } from "lib";
+import { rootDir } from "lib";
 
 export type PathStackEntry = {
   repo: Repository;
   repoPath: string[];
   path: string[];
 };
-export const FileBrowser = ({ repo }: { repo: Repository | undefined }) => {
+export const FileBrowser = ({
+  repo,
+  metadataRepo,
+}: {
+  repo: Repository | undefined;
+  metadataRepo: MetadataRepository | undefined;
+}) => {
   const [viewType, setViewType] = useState<"gallery" | "file">("file");
 
   const { currentPath, dirEntries, openFolder, onBack } = useFileNavigation(
-    repo,
-    storeGetter
+    repo && metadataRepo ? rootDir(repo, metadataRepo) : undefined
   );
 
-  const onDirEntryClicked = async (entry: DirEntry) => {
+  const onDirEntryClicked = async (entry: VFSEntry) => {
     if (entry.type !== "file") {
-      await openFolder(entry);
+      await openFolder(entry.name);
       return;
     }
   };
@@ -61,7 +67,7 @@ export const FileBrowser = ({ repo }: { repo: Repository | undefined }) => {
         <Tooltip title="Navigate to parent directory">
           <span>
             <IconButton
-              disabled={(currentPath?.path.length ?? 0) === 0}
+              disabled={(currentPath.length ?? 0) === 0}
               onClick={onBack}
             >
               <DriveFolderUploadTwoToneIcon />
@@ -69,7 +75,7 @@ export const FileBrowser = ({ repo }: { repo: Repository | undefined }) => {
           </span>
         </Tooltip>
         <Breadcrumbs aria-label="breadcrumb">
-          {currentPath?.path.map((it, i) => (
+          {currentPath.map((it, i) => (
             <Typography key={`${i}`}>{it}</Typography>
           ))}
         </Breadcrumbs>
@@ -104,7 +110,7 @@ export const FileBrowser = ({ repo }: { repo: Repository | undefined }) => {
           <CircularProgress />
         </Stack>
       ) : viewType === "gallery" ? (
-        <GalleryView content={dirEntries} path={currentPath} />
+        <GalleryView dirPath={currentPath} content={dirEntries} />
       ) : (
         <FileView content={dirEntries} onDirEntryClicked={onDirEntryClicked} />
       )}

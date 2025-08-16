@@ -1,6 +1,6 @@
 import { readdirSync, statSync } from "node:fs";
 import path from "path";
-import { DirEntry, Repository } from "lib/src/repository";
+import { DirEntry, Repository } from "lib";
 
 export interface DirReader {
   list(path: string[]): Promise<DirEntry[]>;

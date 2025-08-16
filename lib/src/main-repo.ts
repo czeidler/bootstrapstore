@@ -158,7 +158,7 @@ export class MetadataRepository {
 
   async listRemotes(): Promise<DirEntry[]> {
     const entries = await this.metaRepo.listDirectory([remoteDir]);
-    return entries ?? [];
+    return entries;
   }
 
   async getRemote(remoteId: string): Promise<RemoteInfo | undefined> {
@@ -170,7 +170,7 @@ export class MetadataRepository {
     const entries = await this.metaRepo.listDirectory(
       remoteConnectionsBasePath(remoteId)
     );
-    return entries ?? [];
+    return entries;
   }
 
   async readConnection(
@@ -194,7 +194,7 @@ export class MetadataRepository {
     const entries = await this.metaRepo.listDirectory(
       locationBasePath(remoteId)
     );
-    return entries ?? [];
+    return entries;
   }
 
   async readLocation(
@@ -210,7 +210,7 @@ export class MetadataRepository {
 
   async listSyncs(remoteId: string): Promise<DirEntry[]> {
     const entries = await this.metaRepo.listDirectory(syncBasePath(remoteId));
-    return entries ?? [];
+    return entries;
   }
 
   async writeSync(remoteId: string, syncConfig: SyncConfig) {

@@ -1,4 +1,4 @@
-import { SerializableDB } from "lib/src/sqlite";
+import { SerializableDB } from "lib";
 import { SQLocalKysely } from "sqlocal/kysely";
 
 export const SqlocalSerializableDB: SerializableDB = {

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, QueryClient } from "@tanstack/react-query";
 import {
   MetadataRepository,
   RemoteConnection,
@@ -6,9 +6,7 @@ import {
   LocationInfo,
   SyncConfig,
   DirectoryLocationInfo,
-} from "lib/src/main-repo";
-
-import { QueryClient } from "@tanstack/react-query";
+} from "lib";
 
 export const queryClient = new QueryClient();
 

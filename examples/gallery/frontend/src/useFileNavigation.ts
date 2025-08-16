@@ -1,8 +1,6 @@
-import { MetadataRepository, Repository } from "lib";
-import { DirEntry } from "lib/src/repository";
+import { Repository } from "lib";
 import { useCallback, useEffect, useState } from "react";
-import { BlobStoreGetter } from "lib/src/blob-store";
-import { getRepoIOConfig } from "./io-config";
+import { VFSDir, VFSEntry } from "lib";
 
 export type PathStackEntry = {
   repo: Repository;
@@ -10,90 +8,52 @@ export type PathStackEntry = {
   path: string[];
 };
 
-export const useFileNavigation = (
-  repo: Repository | undefined,
-  storeGetter: BlobStoreGetter
-) => {
-  const [pathStack, setPathStack] = useState<PathStackEntry[]>([]);
-  const currentPath: PathStackEntry | undefined =
+export const useFileNavigation = (root: VFSDir | undefined) => {
+  const [pathStack, setPathStack] = useState<{ path: string[]; dir: VFSDir }[]>(
+    []
+  );
+  const currentPath: { path: string[]; dir: VFSDir } | undefined =
     pathStack[pathStack.length - 1];
-  const [dirEntries, setDirEntries] = useState<DirEntry[]>([]);
+  const [dirEntries, setDirEntries] = useState<VFSEntry[]>([]);
   useEffect(() => {
     (async () => {
       if (currentPath === undefined) {
         return;
       }
-      const content = await currentPath.repo.listDirectory(
-        currentPath.repoPath
-      );
-      setDirEntries(content ?? []);
+      const content = await currentPath.dir.list();
+      setDirEntries(content);
     })();
   }, [currentPath]);
 
   useEffect(() => {
-    if (!repo) {
+    if (!root) {
       setPathStack([]);
       return;
     }
-    setPathStack([{ repo, repoPath: [], path: [] }]);
-  }, [repo]);
+    setPathStack([{ path: [], dir: root }]);
+  }, [root]);
 
   const onBack = useCallback(() => {
     if (!currentPath) {
       return;
     }
-    if (currentPath.repoPath.length === 0) {
-      setPathStack(pathStack.slice(0, -1));
-      return;
-    }
-    setPathStack([
-      ...pathStack.slice(0, -1),
-      {
-        repo: currentPath.repo,
-        path: currentPath.path.slice(0, -1),
-        repoPath: currentPath.repoPath.slice(0, -1),
-      },
-    ]);
+    setPathStack([...pathStack.slice(0, -1)]);
   }, [currentPath, pathStack]);
   const openFolder = useCallback(
-    async (row: DirEntry) => {
-      if (pathStack.length === 0) {
+    async (name: string) => {
+      const entry = dirEntries.find((it) => it.name === name);
+      if (entry === undefined) {
         return;
       }
-      const currentPath = pathStack[pathStack.length - 1];
-      if (row.type === "dir") {
-        setPathStack([
-          ...pathStack.slice(0, -1),
-          {
-            repo: currentPath.repo,
-            repoPath: [...currentPath.repoPath, row.name],
-            path: [...currentPath.path, row.name],
-          },
-        ]);
-        return;
-      }
-      if (row.type === "repo") {
-        const mRepo = MetadataRepository.fromRepo(
-          currentPath.repo,
-          storeGetter,
-          getRepoIOConfig()
-        );
-        const child = await (await mRepo).openChild("default", row.repoId);
-        if (child === undefined) {
-          return;
-        }
+      if (entry.type === "dir" || entry.type === "repo") {
         setPathStack([
           ...pathStack,
-          {
-            repo: child,
-            repoPath: [],
-            path: [...currentPath.path, row.name],
-          },
+          { path: [...currentPath.path, name], dir: entry.content },
         ]);
       }
     },
-    [pathStack, storeGetter]
+    [pathStack, currentPath, dirEntries]
   );
 
-  return { onBack, openFolder, currentPath, dirEntries };
+  return { onBack, openFolder, currentPath: currentPath.path, dirEntries };
 };
