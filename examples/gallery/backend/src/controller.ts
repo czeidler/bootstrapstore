@@ -7,8 +7,8 @@ import cors from "cors";
 import { Readable } from "stream";
 import { authValidation } from "./auth";
 import { syncRepo, syncRepoStatus } from "./trustedService";
-import { rcloneRC } from "lib-node";
-import { RCloneFSInterface } from "lib-node/src/rclone";
+import { RCloneVFSDir } from "lib-node";
+import { ExhaustiveCheckError } from "lib";
 
 const upload = multer();
 const s = initServer();
@@ -121,8 +121,40 @@ export const buildApp = (config: AppConfig) => {
       ls: {
         handler: async ({ body }) => {
           const { remote, path } = body;
-          const entries = await new RCloneFSInterface().ls(path, remote);
-          return { status: 201, body: { entries } };
+          const result = await new RCloneVFSDir(path, remote).list();
+          const entries = result.map(async (it) => {
+            switch (it.type) {
+              case "dir":
+                return { type: "dir", name: it.name } satisfies {
+                  type: "dir";
+                  name: string;
+                };
+
+              case "repo": {
+                throw Error("Internal error");
+              }
+
+              case "file": {
+                const st = await it.content.stats();
+                return {
+                  type: "file",
+                  name: it.name,
+                  size: st.size,
+                  creationTime: st.creationTime,
+                  modificationTime: st.modificationTime,
+                } satisfies {
+                  type: "file";
+                  name: string;
+                  size: number;
+                  creationTime: number;
+                  modificationTime: number;
+                };
+              }
+              default:
+                throw new ExhaustiveCheckError(it);
+            }
+          });
+          return { status: 201, body: { entries: await Promise.all(entries) } };
         },
       },
     });

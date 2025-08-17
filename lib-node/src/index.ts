@@ -2,5 +2,5 @@ export { scanDir } from "./fs-scanner";
 export { FileBlobStore } from "./file-blob-store";
 export { BetterSqliteSerializableDB } from "./better-sqlite";
 export { diffWalk, DiffEntry, FSDirReader, RepoDirReader } from "./diff";
-export { rcloneRC, findOrDownloadRclone } from "./rclone";
+export { rcloneRC, findOrDownloadRclone, RCloneVFSDir } from "./rclone";
 export { getRepoIOConfig } from "./io-config";

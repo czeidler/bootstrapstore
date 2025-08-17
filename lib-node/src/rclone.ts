@@ -6,7 +6,14 @@ import { exec as execRaw } from "child_process";
 import JSZip from "jszip";
 import { Agent } from "node:https";
 import { ChildProcess, spawn } from "node:child_process";
-import { ExhaustiveCheckError, shortId, DirEntry, RemoteConnection } from "lib";
+import {
+  ExhaustiveCheckError,
+  shortId,
+  RemoteConnection,
+  VFSDir,
+  VFSEntry,
+  VFSFile,
+} from "lib";
 
 const exec = util.promisify(execRaw);
 
@@ -205,16 +212,7 @@ export async function rcloneRC(
   }
 }
 
-type FSDirEntry = Exclude<DirEntry, { type: "repo" }>;
 type FSRemoteConnection = Omit<RemoteConnection, "id">;
-
-interface FSInterface {
-  ls(
-    path: string,
-    remote: FSRemoteConnection | undefined
-  ): Promise<FSDirEntry[]>;
-  //copy();
-}
 
 function remoteToRClone(remote: FSRemoteConnection | undefined): string {
   if (remote === undefined) {
@@ -308,14 +306,16 @@ type RCloneJobStatus<Output = Record<string, unknown>> = {
   success: boolean;
 };
 
-export class RCloneFSInterface implements FSInterface {
-  async ls(
-    path: string,
-    remote: FSRemoteConnection | undefined
-  ): Promise<FSDirEntry[]> {
+export class RCloneVFSDir implements VFSDir {
+  constructor(
+    private path: string,
+    private remote: FSRemoteConnection | undefined
+  ) {}
+
+  async list(): Promise<VFSEntry[]> {
     const result = await rcloneRC("operations/list", [
       "--config=/dev/null",
-      `fs=${remoteToRClone(remote)}${path}`,
+      `fs=${remoteToRClone(this.remote)}${this.path}`,
       `remote=""`,
       "--max-depth",
       "1",
@@ -323,20 +323,49 @@ export class RCloneFSInterface implements FSInterface {
     const response = JSON.parse(result) as RCloneLsResponse;
     return response.list.map((it) => {
       return it.IsDir
-        ? {
+        ? ({
             type: "dir",
             name: it.Name,
-          }
-        : {
+            content: new RCloneVFSDir(
+              path.join(this.path, it.Name),
+              this.remote
+            ),
+          } satisfies VFSEntry)
+        : ({
             type: "file",
             name: it.Name,
-            size: it.Size,
-            creationTime: 0,
-            modificationTime: new Date(it.ModTime).getTime(),
-          };
+            content: new RCloneVFSFile({
+              size: it.Size,
+              creationTime: 0,
+              modificationTime: new Date(it.ModTime).getTime(),
+            }),
+          } satisfies VFSEntry);
     });
   }
+}
 
+class RCloneVFSFile implements VFSFile {
+  constructor(
+    private fileStats: {
+      size: number;
+      creationTime: number;
+      modificationTime: number;
+    }
+  ) {}
+  read(): Promise<Buffer> {
+    throw new Error("Method not implemented.");
+  }
+
+  async stats(): Promise<{
+    size: number;
+    creationTime: number;
+    modificationTime: number;
+  }> {
+    return this.fileStats;
+  }
+}
+
+export class RCloneFSInterface {
   async operationsCheck(
     src: { path: string; remote: FSRemoteConnection | undefined },
     destination: { path: string; remote: FSRemoteConnection | undefined }
