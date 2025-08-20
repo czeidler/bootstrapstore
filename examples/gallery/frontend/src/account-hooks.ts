@@ -37,12 +37,12 @@ export const useProfiles = (metadataRepo: MetadataRepository | undefined) =>
     enabled: metadataRepo !== undefined,
   });
 
-export const useConnections = (
+export const useRemotes = (
   metadataRepo: MetadataRepository,
   profileId: string
 ) =>
   useQuery({
-    queryKey: ["profiles", profileId, "connections"],
+    queryKey: ["profiles", profileId, "remotes"],
     queryFn: async () => {
       const repoList = await metadataRepo.listRemotes(profileId);
       const repos = await Promise.all(
@@ -54,18 +54,18 @@ export const useConnections = (
     },
   });
 
-export const useUpsertConnection = (
+export const useUpsertRemote = (
   metadataRepo: MetadataRepository,
   profileId: string
 ) =>
   useMutation({
     mutationFn: async (remote: RemoteInfo) => {
-      await metadataRepo.writeConnection(profileId, remote);
+      await metadataRepo.writeRemote(profileId, remote);
       await metadataRepo.snapshot();
     },
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: ["profiles", profileId, "connections"],
+        queryKey: ["profiles", profileId, "remotes"],
       }),
   });
 

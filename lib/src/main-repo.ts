@@ -191,7 +191,7 @@ export class MetadataRepository {
     return this.read<RemoteInfo>(remotePath(profileId, remoteId));
   }
 
-  async writeConnection(profileId: string, remote: RemoteInfo) {
+  async writeRemote(profileId: string, remote: RemoteInfo) {
     await this.write(remotePath(profileId, remote.id), remote);
   }
 

@@ -133,11 +133,11 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
     MetadataRepository | undefined
   >();
 
-  const [openAddRemoteDialog, setOpenAddRemoteDialog] = useState(false);
+  const [openAddProfileDialog, setOpenAddProfileDialog] = useState(false);
   const { data: remotes } = useProfiles(metadataRepo);
-  const [selectedRemote, setSelectedRemote] = useState<string | undefined>();
+  const [selectedProfile, setSelectedProfile] = useState<string | undefined>();
   useEffect(() => {
-    setSelectedRemote(accountData?.profileId);
+    setSelectedProfile(accountData?.profileId);
   }, [accountData]);
   if (accountData === undefined || metadataRepo === undefined) {
     return (
@@ -178,8 +178,8 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
                       justifyContent={"space-between"}
                       alignItems={"center"}
                     >
-                      <Typography>Remotes:</Typography>
-                      <Button onClick={() => setOpenAddRemoteDialog(true)}>
+                      <Typography>Profiles:</Typography>
+                      <Button onClick={() => setOpenAddProfileDialog(true)}>
                         Add
                       </Button>
                     </Stack>
@@ -189,8 +189,8 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
                 <Divider />
                 <ListItem disablePadding={true} divider={true} dense={true}>
                   <ListItemButton
-                    selected={selectedRemote === accountData.profileId}
-                    onClick={() => setSelectedRemote(accountData.profileId)}
+                    selected={selectedProfile === accountData.profileId}
+                    onClick={() => setSelectedProfile(accountData.profileId)}
                   >
                     <ListItemText
                       primary={`${accountData.profileId} (Local)`}
@@ -207,8 +207,8 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
                       dense={true}
                     >
                       <ListItemButton
-                        selected={selectedRemote === remote.id}
-                        onClick={() => setSelectedRemote(remote.id)}
+                        selected={selectedProfile === remote.id}
+                        onClick={() => setSelectedProfile(remote.id)}
                       >
                         <ListItemText primary={remote.name ?? remote.id} />
                       </ListItemButton>
@@ -218,13 +218,13 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
             </Stack>
             <Divider orientation="vertical" sx={{ marginRight: 1 }} />
             <RemoteView
-              profileId={selectedRemote ?? accountData.profileId}
+              profileId={selectedProfile ?? accountData.profileId}
               metadataRepo={metadataRepo}
             />
           </Stack>
           <AddRemoteDialog
-            open={openAddRemoteDialog}
-            onClose={() => setOpenAddRemoteDialog(false)}
+            open={openAddProfileDialog}
+            onClose={() => setOpenAddProfileDialog(false)}
             metadataRepo={metadataRepo}
           />
         </>
