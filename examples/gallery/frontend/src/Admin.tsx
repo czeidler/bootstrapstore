@@ -12,6 +12,7 @@ import { useState } from "react";
 import { AccountView } from "./AccountView";
 import { MainLayout } from "./MainLayout";
 import { getRepoIOConfig } from "./io-config";
+import { queryClient } from "./account-hooks";
 
 // TEMP
 function create16ByteBuffer(str: string): Buffer {
@@ -22,18 +23,21 @@ function create16ByteBuffer(str: string): Buffer {
 
 const AccountCreation = () => {
   const [password, setPassword] = useState<string | undefined>();
-  const { mutate: onClick } = useMutation({
+  const { mutate: onClick, isPending } = useMutation({
     mutationFn: async () => {
       if (password === undefined) {
         return;
       }
       const store = storeGetter.get(undefined);
-      Account.createAccount(
+      await Account.createAccount(
         store,
         storeGetter,
         getRepoIOConfig(),
         create16ByteBuffer(password)
       );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accountFile"] });
     },
   });
   return (
@@ -45,7 +49,7 @@ const AccountCreation = () => {
             label="Password"
             onChange={(e) => setPassword(e.target.value)}
           />
-          <Button disabled={!password} onClick={() => onClick()}>
+          <Button disabled={!password || isPending} onClick={() => onClick()}>
             Create
           </Button>
         </>
