@@ -21,7 +21,7 @@ import { storeGetter } from "./utils";
 import { useEffect, useState } from "react";
 import { AccountData } from "lib/src/account";
 import { RemoteView } from "./RemoteView";
-import { useCreateRemote, useRemotes } from "./account-hooks";
+import { useCreateRemote, useProfiles } from "./account-hooks";
 import { shortId } from "lib/src/utils";
 import HomeTwoToneIcon from "@mui/icons-material/HomeTwoTone";
 import { MainLayout } from "./MainLayout";
@@ -134,10 +134,10 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
   >();
 
   const [openAddRemoteDialog, setOpenAddRemoteDialog] = useState(false);
-  const { data: remotes } = useRemotes(metadataRepo);
+  const { data: remotes } = useProfiles(metadataRepo);
   const [selectedRemote, setSelectedRemote] = useState<string | undefined>();
   useEffect(() => {
-    setSelectedRemote(accountData?.remoteId);
+    setSelectedRemote(accountData?.profileId);
   }, [accountData]);
   if (accountData === undefined || metadataRepo === undefined) {
     return (
@@ -156,7 +156,7 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
       Header={
         <>
           <Tooltip
-            title={`Open: repo: ${accountData.repoId}, local remote: ${accountData.remoteId}`}
+            title={`Open: repo: ${accountData.repoId}, local remote: ${accountData.profileId}`}
           >
             <HomeTwoToneIcon sx={{ alignSelf: "center" }} />
           </Tooltip>
@@ -189,14 +189,16 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
                 <Divider />
                 <ListItem disablePadding={true} divider={true} dense={true}>
                   <ListItemButton
-                    selected={selectedRemote === accountData.remoteId}
-                    onClick={() => setSelectedRemote(accountData.remoteId)}
+                    selected={selectedRemote === accountData.profileId}
+                    onClick={() => setSelectedRemote(accountData.profileId)}
                   >
-                    <ListItemText primary={`${accountData.remoteId} (Local)`} />
+                    <ListItemText
+                      primary={`${accountData.profileId} (Local)`}
+                    />
                   </ListItemButton>
                 </ListItem>
                 {remotes
-                  ?.filter((remote) => remote.id !== accountData.remoteId)
+                  ?.filter((remote) => remote.id !== accountData.profileId)
                   .map((remote) => (
                     <ListItem
                       key={remote.id}
@@ -216,7 +218,7 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
             </Stack>
             <Divider orientation="vertical" sx={{ marginRight: 1 }} />
             <RemoteView
-              remoteId={selectedRemote ?? accountData.remoteId}
+              profileId={selectedRemote ?? accountData.profileId}
               metadataRepo={metadataRepo}
             />
           </Stack>

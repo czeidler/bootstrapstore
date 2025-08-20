@@ -28,7 +28,7 @@ import {
 } from "./account-hooks";
 import {
   DirectoryLocationInfo,
-  RemoteConnection,
+  RemoteInfo,
   RepositoryLocationInfo,
 } from "lib/src/main-repo";
 import { trustedTsr } from "./tsr";
@@ -37,16 +37,16 @@ import { shortId } from "lib/src/utils";
 const CreateConnectionDialog = ({
   open,
   onClose,
-  remoteId,
+  profileId,
   metadataRepo,
 }: {
-  open: { connection?: RemoteConnection } | undefined;
+  open: { connection?: RemoteInfo } | undefined;
   onClose: () => void;
-  remoteId: string;
+  profileId: string;
   metadataRepo: MetadataRepository;
 }) => {
   const [connection, setConnection] = useState<
-    Partial<RemoteConnection> | undefined
+    Partial<RemoteInfo> | undefined
   >();
 
   useEffect(() => {
@@ -57,7 +57,7 @@ const CreateConnectionDialog = ({
 
   const { mutateAsync: upsertConnection } = useUpsertConnection(
     metadataRepo,
-    remoteId
+    profileId
   );
   const close = () => {
     setConnection(undefined);
@@ -142,18 +142,18 @@ const CreateConnectionDialog = ({
 const CreateRepoDialog = ({
   open,
   onClose,
-  remoteId,
+  profileId,
   metadataRepo,
 }: {
   open: boolean;
   onClose: () => void;
-  remoteId: string;
+  profileId: string;
   metadataRepo: MetadataRepository;
 }) => {
   const [repoName, setRepoName] = useState<string | undefined>();
   const { mutate: createChild } = useCreateChildRepo(
     metadataRepo,
-    remoteId,
+    profileId,
     repoName
   );
   const create = async () => {
@@ -189,19 +189,19 @@ const CreateRepoDialog = ({
 const CreateCheckoutDialog = ({
   open,
   onClose,
-  remoteId,
+  profileId,
   metadataRepo,
   repositories,
 }: {
   open: boolean;
   onClose: () => void;
-  remoteId: string;
+  profileId: string;
   metadataRepo: MetadataRepository;
   repositories: RepositoryLocationInfo[];
 }) => {
   const [path, setPath] = useState<string | undefined>();
   const [repoId, setRepoId] = useState<string | null>(null);
-  const { mutateAsync } = useCreateCheckout(metadataRepo, remoteId);
+  const { mutateAsync } = useCreateCheckout(metadataRepo, profileId);
   const close = () => {
     setPath(undefined);
     setRepoId(null);
@@ -319,21 +319,21 @@ const SyncEntryRepo = ({
 const CreateSyncDialog = ({
   open,
   onClose,
-  remoteId,
+  profileId,
   metadataRepo,
   checkouts,
   repositories,
 }: {
   open: boolean;
   onClose: () => void;
-  remoteId: string;
+  profileId: string;
   metadataRepo: MetadataRepository;
   checkouts: DirectoryLocationInfo[];
   repositories: RepositoryLocationInfo[];
 }) => {
   const [checkoutId, setCheckoutId] = useState<string | undefined>();
   const [repoId, setRepoId] = useState<string | null>(null);
-  const { mutateAsync } = useCreateSync(metadataRepo, remoteId);
+  const { mutateAsync } = useCreateSync(metadataRepo, profileId);
   const create = async () => {
     if (checkoutId === undefined || repoId === null) {
       return;
@@ -341,7 +341,7 @@ const CreateSyncDialog = ({
     await mutateAsync({
       id: shortId(),
       type: "repo",
-      checkoutId,
+      checkout: { id: checkoutId },
       repository: {
         id: repoId,
       },
@@ -380,20 +380,20 @@ const CreateSyncDialog = ({
 };
 
 export const RemoteView = ({
-  remoteId,
+  profileId,
   metadataRepo,
 }: {
-  remoteId: string;
+  profileId: string;
   metadataRepo: MetadataRepository;
 }) => {
-  const { data: connections } = useConnections(metadataRepo, remoteId);
-  const { data: locations } = useLocations(metadataRepo, remoteId);
-  const { data: syncs } = useSyncs(metadataRepo, remoteId);
+  const { data: connections } = useConnections(metadataRepo, profileId);
+  const { data: locations } = useLocations(metadataRepo, profileId);
+  const { data: syncs } = useSyncs(metadataRepo, profileId);
   const [openCreateRepoDialog, setOpenCreateRepoDialog] = useState(false);
   const [openCreateCheckoutDialog, setOpenCreateCheckoutDialog] =
     useState(false);
   const [openCreateConnectionDialog, setOpenCreateConnectionDialog] = useState<
-    { connection?: RemoteConnection } | undefined
+    { connection?: RemoteInfo } | undefined
   >(undefined);
   const [openCreateSyncDialog, setOpenCreateSyncDialog] = useState(false);
 
@@ -481,7 +481,7 @@ export const RemoteView = ({
                     </Typography>
                     <Typography>
                       Checkout:{" "}
-                      {checkouts?.find((c) => c.id === it.checkoutId)?.path}
+                      {checkouts?.find((c) => c.id === it.checkout.id)?.path}
                     </Typography>
 
                     <Button
@@ -497,7 +497,7 @@ export const RemoteView = ({
                             repoId: it.repository.id,
                             encKey: repo.encKey,
                             checkoutPath:
-                              checkouts?.find((c) => c.id === it.checkoutId)
+                              checkouts?.find((c) => c.id === it.checkout.id)
                                 ?.path ?? "",
                           },
                         });
@@ -519,7 +519,7 @@ export const RemoteView = ({
                             repoId: it.repository.id,
                             encKey: repo.encKey,
                             checkoutPath:
-                              checkouts?.find((c) => c.id === it.checkoutId)
+                              checkouts?.find((c) => c.id === it.checkout.id)
                                 ?.path ?? "",
                           },
                         });
@@ -577,26 +577,26 @@ export const RemoteView = ({
         ) : null}
       </Stack>
       <CreateConnectionDialog
-        remoteId={remoteId}
+        profileId={profileId}
         metadataRepo={metadataRepo}
         open={openCreateConnectionDialog}
         onClose={() => setOpenCreateConnectionDialog(undefined)}
       />
       <CreateRepoDialog
-        remoteId={remoteId}
+        profileId={profileId}
         metadataRepo={metadataRepo}
         open={openCreateRepoDialog}
         onClose={() => setOpenCreateRepoDialog(false)}
       />
       <CreateCheckoutDialog
-        remoteId={remoteId}
+        profileId={profileId}
         metadataRepo={metadataRepo}
         open={openCreateCheckoutDialog}
         onClose={() => setOpenCreateCheckoutDialog(false)}
         repositories={repositories ?? []}
       />
       <CreateSyncDialog
-        remoteId={remoteId}
+        profileId={profileId}
         metadataRepo={metadataRepo}
         open={openCreateSyncDialog}
         onClose={() => setOpenCreateSyncDialog(false)}

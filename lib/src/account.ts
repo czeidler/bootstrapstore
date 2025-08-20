@@ -14,10 +14,10 @@ export type AccountData = {
   /** Main repo key */
   repoKeyBase64: string;
   /**
-   * The remote id for this account, i.e. where this account is located / checked out.
-   * Points to a remote in the main repo.
+   * The profile id for this account, i.e. where this account is located / checked out.
+   * Points to a profile in the main repo.
    */
-  remoteId: string;
+  profileId: string;
 };
 
 export async function readAccountFile(
@@ -80,19 +80,23 @@ export class Account {
       ioConfig,
       repoKey
     );
-    const remoteId = shortId();
-    await metadataRepo.addRemote({
-      id: remoteId,
+    const profileId = shortId();
+    await metadataRepo.addProfile({
+      id: profileId,
     });
     const repoKeyBase64 = repoKey.toString("base64");
-    await metadataRepo.writeLocation(remoteId, {
+    await metadataRepo.writeLocation(profileId, {
       id: repoId,
       type: "repository",
       encKey: repoKeyBase64,
     });
     await metadataRepo.snapshot();
 
-    const accountData: AccountData = { repoId, remoteId, repoKeyBase64 };
+    const accountData: AccountData = {
+      repoId,
+      profileId: profileId,
+      repoKeyBase64,
+    };
     const cipher = await enc.encrypt(
       Buffer.from(JSON.stringify(accountData)),
       key

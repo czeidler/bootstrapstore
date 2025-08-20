@@ -79,7 +79,7 @@ repo
         storeGetter,
         getRepoIOConfig()
       );
-      // TODO handle remoteId:
+      // TODO handle default profileId:
       const child = await mainRepo.createChild("default");
       console.log(`Child repo id: ${child.repoId}`);
       await repo.insertRepoLink(arg.childTargetPath.split("/"), child.repoId);
@@ -114,7 +114,7 @@ repo
           inlined: false,
         }
       );
-      // TODO handle remoteId:
+      // TODO handle default profileId:
       const child1 = await (
         await MetadataRepository.fromRepo(repo, storeGetter, getRepoIOConfig())
       ).openChild("default", arg.childRepoId);

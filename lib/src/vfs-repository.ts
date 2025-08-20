@@ -44,7 +44,7 @@ class ChildRepoDir implements VFSDir {
       return this.repo;
     }
 
-    // TODO handle remoteId:
+    // TODO handle default profileId:
     const child = await this.metadataRepo.openChild("default", this.repoId);
     if (child === undefined) {
       throw Error(`Can't open repo`);

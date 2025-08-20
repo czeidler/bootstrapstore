@@ -2,14 +2,14 @@ import { BlobStoreGetter } from "./blob-store";
 import { DirEntry, RepoIOConfig, Repository } from "./repository";
 import { shortId } from "./utils";
 
-export type RemoteInfo = {
+export type ProfileInfo = {
   id: string;
   name?: string;
   description?: string;
   machineId?: string;
 };
 
-export type RemoteConnection = {
+export type RemoteInfo = {
   id: string;
   type: "sftp";
   host: string;
@@ -38,53 +38,61 @@ export type SyncConfig =
   | {
       id: string;
       type: "repo";
-      checkoutId: string;
+      /** Points to the repo checkout */
+      checkout: {
+        id: string;
+        remoteId?: string;
+      };
       repository: {
         id: string;
+        /** If undefined it means it local */
         remoteId?: string;
       };
     }
   | {
       id: string;
       type: "checkout";
-      checkoutId: string;
+      checkout1: {
+        id: string;
+        remoteId?: string;
+      };
       checkout2: {
         id: string;
         remoteId?: string;
       };
     };
 
-const remoteDir = "remotes";
-const remotePath = (remoteId: string) => [remoteDir, remoteId];
-const remoteConnectionsBasePath = (remoteId: string) => [
-  remoteDir,
-  remoteId,
-  "connections",
+const profileDir = "profiles";
+const profilePath = (profileId: string) => [profileDir, profileId];
+const remoteBasePath = (profileId: string) => [
+  profileDir,
+  profileId,
+  "remotes",
 ];
-const remoteConnectionsPath = (remoteId: string, connectionId: string) => [
-  remoteDir,
+const remotePath = (profileId: string, remoteId: string) => [
+  profileDir,
+  profileId,
+  "remotes",
   remoteId,
-  "connections",
-  connectionId,
-  "connection.json",
+  "remote.json",
 ];
-const locationBasePath = (remoteId: string) => [
-  remoteDir,
-  remoteId,
+const locationBasePath = (profileId: string) => [
+  profileDir,
+  profileId,
   "locations",
 ];
-const locationInfoPath = (remoteId: string, locationId: string) => [
-  remoteDir,
-  remoteId,
+const locationInfoPath = (profileId: string, locationId: string) => [
+  profileDir,
+  profileId,
   "locations",
   locationId,
   "location.json",
 ];
 
-const syncBasePath = (remoteId: string) => [remoteDir, remoteId, "sync"];
-const syncInfoPath = (remoteId: string, syncId: string) => [
-  remoteDir,
-  remoteId,
+const syncBasePath = (profileId: string) => [profileDir, profileId, "sync"];
+const syncInfoPath = (profileId: string, syncId: string) => [
+  profileDir,
+  profileId,
   "sync",
   syncId,
   "sync.json",
@@ -152,83 +160,84 @@ export class MetadataRepository {
     return JSON.parse(buf.toString()) as T;
   }
 
-  async addRemote(remoteInfo: RemoteInfo) {
-    await this.write([...remotePath(remoteInfo.id), "remote.json"], remoteInfo);
+  async addProfile(profileInfo: ProfileInfo) {
+    await this.write(
+      [...profilePath(profileInfo.id), "profile.json"],
+      profileInfo
+    );
   }
 
-  async listRemotes(): Promise<DirEntry[]> {
-    const entries = await this.metaRepo.listDirectory([remoteDir]);
+  async listProfile(): Promise<DirEntry[]> {
+    const entries = await this.metaRepo.listDirectory([profileDir]);
     return entries;
   }
 
-  async getRemote(remoteId: string): Promise<RemoteInfo | undefined> {
-    return this.read<RemoteInfo>([...remotePath(remoteId), "remote.json"]);
+  async getProfile(profileId: string): Promise<ProfileInfo | undefined> {
+    return this.read<ProfileInfo>([...profilePath(profileId), "profile.json"]);
   }
 
   // connections
-  async listConnections(remoteId: string): Promise<DirEntry[]> {
+  async listRemotes(profileId: string): Promise<DirEntry[]> {
     const entries = await this.metaRepo.listDirectory(
-      remoteConnectionsBasePath(remoteId)
+      remoteBasePath(profileId)
     );
     return entries;
   }
 
-  async readConnection(
-    remoteId: string,
-    connectionId: string
-  ): Promise<RemoteConnection | undefined> {
-    return this.read<RemoteConnection>(
-      remoteConnectionsPath(remoteId, connectionId)
-    );
+  async readRemote(
+    profileId: string,
+    remoteId: string
+  ): Promise<RemoteInfo | undefined> {
+    return this.read<RemoteInfo>(remotePath(profileId, remoteId));
   }
 
-  async writeConnection(remoteId: string, remoteConnection: RemoteConnection) {
-    await this.write(
-      remoteConnectionsPath(remoteId, remoteConnection.id),
-      remoteConnection
-    );
+  async writeConnection(profileId: string, remote: RemoteInfo) {
+    await this.write(remotePath(profileId, remote.id), remote);
   }
 
   // locations
-  async listLocations(remoteId: string): Promise<DirEntry[]> {
+  async listLocations(profileId: string): Promise<DirEntry[]> {
     const entries = await this.metaRepo.listDirectory(
-      locationBasePath(remoteId)
+      locationBasePath(profileId)
     );
     return entries;
   }
 
   async readLocation(
-    remoteId: string,
+    profileId: string,
     repoId: string
   ): Promise<LocationInfo | undefined> {
-    return this.read<LocationInfo>(locationInfoPath(remoteId, repoId));
+    return this.read<LocationInfo>(locationInfoPath(profileId, repoId));
   }
 
-  async writeLocation(remoteId: string, locationInfo: LocationInfo) {
-    await this.write(locationInfoPath(remoteId, locationInfo.id), locationInfo);
+  async writeLocation(profileId: string, locationInfo: LocationInfo) {
+    await this.write(
+      locationInfoPath(profileId, locationInfo.id),
+      locationInfo
+    );
   }
 
-  async listSyncs(remoteId: string): Promise<DirEntry[]> {
-    const entries = await this.metaRepo.listDirectory(syncBasePath(remoteId));
+  async listSyncs(profileId: string): Promise<DirEntry[]> {
+    const entries = await this.metaRepo.listDirectory(syncBasePath(profileId));
     return entries;
   }
 
-  async writeSync(remoteId: string, syncConfig: SyncConfig) {
-    await this.write(syncInfoPath(remoteId, syncConfig.id), syncConfig);
+  async writeSync(profileId: string, syncConfig: SyncConfig) {
+    await this.write(syncInfoPath(profileId, syncConfig.id), syncConfig);
   }
 
   async readSync(
-    remoteId: string,
+    profileId: string,
     syncId: string
   ): Promise<SyncConfig | undefined> {
-    return this.read<SyncConfig>(syncInfoPath(remoteId, syncId));
+    return this.read<SyncConfig>(syncInfoPath(profileId, syncId));
   }
 
   async snapshot() {
     await this.metaRepo.createSnapshot(new Date());
   }
 
-  async createChild(remoteId: string, repoName?: string): Promise<Repository> {
+  async createChild(profileId: string, repoName?: string): Promise<Repository> {
     const repoId = shortId();
     const key = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
     await Repository.create(repoId, this.ioConfig, this.storeGetter, key);
@@ -238,7 +247,7 @@ export class MetadataRepository {
       inlined: false,
     });
 
-    await this.writeLocation(remoteId, {
+    await this.writeLocation(profileId, {
       id: repoId,
       type: "repository",
       encKey: key.toString("base64"),
@@ -251,10 +260,10 @@ export class MetadataRepository {
   }
 
   async openChild(
-    remoteId: string,
+    profileId: string,
     repoId: string
   ): Promise<Repository | undefined> {
-    const repoInfo = await this.readLocation(remoteId, repoId);
+    const repoInfo = await this.readLocation(profileId, repoId);
     if (repoInfo?.type !== "repository") {
       return undefined;
     }

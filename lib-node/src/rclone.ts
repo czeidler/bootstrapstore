@@ -9,7 +9,7 @@ import { ChildProcess, spawn } from "node:child_process";
 import {
   ExhaustiveCheckError,
   shortId,
-  RemoteConnection,
+  RemoteInfo,
   VFSDir,
   VFSEntry,
   VFSFile,
@@ -212,7 +212,7 @@ export async function rcloneRC(
   }
 }
 
-type FSRemoteConnection = Omit<RemoteConnection, "id">;
+type FSRemoteConnection = Omit<RemoteInfo, "id">;
 
 function remoteToRClone(remote: FSRemoteConnection | undefined): string {
   if (remote === undefined) {
