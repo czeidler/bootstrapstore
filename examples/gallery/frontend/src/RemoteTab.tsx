@@ -1,0 +1,181 @@
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { MetadataRepository } from "lib";
+import { useEffect, useState } from "react";
+import { useRemotes, useUpsertRemote } from "./account-hooks";
+import { RemoteInfo } from "lib/src/main-repo";
+import { trustedTsr } from "./tsr";
+import { shortId } from "lib/src/utils";
+
+const CreateRemoteDialog = ({
+  open,
+  onClose,
+  profileId,
+  metadataRepo,
+}: {
+  open: { remote?: RemoteInfo } | undefined;
+  onClose: () => void;
+  profileId: string;
+  metadataRepo: MetadataRepository;
+}) => {
+  const [remote, setRemote] = useState<Partial<RemoteInfo> | undefined>();
+
+  useEffect(() => {
+    if (remote === undefined) {
+      setRemote(open?.remote);
+    }
+  }, [remote, open?.remote]);
+
+  const { mutateAsync: upsertConnection } = useUpsertRemote(
+    metadataRepo,
+    profileId
+  );
+  const close = () => {
+    setRemote(undefined);
+    onClose();
+  };
+  const create = async () => {
+    if (remote === undefined) {
+      return;
+    }
+    const { host, keyPem, user } = remote;
+    if (host !== undefined && keyPem !== undefined && user !== undefined) {
+      await upsertConnection({
+        id: remote.id ?? shortId(),
+        type: "sftp",
+        host,
+        keyPem,
+        user,
+      });
+    }
+    close();
+  };
+  return (
+    <Dialog open={open !== undefined} onClose={close}>
+      <DialogTitle id="alert-dialog-title">Create sFTP Connection</DialogTitle>
+      <DialogContent>
+        {remote?.id !== undefined ? (
+          <TextField
+            value={remote.id}
+            autoFocus
+            margin="dense"
+            label="Id"
+            fullWidth
+            variant="standard"
+            disabled
+          />
+        ) : null}
+        <TextField
+          value={remote?.host ?? ""}
+          autoFocus
+          margin="dense"
+          label="Host"
+          fullWidth
+          variant="standard"
+          onChange={(event) =>
+            setRemote((prev) => ({ ...prev, host: event.target.value }))
+          }
+        />
+        <TextField
+          value={remote?.user ?? ""}
+          autoFocus
+          margin="dense"
+          label="User"
+          fullWidth
+          variant="standard"
+          onChange={(event) =>
+            setRemote((prev) => ({ ...prev, user: event.target.value }))
+          }
+        />
+        <TextField
+          value={remote?.keyPem ?? ""}
+          autoFocus
+          margin="dense"
+          label="Key Pem"
+          fullWidth
+          variant="standard"
+          multiline={true}
+          onChange={(event) =>
+            setRemote((prev) => ({ ...prev, keyPem: event.target.value }))
+          }
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={close}>Cancel</Button>
+        <Button onClick={create} autoFocus disabled={remote === undefined}>
+          {remote?.id !== undefined ? "Save" : "Create"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+export const RemoteTab = ({
+  profileId,
+  metadataRepo,
+}: {
+  profileId: string;
+  metadataRepo: MetadataRepository;
+}) => {
+  const { data: remotes } = useRemotes(metadataRepo, profileId);
+  const [openCreateRemoteDialog, setOpenCreateRemoteDialog] = useState<
+    { remote?: RemoteInfo } | undefined
+  >(undefined);
+
+  const { mutate: ls } = trustedTsr.ls.useMutation();
+
+  return (
+    <>
+      <Stack height={"100%"}>
+        <Stack direction={"row"}>
+          <Button onClick={() => setOpenCreateRemoteDialog({})}>
+            Add Remote
+          </Button>
+        </Stack>
+        <Divider />
+        <Typography>Remotes</Typography>
+        {remotes?.map((it) => (
+          <Stack key={it.id} flexDirection={"row"}>
+            <Typography>Id: {it.id}</Typography>
+            <Typography>Type: {it.type}</Typography>
+            <Button
+              onClick={() =>
+                ls({
+                  body: {
+                    remote: {
+                      type: it.type,
+                      host: it.host,
+                      user: it.user,
+                      keyPem: it.keyPem,
+                    },
+                    path: "",
+                  },
+                })
+              }
+            >
+              RClone test
+            </Button>
+            <Button onClick={() => setOpenCreateRemoteDialog({ remote: it })}>
+              Edit Connection
+            </Button>
+          </Stack>
+        ))}
+      </Stack>
+      <CreateRemoteDialog
+        profileId={profileId}
+        metadataRepo={metadataRepo}
+        open={openCreateRemoteDialog}
+        onClose={() => setOpenCreateRemoteDialog(undefined)}
+      />
+    </>
+  );
+};

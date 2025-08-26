@@ -20,7 +20,7 @@ import { AccountFile, Account, MetadataRepository } from "lib";
 import { storeGetter } from "./utils";
 import { useEffect, useState } from "react";
 import { AccountData } from "lib/src/account";
-import { RemoteView } from "./RemoteView";
+import { ProfileView } from "./ProfileView";
 import { useCreateRemote, useProfiles } from "./account-hooks";
 import { shortId } from "lib/src/utils";
 import HomeTwoToneIcon from "@mui/icons-material/HomeTwoTone";
@@ -217,7 +217,7 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
               </List>
             </Stack>
             <Divider orientation="vertical" sx={{ marginRight: 1 }} />
-            <RemoteView
+            <ProfileView
               profileId={selectedProfile ?? accountData.profileId}
               metadataRepo={metadataRepo}
             />

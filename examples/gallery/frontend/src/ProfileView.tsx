@@ -16,126 +16,21 @@ import {
   Tab,
 } from "@mui/material";
 import { MetadataRepository } from "lib";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   useLocations,
-  useRemotes,
   useCreateCheckout,
   useCreateChildRepo,
-  useUpsertRemote,
   useCreateSync,
   useSyncs,
 } from "./account-hooks";
 import {
   DirectoryLocationInfo,
-  RemoteInfo,
   RepositoryLocationInfo,
 } from "lib/src/main-repo";
 import { trustedTsr } from "./tsr";
 import { shortId } from "lib/src/utils";
-
-const CreateConnectionDialog = ({
-  open,
-  onClose,
-  profileId,
-  metadataRepo,
-}: {
-  open: { remote?: RemoteInfo } | undefined;
-  onClose: () => void;
-  profileId: string;
-  metadataRepo: MetadataRepository;
-}) => {
-  const [remote, setRemote] = useState<Partial<RemoteInfo> | undefined>();
-
-  useEffect(() => {
-    if (remote === undefined) {
-      setRemote(open?.remote);
-    }
-  }, [remote, open?.remote]);
-
-  const { mutateAsync: upsertConnection } = useUpsertRemote(
-    metadataRepo,
-    profileId
-  );
-  const close = () => {
-    setRemote(undefined);
-    onClose();
-  };
-  const create = async () => {
-    if (remote === undefined) {
-      return;
-    }
-    const { host, keyPem, user } = remote;
-    if (host !== undefined && keyPem !== undefined && user !== undefined) {
-      await upsertConnection({
-        id: remote.id ?? shortId(),
-        type: "sftp",
-        host,
-        keyPem,
-        user,
-      });
-    }
-    close();
-  };
-  return (
-    <Dialog open={open !== undefined} onClose={close}>
-      <DialogTitle id="alert-dialog-title">Create sFTP Connection</DialogTitle>
-      <DialogContent>
-        {remote?.id !== undefined ? (
-          <TextField
-            value={remote.id}
-            autoFocus
-            margin="dense"
-            label="Id"
-            fullWidth
-            variant="standard"
-            disabled
-          />
-        ) : null}
-        <TextField
-          value={remote?.host ?? ""}
-          autoFocus
-          margin="dense"
-          label="Host"
-          fullWidth
-          variant="standard"
-          onChange={(event) =>
-            setRemote((prev) => ({ ...prev, host: event.target.value }))
-          }
-        />
-        <TextField
-          value={remote?.user ?? ""}
-          autoFocus
-          margin="dense"
-          label="User"
-          fullWidth
-          variant="standard"
-          onChange={(event) =>
-            setRemote((prev) => ({ ...prev, user: event.target.value }))
-          }
-        />
-        <TextField
-          value={remote?.keyPem ?? ""}
-          autoFocus
-          margin="dense"
-          label="Key Pem"
-          fullWidth
-          variant="standard"
-          multiline={true}
-          onChange={(event) =>
-            setRemote((prev) => ({ ...prev, keyPem: event.target.value }))
-          }
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={close}>Cancel</Button>
-        <Button onClick={create} autoFocus disabled={remote === undefined}>
-          {remote?.id !== undefined ? "Save" : "Create"}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
+import { RemoteTab } from "./RemoteTab";
 
 const CreateRepoDialog = ({
   open,
@@ -377,27 +272,23 @@ const CreateSyncDialog = ({
   );
 };
 
-export const RemoteView = ({
+export const ProfileView = ({
   profileId,
   metadataRepo,
 }: {
   profileId: string;
   metadataRepo: MetadataRepository;
 }) => {
-  const { data: remotes } = useRemotes(metadataRepo, profileId);
   const { data: locations } = useLocations(metadataRepo, profileId);
   const { data: syncs } = useSyncs(metadataRepo, profileId);
   const [openCreateRepoDialog, setOpenCreateRepoDialog] = useState(false);
   const [openCreateCheckoutDialog, setOpenCreateCheckoutDialog] =
     useState(false);
-  const [openCreateRemoteDialog, setOpenCreateRemoteDialog] = useState<
-    { remote?: RemoteInfo } | undefined
-  >(undefined);
+
   const [openCreateSyncDialog, setOpenCreateSyncDialog] = useState(false);
 
   const { mutateAsync: syncStatus } = trustedTsr.syncRepoStatus.useMutation();
   const { mutateAsync: sync } = trustedTsr.syncRepo.useMutation();
-  const { mutate: ls } = trustedTsr.ls.useMutation();
   type TabValue = "data" | "sync" | "remote";
   const [tabValue, setTabValue] = useState<TabValue>("data");
 
@@ -533,51 +424,10 @@ export const RemoteView = ({
           </Stack>
         ) : null}
         {tabValue === "remote" ? (
-          <Stack height={"100%"}>
-            <Stack direction={"row"}>
-              <Button onClick={() => setOpenCreateRemoteDialog({})}>
-                Add Remote
-              </Button>
-            </Stack>
-            <Divider />
-            <Typography>Remotes</Typography>
-            {remotes?.map((it) => (
-              <Stack key={it.id} flexDirection={"row"}>
-                <Typography>Id: {it.id}</Typography>
-                <Typography>Type: {it.type}</Typography>
-                <Button
-                  onClick={() =>
-                    ls({
-                      body: {
-                        remote: {
-                          type: it.type,
-                          host: it.host,
-                          user: it.user,
-                          keyPem: it.keyPem,
-                        },
-                        path: "",
-                      },
-                    })
-                  }
-                >
-                  RClone test
-                </Button>
-                <Button
-                  onClick={() => setOpenCreateRemoteDialog({ remote: it })}
-                >
-                  Edit Connection
-                </Button>
-              </Stack>
-            ))}
-          </Stack>
+          <RemoteTab profileId={profileId} metadataRepo={metadataRepo} />
         ) : null}
       </Stack>
-      <CreateConnectionDialog
-        profileId={profileId}
-        metadataRepo={metadataRepo}
-        open={openCreateRemoteDialog}
-        onClose={() => setOpenCreateRemoteDialog(undefined)}
-      />
+
       <CreateRepoDialog
         profileId={profileId}
         metadataRepo={metadataRepo}
