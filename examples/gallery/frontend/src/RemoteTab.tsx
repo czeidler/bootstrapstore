@@ -9,12 +9,46 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { MetadataRepository } from "lib";
+import { MetadataRepository, VFSDir, VFSEntry } from "lib";
 import { useEffect, useState } from "react";
 import { useRemotes, useUpsertRemote } from "./account-hooks";
 import { RemoteInfo } from "lib/src/main-repo";
 import { trustedTsr } from "./tsr";
 import { shortId } from "lib/src/utils";
+import { useFileNavigation } from "./useFileNavigation";
+import FileView from "./FileView";
+import { RemoteProxyDirVFS } from "./remote-proxy-vfs";
+
+const FileViewDialog = ({
+  root,
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+  root: VFSDir | undefined;
+}) => {
+  const { dirEntries, openFolder } = useFileNavigation(root);
+
+  const onDirEntryClicked = async (entry: VFSEntry) => {
+    if (entry.type !== "file") {
+      await openFolder(entry.name);
+      return;
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle id="alert-dialog-title">Files</DialogTitle>
+      <DialogContent>
+        <FileView content={dirEntries} onDirEntryClicked={onDirEntryClicked} />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Ok</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 const CreateRemoteDialog = ({
   open,
@@ -133,6 +167,8 @@ export const RemoteTab = ({
 
   const { mutate: ls } = trustedTsr.ls.useMutation();
 
+  const [openDir, setOpenDir] = useState<RemoteProxyDirVFS | undefined>();
+
   return (
     <>
       <Stack height={"100%"}>
@@ -167,9 +203,17 @@ export const RemoteTab = ({
             <Button onClick={() => setOpenCreateRemoteDialog({ remote: it })}>
               Edit Connection
             </Button>
+            <Button onClick={() => setOpenDir(new RemoteProxyDirVFS(it, []))}>
+              Browse
+            </Button>
           </Stack>
         ))}
       </Stack>
+      <FileViewDialog
+        root={openDir}
+        open={openDir !== undefined}
+        onClose={() => setOpenDir(undefined)}
+      />
       <CreateRemoteDialog
         profileId={profileId}
         metadataRepo={metadataRepo}

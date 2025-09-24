@@ -10,7 +10,7 @@ export type PathStackEntry = {
 
 export const useFileNavigation = (root: VFSDir | undefined) => {
   const [pathStack, setPathStack] = useState<{ path: string[]; dir: VFSDir }[]>(
-    []
+    root ? [{ path: [], dir: root }] : []
   );
   const currentPath: { path: string[]; dir: VFSDir } | undefined =
     pathStack[pathStack.length - 1];
@@ -55,5 +55,10 @@ export const useFileNavigation = (root: VFSDir | undefined) => {
     [pathStack, currentPath, dirEntries]
   );
 
-  return { onBack, openFolder, currentPath: currentPath.path, dirEntries };
+  return {
+    onBack,
+    openFolder,
+    currentPath: currentPath?.path ?? [],
+    dirEntries,
+  };
 };
