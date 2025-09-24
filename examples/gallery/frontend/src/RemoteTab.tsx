@@ -38,7 +38,7 @@ const FileViewDialog = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth>
       <DialogTitle id="alert-dialog-title">Files</DialogTitle>
       <DialogContent>
         <FileView content={dirEntries} onDirEntryClicked={onDirEntryClicked} />
