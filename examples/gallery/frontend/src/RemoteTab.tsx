@@ -38,12 +38,24 @@ const FileViewDialog = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xl"
+      fullWidth
+      slotProps={{
+        paper: {
+          style: {
+            height: "100%",
+          },
+        },
+      }}
+    >
       <DialogTitle id="alert-dialog-title">Files</DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ pb: 0 }}>
         <FileView content={dirEntries} onDirEntryClicked={onDirEntryClicked} />
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{ pt: 0 }}>
         <Button onClick={onClose}>Ok</Button>
       </DialogActions>
     </Dialog>
