@@ -6,9 +6,6 @@ import {
   DialogTitle,
   Divider,
   List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
   ListSubheader,
   Stack,
   TextField,
@@ -20,12 +17,15 @@ import { AccountFile, Account, MetadataRepository } from "lib";
 import { storeGetter } from "./utils";
 import { useEffect, useState } from "react";
 import { AccountData } from "lib/src/account";
-import { ProfileView } from "./ProfileView";
-import { useCreateRemote, useProfiles } from "./account-hooks";
+import { DevicesView } from "./DeviceView";
+import { useCreateDevice, useDevices } from "./account-hooks";
 import { shortId } from "lib/src/utils";
 import HomeTwoToneIcon from "@mui/icons-material/HomeTwoTone";
 import { MainLayout } from "./MainLayout";
 import { getRepoIOConfig } from "./io-config";
+import { tsr } from "./tsr";
+import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
+import { TreeItem } from "@mui/x-tree-view/TreeItem";
 
 // TEMP
 function create16ByteBuffer(str: string): Buffer {
@@ -52,7 +52,7 @@ const OpenAccount = ({
         storeGetter,
         getRepoIOConfig(),
         create16ByteBuffer(password),
-        accountFile
+        accountFile,
       );
 
       const metadataRepo = await account.openMetadataRepo();
@@ -82,7 +82,7 @@ const OpenAccount = ({
   );
 };
 
-const AddRemoteDialog = ({
+const AddDeviceDialog = ({
   open,
   onClose,
   metadataRepo,
@@ -91,30 +91,30 @@ const AddRemoteDialog = ({
   onClose: () => void;
   metadataRepo: MetadataRepository;
 }) => {
-  const [remoteName, setRemoteName] = useState<string | undefined>();
-  const { mutateAsync } = useCreateRemote(metadataRepo);
+  const [deviceName, setDeviceName] = useState<string | undefined>();
+  const { mutateAsync } = useCreateDevice(metadataRepo);
   const create = async () => {
     await mutateAsync({
       id: shortId(),
-      name: remoteName,
+      name: deviceName,
     });
 
     onClose();
   };
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle id="alert-dialog-title">Create Remote</DialogTitle>
+      <DialogTitle id="alert-dialog-title">Add Device</DialogTitle>
       <DialogContent>
         <TextField
-          value={remoteName}
+          value={deviceName}
           autoFocus
           margin="dense"
           id="name"
           name="reponame"
-          label="Remote Name"
+          label="Device Name"
           fullWidth
           variant="standard"
-          onChange={(event) => setRemoteName(event.target.value)}
+          onChange={(event) => setDeviceName(event.target.value)}
         />
       </DialogContent>
       <DialogActions>
@@ -133,11 +133,13 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
     MetadataRepository | undefined
   >();
 
-  const [openAddProfileDialog, setOpenAddProfileDialog] = useState(false);
-  const { data: remotes } = useProfiles(metadataRepo);
-  const [selectedProfile, setSelectedProfile] = useState<string | undefined>();
+  const { data: me } = tsr.me.useQuery({ queryKey: ["me"] });
+
+  const [openAddDeviceDialog, setOpenAddDeviceDialog] = useState(false);
+  const { data: devices } = useDevices(metadataRepo);
+  const [selectedDevice, setSelectedDevice] = useState<string | undefined>();
   useEffect(() => {
-    setSelectedProfile(accountData?.profileId);
+    setSelectedDevice(accountData?.deviceId);
   }, [accountData]);
   if (accountData === undefined || metadataRepo === undefined) {
     return (
@@ -156,7 +158,7 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
       Header={
         <>
           <Tooltip
-            title={`Open: repo: ${accountData.repoId}, local remote: ${accountData.profileId}`}
+            title={`Open: repo: ${accountData.repoId}, local device: ${accountData.deviceId}`}
           >
             <HomeTwoToneIcon sx={{ alignSelf: "center" }} />
           </Tooltip>
@@ -168,7 +170,7 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
       Content={
         <>
           <Stack direction={"row"} height={"100%"} marginRight={1}>
-            <Stack justifyContent={"space-between"} minWidth="400px">
+            <Stack minWidth="400px">
               <List
                 subheader={
                   <ListSubheader sx={{ textAlign: "start" }}>
@@ -178,8 +180,8 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
                       justifyContent={"space-between"}
                       alignItems={"center"}
                     >
-                      <Typography>Profiles:</Typography>
-                      <Button onClick={() => setOpenAddProfileDialog(true)}>
+                      <Typography>Devices:</Typography>
+                      <Button onClick={() => setOpenAddDeviceDialog(true)}>
                         Add
                       </Button>
                     </Stack>
@@ -187,44 +189,34 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
                 }
               >
                 <Divider />
-                <ListItem disablePadding={true} divider={true} dense={true}>
-                  <ListItemButton
-                    selected={selectedProfile === accountData.profileId}
-                    onClick={() => setSelectedProfile(accountData.profileId)}
-                  >
-                    <ListItemText
-                      primary={`${accountData.profileId} (Local)`}
-                    />
-                  </ListItemButton>
-                </ListItem>
-                {remotes
-                  ?.filter((remote) => remote.id !== accountData.profileId)
-                  .map((remote) => (
-                    <ListItem
-                      key={remote.id}
-                      disablePadding={true}
-                      divider={true}
-                      dense={true}
-                    >
-                      <ListItemButton
-                        selected={selectedProfile === remote.id}
-                        onClick={() => setSelectedProfile(remote.id)}
-                      >
-                        <ListItemText primary={remote.name ?? remote.id} />
-                      </ListItemButton>
-                    </ListItem>
-                  ))}
               </List>
+              <SimpleTreeView sx={{ textAlign: "start" }}>
+                <TreeItem
+                  itemId={accountData.deviceId}
+                  label={`${accountData.deviceId} (Local) ${me?.body?.admin?.path}`}
+                >
+                  <TreeItem itemId={"account-repo"} label={"Account repo"} />
+                </TreeItem>
+                {devices
+                  ?.filter((device) => device.id !== accountData.deviceId)
+                  .map((device) => (
+                    <TreeItem
+                      itemId={device.id}
+                      label={device.name ?? device.id}
+                      onClick={() => setSelectedDevice(device.id)}
+                    />
+                  ))}
+              </SimpleTreeView>
             </Stack>
             <Divider orientation="vertical" sx={{ marginRight: 1 }} />
-            <ProfileView
-              profileId={selectedProfile ?? accountData.profileId}
+            <DevicesView
+              deviceId={selectedDevice ?? accountData.deviceId}
               metadataRepo={metadataRepo}
             />
           </Stack>
-          <AddRemoteDialog
-            open={openAddProfileDialog}
-            onClose={() => setOpenAddProfileDialog(false)}
+          <AddDeviceDialog
+            open={openAddDeviceDialog}
+            onClose={() => setOpenAddDeviceDialog(false)}
             metadataRepo={metadataRepo}
           />
         </>

@@ -9,7 +9,7 @@ import { ChildProcess, spawn } from "node:child_process";
 import {
   ExhaustiveCheckError,
   shortId,
-  RemoteInfo,
+  ConnectionInfo,
   VFSDir,
   VFSEntry,
   VFSFile,
@@ -212,23 +212,23 @@ export async function rcloneRC(
   }
 }
 
-type FSRemoteConnection = Omit<RemoteInfo, "id">;
+type FSRemoteConnection = Omit<ConnectionInfo, "id">;
 
-function remoteToRClone(remote: FSRemoteConnection | undefined): string {
-  if (remote === undefined) {
+function remoteToRClone(connection: FSRemoteConnection | undefined): string {
+  if (connection === undefined) {
     return "";
   }
-  switch (remote.type) {
+  switch (connection.type) {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     case "sftp": {
-      const { host, user, keyPem } = remote;
+      const { host, user, keyPem } = connection;
       return `:sftp,host=${host},user=${user},key_pem="${keyPem.replace(
         /\n/g,
         "\\n"
       )}":`;
     }
     default:
-      throw new ExhaustiveCheckError(remote.type);
+      throw new ExhaustiveCheckError(connection.type);
   }
 }
 

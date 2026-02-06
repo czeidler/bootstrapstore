@@ -2,7 +2,7 @@ import { FileBlobStore } from "lib-node";
 import { BlobStore, RepoBlobStoreGetter } from "lib";
 import { argv } from "node:process";
 
-const repoDir = argv[2] ?? "testRepo";
+export const repoDir = argv[2] ?? "testRepo";
 
 const store = new FileBlobStore([repoDir, ".storage"]);
 export const storeGetter = new RepoBlobStoreGetter(store);

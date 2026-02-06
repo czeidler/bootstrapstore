@@ -17,7 +17,7 @@ export type AccountData = {
    * The profile id for this account, i.e. where this account is located / checked out.
    * Points to a profile in the main repo.
    */
-  profileId: string;
+  deviceId: string;
 };
 
 export async function readAccountFile(
@@ -80,12 +80,12 @@ export class Account {
       ioConfig,
       repoKey
     );
-    const profileId = shortId();
-    await metadataRepo.addProfile({
-      id: profileId,
+    const deviceId = shortId();
+    await metadataRepo.addDevice({
+      id: deviceId,
     });
     const repoKeyBase64 = repoKey.toString("base64");
-    await metadataRepo.writeLocation(profileId, {
+    await metadataRepo.writeLocation(deviceId, {
       id: repoId,
       type: "repository",
       encKey: repoKeyBase64,
@@ -94,7 +94,7 @@ export class Account {
 
     const accountData: AccountData = {
       repoId,
-      profileId: profileId,
+      deviceId: deviceId,
       repoKeyBase64,
     };
     const cipher = await enc.encrypt(

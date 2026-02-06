@@ -1,99 +1,99 @@
 import { useMutation, useQuery, QueryClient } from "@tanstack/react-query";
 import {
   MetadataRepository,
-  RemoteInfo,
-  ProfileInfo,
+  ConnectionInfo,
+  DeviceInfo,
   LocationInfo,
-  SyncConfig,
+  SyncInfo,
   DirectoryLocationInfo,
 } from "lib";
 
 export const queryClient = new QueryClient();
 
-export const useCreateRemote = (metadataRepo: MetadataRepository) =>
+export const useCreateDevice = (metadataRepo: MetadataRepository) =>
   useMutation({
-    mutationFn: async (remoteInfo: ProfileInfo) => {
-      await metadataRepo.addProfile(remoteInfo);
+    mutationFn: async (deviceInfo: DeviceInfo) => {
+      await metadataRepo.addDevice(deviceInfo);
       await metadataRepo.snapshot();
     },
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: ["remotes"],
+        queryKey: ["devices"],
       }),
   });
 
-export const useProfiles = (metadataRepo: MetadataRepository | undefined) =>
+export const useDevices = (metadataRepo: MetadataRepository | undefined) =>
   useQuery({
-    queryKey: ["profiles"],
+    queryKey: ["devices"],
     queryFn: async () => {
-      const repoList = await metadataRepo?.listProfile();
+      const repoList = await metadataRepo?.listDevices();
       const repos = await Promise.all(
         repoList
           ?.filter((it) => it !== undefined)
-          .map((it) => metadataRepo?.getProfile(it.name)) ?? []
+          .map((it) => metadataRepo?.getDevice(it.name)) ?? [],
       );
-      return repos.filter((it): it is ProfileInfo => it !== undefined);
+      return repos.filter((it): it is DeviceInfo => it !== undefined);
     },
     enabled: metadataRepo !== undefined,
   });
 
-export const useRemotes = (
+export const useConnections = (
   metadataRepo: MetadataRepository,
-  profileId: string
+  deviceId: string,
 ) =>
   useQuery({
-    queryKey: ["profiles", profileId, "remotes"],
+    queryKey: ["devices", deviceId, "connections"],
     queryFn: async () => {
-      const repoList = await metadataRepo.listRemotes(profileId);
+      const repoList = await metadataRepo.listConnections(deviceId);
       const repos = await Promise.all(
         repoList
           ?.filter((it) => it !== undefined)
-          .map((it) => metadataRepo.readRemote(profileId, it.name)) ?? []
+          .map((it) => metadataRepo.readConnection(deviceId, it.name)) ?? [],
       );
       return repos.filter((it) => it !== undefined);
     },
   });
 
-export const useUpsertRemote = (
+export const useUpsertConnection = (
   metadataRepo: MetadataRepository,
-  profileId: string
+  deviceId: string,
 ) =>
   useMutation({
-    mutationFn: async (remote: RemoteInfo) => {
-      await metadataRepo.writeRemote(profileId, remote);
+    mutationFn: async (connection: ConnectionInfo) => {
+      await metadataRepo.writeConnection(deviceId, connection);
       await metadataRepo.snapshot();
     },
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: ["profiles", profileId, "remotes"],
+        queryKey: ["devices", deviceId, "connections"],
       }),
   });
 
 export const useCreateChildRepo = (
   metadataRepo: MetadataRepository,
-  profileId: string,
-  repoName: string | undefined
+  deviceId: string,
+  repoName: string | undefined,
 ) =>
   useMutation({
-    mutationFn: () => metadataRepo.createChild(profileId, repoName),
+    mutationFn: () => metadataRepo.createChild(deviceId, repoName),
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: ["profiles", profileId, "locations"],
+        queryKey: ["devices", deviceId, "locations"],
       }),
   });
 
 export const useLocations = (
   metadataRepo: MetadataRepository,
-  profileId: string
+  deviceId: string,
 ) =>
   useQuery({
-    queryKey: ["profiles", profileId, "locations"],
+    queryKey: ["devices", deviceId, "locations"],
     queryFn: async () => {
-      const repoList = await metadataRepo.listLocations(profileId);
+      const repoList = await metadataRepo.listLocations(deviceId);
       const repos = await Promise.all(
         repoList
           ?.filter((it) => it !== undefined)
-          .map((it) => metadataRepo.readLocation(profileId, it.name)) ?? []
+          .map((it) => metadataRepo.readLocation(deviceId, it.name)) ?? [],
       );
       return repos.filter((it): it is LocationInfo => it !== undefined);
     },
@@ -101,44 +101,50 @@ export const useLocations = (
 
 export const useCreateCheckout = (
   metadataRepo: MetadataRepository,
-  profileId: string
+  deviceId: string,
 ) =>
   useMutation({
     mutationFn: async (checkoutInfo: DirectoryLocationInfo) => {
-      await metadataRepo.writeLocation(profileId, checkoutInfo);
+      await metadataRepo.writeLocation(deviceId, checkoutInfo);
       await metadataRepo.snapshot();
     },
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: ["profiles", profileId, "locations"],
+        queryKey: ["devices", deviceId, "locations"],
       }),
   });
 
 export const useCreateSync = (
   metadataRepo: MetadataRepository,
-  profileId: string
+  deviceId: string,
+  locationId: string,
 ) =>
   useMutation({
-    mutationFn: async (syncInfo: SyncConfig) => {
-      await metadataRepo.writeSync(profileId, syncInfo);
+    mutationFn: async (syncInfo: SyncInfo) => {
+      await metadataRepo.writeSync(deviceId, locationId, syncInfo);
       await metadataRepo.snapshot();
     },
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: ["profiles", profileId, "syncs"],
+        queryKey: ["devices", deviceId, "locations", locationId, "syncs"],
       }),
   });
 
-export const useSyncs = (metadataRepo: MetadataRepository, profileId: string) =>
+export const useSyncs = (
+  metadataRepo: MetadataRepository,
+  deviceId: string,
+  locationId: string,
+) =>
   useQuery({
-    queryKey: ["profiles", profileId, "syncs"],
+    queryKey: ["devices", deviceId, "locations", locationId, "syncs"],
     queryFn: async () => {
-      const repoList = await metadataRepo.listSyncs(profileId);
+      const repoList = await metadataRepo.listSyncs(deviceId, locationId);
       const repos = await Promise.all(
         repoList
           ?.filter((it) => it !== undefined)
-          .map((it) => metadataRepo.readSync(profileId, it.name)) ?? []
+          .map((it) => metadataRepo.readSync(deviceId, locationId, it.name)) ??
+          [],
       );
-      return repos.filter((it): it is SyncConfig => it !== undefined);
+      return repos.filter((it): it is SyncInfo => it !== undefined);
     },
   });

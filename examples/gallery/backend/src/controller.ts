@@ -13,12 +13,14 @@ import { ExhaustiveCheckError } from "lib";
 const upload = multer();
 const s = initServer();
 
-const mainRouter = ({ isAdmin }: { isAdmin: boolean }) => {
-  const { hasRepoReadAccess, hasRepoWriteAccess } = authValidation(isAdmin);
+const mainRouter = ({ admin }: { admin?: { path: string } }) => {
+  const { hasRepoReadAccess, hasRepoWriteAccess } = authValidation(
+    admin !== undefined,
+  );
   return s.router(contract, {
     me: {
       handler: async () => {
-        return { status: 200, body: { isAdmin } };
+        return { status: 200, body: { admin } };
       },
     },
 
@@ -75,6 +77,7 @@ const mainRouter = ({ isAdmin }: { isAdmin: boolean }) => {
 };
 
 export type AppConfig = {
+  path: string;
   isAdmin: boolean;
   isLocal: boolean;
 };
@@ -90,13 +93,13 @@ export const buildApp = (config: AppConfig) => {
         // allow all origins
         callback(null, true);
       },
-    })
+    }),
   );
 
   createExpressEndpoints(
     contract,
-    mainRouter({ isAdmin: config.isAdmin }),
-    app
+    mainRouter({ admin: config.isAdmin ? { path: config.path } : undefined }),
+    app,
   );
 
   if (config.isLocal) {

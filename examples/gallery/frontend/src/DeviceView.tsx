@@ -47,7 +47,7 @@ const CreateRepoDialog = ({
   const { mutate: createChild } = useCreateChildRepo(
     metadataRepo,
     profileId,
-    repoName
+    repoName,
   );
   const create = async () => {
     await createChild();
@@ -212,21 +212,23 @@ const SyncEntryRepo = ({
 const CreateSyncDialog = ({
   open,
   onClose,
-  profileId,
+  deviceId,
+  locationId,
   metadataRepo,
   checkouts,
   repositories,
 }: {
   open: boolean;
   onClose: () => void;
-  profileId: string;
+  deviceId: string;
+  locationId: string;
   metadataRepo: MetadataRepository;
   checkouts: DirectoryLocationInfo[];
   repositories: RepositoryLocationInfo[];
 }) => {
   const [checkoutId, setCheckoutId] = useState<string | undefined>();
   const [repoId, setRepoId] = useState<string | null>(null);
-  const { mutateAsync } = useCreateSync(metadataRepo, profileId);
+  const { mutateAsync } = useCreateSync(metadataRepo, deviceId, locationId);
   const create = async () => {
     if (checkoutId === undefined || repoId === null) {
       return;
@@ -272,15 +274,15 @@ const CreateSyncDialog = ({
   );
 };
 
-export const ProfileView = ({
-  profileId,
+export const DevicesView = ({
+  deviceId,
   metadataRepo,
 }: {
-  profileId: string;
+  deviceId: string;
   metadataRepo: MetadataRepository;
 }) => {
-  const { data: locations } = useLocations(metadataRepo, profileId);
-  const { data: syncs } = useSyncs(metadataRepo, profileId);
+  const { data: locations } = useLocations(metadataRepo, deviceId);
+  const { data: syncs } = useSyncs(metadataRepo, deviceId);
   const [openCreateRepoDialog, setOpenCreateRepoDialog] = useState(false);
   const [openCreateCheckoutDialog, setOpenCreateCheckoutDialog] =
     useState(false);
@@ -362,10 +364,10 @@ export const ProfileView = ({
                     <Typography>
                       Repo:{" "}
                       {repositories?.find(
-                        (repo) => repo.id === it.repository.id
+                        (repo) => repo.id === it.repository.id,
                       )?.name ??
                         repositories?.find(
-                          (repo) => repo.id === it.repository.id
+                          (repo) => repo.id === it.repository.id,
                         )?.id}
                     </Typography>
                     <Typography>
@@ -376,7 +378,7 @@ export const ProfileView = ({
                     <Button
                       onClick={async () => {
                         const repo = repositories?.find(
-                          (repo) => repo.id === it.repository.id
+                          (repo) => repo.id === it.repository.id,
                         );
                         if (repo === undefined) {
                           return;
@@ -398,7 +400,7 @@ export const ProfileView = ({
                     <Button
                       onClick={async () => {
                         const repo = repositories?.find(
-                          (repo) => repo.id === it.repository.id
+                          (repo) => repo.id === it.repository.id,
                         );
                         if (repo === undefined) {
                           return;
@@ -424,25 +426,25 @@ export const ProfileView = ({
           </Stack>
         ) : null}
         {tabValue === "remote" ? (
-          <RemoteTab profileId={profileId} metadataRepo={metadataRepo} />
+          <RemoteTab deviceId={deviceId} metadataRepo={metadataRepo} />
         ) : null}
       </Stack>
 
       <CreateRepoDialog
-        profileId={profileId}
+        profileId={deviceId}
         metadataRepo={metadataRepo}
         open={openCreateRepoDialog}
         onClose={() => setOpenCreateRepoDialog(false)}
       />
       <CreateCheckoutDialog
-        profileId={profileId}
+        profileId={deviceId}
         metadataRepo={metadataRepo}
         open={openCreateCheckoutDialog}
         onClose={() => setOpenCreateCheckoutDialog(false)}
         repositories={repositories ?? []}
       />
       <CreateSyncDialog
-        profileId={profileId}
+        deviceId={deviceId}
         metadataRepo={metadataRepo}
         open={openCreateSyncDialog}
         onClose={() => setOpenCreateSyncDialog(false)}

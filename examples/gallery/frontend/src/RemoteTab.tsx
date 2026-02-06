@@ -11,8 +11,8 @@ import {
 } from "@mui/material";
 import { MetadataRepository, VFSDir, VFSEntry } from "lib";
 import { useEffect, useState } from "react";
-import { useRemotes, useUpsertRemote } from "./account-hooks";
-import { RemoteInfo } from "lib/src/main-repo";
+import { useConnections, useUpsertConnection } from "./account-hooks";
+import { ConnectionInfo } from "lib/src/main-repo";
 import { trustedTsr } from "./tsr";
 import { shortId } from "lib/src/utils";
 import { useFileNavigation } from "./useFileNavigation";
@@ -62,28 +62,28 @@ const FileViewDialog = ({
   );
 };
 
-const CreateRemoteDialog = ({
+const CreateConnectionDialog = ({
   open,
   onClose,
-  profileId,
+  deviceId,
   metadataRepo,
 }: {
-  open: { remote?: RemoteInfo } | undefined;
+  open: { connection?: ConnectionInfo } | undefined;
   onClose: () => void;
-  profileId: string;
+  deviceId: string;
   metadataRepo: MetadataRepository;
 }) => {
-  const [remote, setRemote] = useState<Partial<RemoteInfo> | undefined>();
+  const [remote, setRemote] = useState<Partial<ConnectionInfo> | undefined>();
 
   useEffect(() => {
     if (remote === undefined) {
-      setRemote(open?.remote);
+      setRemote(open?.connection);
     }
-  }, [remote, open?.remote]);
+  }, [remote, open?.connection]);
 
-  const { mutateAsync: upsertConnection } = useUpsertRemote(
+  const { mutateAsync: upsertConnection } = useUpsertConnection(
     metadataRepo,
-    profileId
+    deviceId,
   );
   const close = () => {
     setRemote(undefined);
@@ -166,15 +166,15 @@ const CreateRemoteDialog = ({
 };
 
 export const RemoteTab = ({
-  profileId,
+  deviceId,
   metadataRepo,
 }: {
-  profileId: string;
+  deviceId: string;
   metadataRepo: MetadataRepository;
 }) => {
-  const { data: remotes } = useRemotes(metadataRepo, profileId);
-  const [openCreateRemoteDialog, setOpenCreateRemoteDialog] = useState<
-    { remote?: RemoteInfo } | undefined
+  const { data: connections } = useConnections(metadataRepo, deviceId);
+  const [openCreateConnectionDialog, setOpenCreateConnectionDialog] = useState<
+    { connection?: ConnectionInfo } | undefined
   >(undefined);
 
   const { mutate: ls } = trustedTsr.ls.useMutation();
@@ -185,13 +185,13 @@ export const RemoteTab = ({
     <>
       <Stack height={"100%"}>
         <Stack direction={"row"}>
-          <Button onClick={() => setOpenCreateRemoteDialog({})}>
-            Add Remote
+          <Button onClick={() => setOpenCreateConnectionDialog({})}>
+            Add Connection
           </Button>
         </Stack>
         <Divider />
-        <Typography>Remotes</Typography>
-        {remotes?.map((it) => (
+        <Typography>Connections</Typography>
+        {connections?.map((it) => (
           <Stack key={it.id} flexDirection={"row"}>
             <Typography>Id: {it.id}</Typography>
             <Typography>Type: {it.type}</Typography>
@@ -212,7 +212,9 @@ export const RemoteTab = ({
             >
               RClone test
             </Button>
-            <Button onClick={() => setOpenCreateRemoteDialog({ remote: it })}>
+            <Button
+              onClick={() => setOpenCreateConnectionDialog({ connection: it })}
+            >
               Edit Connection
             </Button>
             <Button onClick={() => setOpenDir(new RemoteProxyDirVFS(it, []))}>
@@ -226,11 +228,11 @@ export const RemoteTab = ({
         open={openDir !== undefined}
         onClose={() => setOpenDir(undefined)}
       />
-      <CreateRemoteDialog
-        profileId={profileId}
+      <CreateConnectionDialog
+        deviceId={deviceId}
         metadataRepo={metadataRepo}
-        open={openCreateRemoteDialog}
-        onClose={() => setOpenCreateRemoteDialog(undefined)}
+        open={openCreateConnectionDialog}
+        onClose={() => setOpenCreateConnectionDialog(undefined)}
       />
     </>
   );

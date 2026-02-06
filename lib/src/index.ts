@@ -5,10 +5,10 @@ export { Repository } from "./repository";
 export type { DirEntry, RepoIOConfig, RepoConfig } from "./repository";
 export { MetadataRepository } from "./main-repo";
 export type {
-  RemoteInfo,
-  ProfileInfo,
+  ConnectionInfo,
+  DeviceInfo,
   LocationInfo,
-  SyncConfig,
+  SyncInfo,
   DirectoryLocationInfo,
 } from "./main-repo";
 export type { AccountFile } from "./account";

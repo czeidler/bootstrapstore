@@ -9,7 +9,12 @@ export const contract = c.router({
     path: "/me",
     responses: {
       200: z.object({
-        isAdmin: z.boolean(),
+        admin: z
+          .object({
+            /** Working dir path on th server */
+            path: z.string(),
+          })
+          .optional(),
       }),
     },
   },
@@ -73,7 +78,7 @@ export const contract = c.router({
         content: z.array(
           z.object({
             name: z.string(),
-          })
+          }),
         ),
       }),
       403: z.undefined(),
@@ -109,7 +114,7 @@ export const trustedContract = c.router({
           z.object({
             path: z.array(z.string()),
             status: z.enum(["Added", "Deleted", "Changed"]),
-          })
+          }),
         ),
       }),
     },
@@ -143,7 +148,7 @@ export const trustedContract = c.router({
               creationTime: z.number().int(),
               modificationTime: z.number().int(),
             }),
-          ])
+          ]),
         ),
       }),
     },

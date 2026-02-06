@@ -37,7 +37,7 @@ export const FileBrowser = ({
   const [viewType, setViewType] = useState<"gallery" | "file">("file");
 
   const { currentPath, dirEntries, openFolder, onBack } = useFileNavigation(
-    repo && metadataRepo ? rootDir(repo, metadataRepo) : undefined
+    repo && metadataRepo ? rootDir(repo, metadataRepo) : undefined,
   );
 
   const onDirEntryClicked = async (entry: VFSEntry) => {
@@ -52,8 +52,8 @@ export const FileBrowser = ({
       if (
         !dirEntries?.some((it) =>
           imageExtensions.some((ext) =>
-            it.name.toLocaleLowerCase().endsWith(ext)
-          )
+            it.name.toLocaleLowerCase().endsWith(ext),
+          ),
         )
       ) {
         setViewType("file");

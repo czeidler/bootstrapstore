@@ -1,6 +1,6 @@
 import {
   ExhaustiveCheckError,
-  RemoteInfo,
+  ConnectionInfo,
   VFSDir,
   VFSEntry,
   VFSFile,
@@ -9,13 +9,13 @@ import { trustedTsr } from "./tsr";
 
 class RemoteProxyFileVFS implements VFSFile {
   constructor(
-    private remote: RemoteInfo,
+    private remote: ConnectionInfo,
     private path: string[],
     private fileStats: {
       size: number;
       creationTime: number;
       modificationTime: number;
-    }
+    },
   ) {}
 
   read(): Promise<Buffer> {
@@ -36,7 +36,10 @@ class RemoteProxyFileVFS implements VFSFile {
 }
 
 export class RemoteProxyDirVFS implements VFSDir {
-  constructor(private remote: RemoteInfo, private path: string[]) {}
+  constructor(
+    private remote: ConnectionInfo,
+    private path: string[],
+  ) {}
 
   async list(): Promise<VFSEntry[]> {
     const result = await trustedTsr.ls.mutate({
