@@ -4,3 +4,6 @@ packages:
   - "scripts"
   - "examples/gallery/backend"
   - "examples/gallery/frontend"
+
+# 1 week:
+minimumReleaseAge: 10080
