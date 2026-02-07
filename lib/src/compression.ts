@@ -1,6 +1,8 @@
+import { concatArrayBuffers } from "./utils";
+
 export interface Compression {
-  compress(plain: Buffer): Promise<Buffer>;
-  decompress(data: Buffer): Promise<Buffer>;
+  compress(plain: Uint8Array): Promise<Uint8Array>;
+  decompress(data: Uint8Array): Promise<Uint8Array>;
 }
 
 type CompressionType =
@@ -12,12 +14,12 @@ type CompressionType =
  */
 export class AnnotatedCompression implements Compression {
   constructor(private parent: Compression) {}
-  async compress(plain: Buffer): Promise<Buffer> {
+  async compress(plain: Uint8Array): Promise<Uint8Array> {
     const deflated = await this.parent.compress(plain);
-    return Buffer.concat([Uint8Array.from(["b".charCodeAt(0)]), deflated]);
+    return concatArrayBuffers([Uint8Array.from(["b".charCodeAt(0)]), deflated]);
   }
 
-  async decompress(data: Buffer): Promise<Buffer> {
+  async decompress(data: Uint8Array): Promise<Uint8Array> {
     const firstByte = data.at(0);
     if (firstByte === undefined) {
       return data;
@@ -25,7 +27,7 @@ export class AnnotatedCompression implements Compression {
     const compressionType = String.fromCharCode(firstByte) as CompressionType;
     switch (compressionType) {
       case "b": {
-        return Buffer.from(await this.parent.decompress(data.subarray(1)));
+        return await this.parent.decompress(data.subarray(1));
       }
       default: {
         throw Error(`Compression type ${compressionType} not supported`);

@@ -11,7 +11,7 @@ import {
   RepoLinkEntry,
 } from "./tree-builder";
 import { Hash, hashParts } from "./hasher";
-import { bufferToHex, ExhaustiveCheckError } from "./utils";
+import { arrayToHex, ExhaustiveCheckError } from "./utils";
 
 type EncryptedBlobInfoReader = {
   readBlobInfo(plainBlobHash: Hash): Promise<BlobInfo>;
@@ -23,7 +23,7 @@ type EncryptedBlobInfoWriter = {
    */
   writeBlobInfo(
     plainBlobHash: Hash,
-    encryptedBlobInfo: BlobInfo
+    encryptedBlobInfo: BlobInfo,
   ): Promise<DBHash>;
 };
 
@@ -33,6 +33,11 @@ type Snapshot = {
   tree: DBHash | undefined;
   timestamp: Date;
   parents: string[];
+};
+
+const arrayToBuffer = (array: Uint8Array) => {
+  const buffer = Buffer.from(array.buffer, array.byteOffset, array.byteLength);
+  return buffer;
 };
 
 export const TreeEntryType = {
@@ -63,7 +68,10 @@ export class IndexRepository
         if (cur.hash265 === null) {
           throw Error("Missing entry hash value");
         }
-        const hash: [number, Buffer] = [Number(cur.content_id), cur.hash265];
+        const hash: [number, Uint8Array] = [
+          Number(cur.content_id),
+          cur.hash265,
+        ];
         prev.set(cur.name, {
           type: TreeEntryType.Blob,
           hash,
@@ -77,7 +85,7 @@ export class IndexRepository
           repoId: cur.link ?? "",
         });
       } else if (cur.type === TreeEntryType.Tree) {
-        const hash: [number, Buffer] | undefined =
+        const hash: [number, Uint8Array] | undefined =
           cur.hash265 !== null
             ? [Number(cur.content_id), cur.hash265]
             : undefined;
@@ -98,11 +106,11 @@ export class IndexRepository
 
   async writeTree(
     treeHash: Hash,
-    entries: { name: string; entry: BlobEntry | RepoLinkEntry | TreeEntry }[]
+    entries: { name: string; entry: BlobEntry | RepoLinkEntry | TreeEntry }[],
   ): Promise<DBHash> {
     const result = await this.db
       .insertInto("content")
-      .values({ hash265: treeHash })
+      .values({ hash265: arrayToBuffer(treeHash) })
       .returning("id as id")
       .executeTakeFirst();
     if (result?.id === undefined) {
@@ -158,7 +166,7 @@ export class IndexRepository
     const id = await this.db
       .selectFrom("content")
       .select("id")
-      .where("content.hash265", "=", hash)
+      .where("content.hash265", "=", arrayToBuffer(hash))
       .executeTakeFirst();
     if (!id?.id) {
       return undefined;
@@ -171,7 +179,7 @@ export class IndexRepository
       .selectFrom("blob")
       .select(["blob.id", "blob.enc_key"])
       .innerJoin("content", "content.id", "blob.content_id")
-      .where("content.hash265", "=", plainBlobHash)
+      .where("content.hash265", "=", arrayToBuffer(plainBlobHash))
       .executeTakeFirstOrThrow();
     const blobParts = await this.db
       .selectFrom("blob_part")
@@ -205,11 +213,11 @@ export class IndexRepository
 
   async writeBlobInfo(
     plainBlobHash: Hash,
-    blobInfo: BlobInfo
+    blobInfo: BlobInfo,
   ): Promise<DBHash> {
     const contentResult = await this.db
       .insertInto("content")
-      .values({ hash265: plainBlobHash })
+      .values({ hash265: arrayToBuffer(plainBlobHash) })
       .returning("id as id")
       .executeTakeFirst();
     const contentId = contentResult?.id;
@@ -221,7 +229,10 @@ export class IndexRepository
       .insertInto("blob")
       .values({
         content_id: contentId,
-        enc_key: blobInfo.type === "encrypted" ? blobInfo.encKey : undefined,
+        enc_key:
+          blobInfo.type === "encrypted"
+            ? arrayToBuffer(blobInfo.encKey)
+            : undefined,
       })
       .returning("id as id")
       .executeTakeFirst();
@@ -235,14 +246,14 @@ export class IndexRepository
         blobInfo.type === "encrypted"
           ? blobInfo.parts.map((it, i) => ({
               blob_id,
-              key: it,
+              key: arrayToBuffer(it),
               index: i,
             }))
           : blobInfo.parts.map((it, i) => ({
               blob_id,
-              data: it,
+              data: arrayToBuffer(it),
               index: i,
-            }))
+            })),
       )
       .execute();
     return [contentId, plainBlobHash];
@@ -275,7 +286,7 @@ export class IndexRepository
     tree: DBHash | undefined,
     timestamp: Date,
     parents: Hash[],
-    branch: string
+    branch: string,
   ) {
     const snapshotHash = await hashParts([
       { key: "t", value: tree?.[1] ?? "" },
@@ -285,10 +296,10 @@ export class IndexRepository
     const result = await this.db
       .insertInto("commit")
       .values({
-        hash256: snapshotHash,
+        hash256: arrayToBuffer(snapshotHash),
         tree_content_id: tree?.[0],
         timestamp: timestamp.getTime(),
-        parents: JSON.stringify(parents.map((it) => bufferToHex(it))),
+        parents: JSON.stringify(parents.map((it) => arrayToHex(it))),
       })
       .returning("id as id")
       .executeTakeFirst();
@@ -303,7 +314,7 @@ export class IndexRepository
         oc
           .column("name")
           .doUpdateSet({ commit_id: commitId })
-          .where("name", "=", branch)
+          .where("name", "=", branch),
       )
       .execute();
   }

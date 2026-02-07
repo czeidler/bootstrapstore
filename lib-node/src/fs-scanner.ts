@@ -5,10 +5,10 @@ export async function scanDir(
   dir: string,
   callback: (
     entryParts: string[],
-    blob: Buffer,
+    blob: Uint8Array,
     creationTime: number,
-    modificationTime: number
-  ) => Promise<void>
+    modificationTime: number,
+  ) => Promise<void>,
 ) {
   type Ongoing = {
     // parts relative to dir;
@@ -49,7 +49,7 @@ export async function scanDir(
         entryParts,
         blob,
         Math.floor(stats.ctimeMs),
-        Math.floor(stats.mtimeMs)
+        Math.floor(stats.mtimeMs),
       );
     }
   }

@@ -1,23 +1,31 @@
-export type Hash = Buffer;
+import { concatArrayBuffers } from "./utils";
 
-export type HashPart = { key: string; value: Buffer | string | Date | number };
+export type Hash = Uint8Array;
+
+export type HashPart = {
+  key: string;
+  value: Uint8Array | string | Date | number;
+};
 
 export async function hashParts(parts: HashPart[]): Promise<Hash> {
-  const all = parts.reduce<Buffer[]>((prev, cur) => {
-    prev.push(Buffer.from(cur.key, "utf8"));
+  const encoder = new TextEncoder();
+  const all = parts.reduce<Uint8Array[]>((prev, cur) => {
+    prev.push(encoder.encode(cur.key));
     if (typeof cur.value === "string") {
-      prev.push(Buffer.from(cur.key, "utf8"));
+      prev.push(encoder.encode(cur.key));
     } else if (cur.value instanceof Date) {
-      prev.push(Buffer.from(cur.value.toISOString(), "utf8"));
+      prev.push(encoder.encode(cur.value.toISOString()));
     } else if (typeof cur.value === "number") {
       // TODO directly convert to buffer?
-      prev.push(Buffer.from(`${cur.value}`, "utf8"));
+      prev.push(encoder.encode(`${cur.value}`));
     } else {
       prev.push(cur.value);
     }
     return prev;
   }, []);
-  const hashArray = await crypto.subtle.digest("SHA-256", Buffer.concat(all));
-  const hash = Buffer.from(hashArray);
-  return hash;
+  const hashArray = await crypto.subtle.digest(
+    "SHA-256",
+    concatArrayBuffers(all),
+  );
+  return new Uint8Array(hashArray);
 }

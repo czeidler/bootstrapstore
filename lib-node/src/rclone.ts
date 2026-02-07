@@ -14,6 +14,7 @@ import {
   VFSEntry,
   VFSFile,
 } from "lib";
+import { arrayToString } from "lib/src/utils";
 
 const exec = util.promisify(execRaw);
 
@@ -66,7 +67,7 @@ function findDownloadedRclone() {
     const bin = path.join(
       rcloneDownloadDir,
       entry,
-      getRcloneTarget() === "windows" ? "rclone.exe" : "rclone"
+      getRcloneTarget() === "windows" ? "rclone.exe" : "rclone",
     );
     if (fs.existsSync(bin)) {
       return bin;
@@ -145,7 +146,7 @@ const startServer = async (rcloneBin: string): Promise<RunningRClone> => {
       stdio: "pipe",
       detached: false,
       windowsHide: true,
-    }
+    },
   );
 
   runningRClone = new Promise((res, rej) => {
@@ -154,8 +155,8 @@ const startServer = async (rcloneBin: string): Promise<RunningRClone> => {
       runningRClone = undefined;
       rej(Error("Timeout starting rclone server"));
     }, 10000);
-    process.stdio[2].on("data", (data: Buffer) => {
-      const line = data.toString();
+    process.stdio[2].on("data", (data: Uint8Array) => {
+      const line = arrayToString(data);
       const match = /Serving remote control on (.*)/.exec(line);
       if (match !== null) {
         const address = match[1];
@@ -186,7 +187,7 @@ const startServer = async (rcloneBin: string): Promise<RunningRClone> => {
 
 export async function rcloneRC(
   command: string,
-  args: string[]
+  args: string[],
 ): Promise<string> {
   const rcloneBin = await findOrDownloadRclone();
   if (rcloneBin === undefined) {
@@ -198,7 +199,7 @@ export async function rcloneRC(
     const result = await exec(
       `${rcloneBin} rc ${command} ${args.join(" ")} --rc-user ${
         rCloneServer.user
-      } --rc-pass ${rCloneServer.password} --rc-addr ${rCloneServer.host}`
+      } --rc-pass ${rCloneServer.password} --rc-addr ${rCloneServer.host}`,
     );
     console.log(`> rclone rc ${command} finished in ${Date.now() - start}ms`);
     return result.stdout;
@@ -224,7 +225,7 @@ function remoteToRClone(connection: FSRemoteConnection | undefined): string {
       const { host, user, keyPem } = connection;
       return `:sftp,host=${host},user=${user},key_pem="${keyPem.replace(
         /\n/g,
-        "\\n"
+        "\\n",
       )}":`;
     }
     default:
@@ -309,7 +310,7 @@ type RCloneJobStatus<Output = Record<string, unknown>> = {
 export class RCloneVFSDir implements VFSDir {
   constructor(
     private path: string,
-    private remote: FSRemoteConnection | undefined
+    private remote: FSRemoteConnection | undefined,
   ) {}
 
   async list(): Promise<VFSEntry[]> {
@@ -328,7 +329,7 @@ export class RCloneVFSDir implements VFSDir {
             name: it.Name,
             content: new RCloneVFSDir(
               path.join(this.path, it.Name),
-              this.remote
+              this.remote,
             ),
           } satisfies VFSEntry)
         : ({
@@ -350,9 +351,9 @@ class RCloneVFSFile implements VFSFile {
       size: number;
       creationTime: number;
       modificationTime: number;
-    }
+    },
   ) {}
-  read(): Promise<Buffer> {
+  read(): Promise<Uint8Array> {
     throw new Error("Method not implemented.");
   }
 
@@ -368,7 +369,7 @@ class RCloneVFSFile implements VFSFile {
 export class RCloneFSInterface {
   async operationsCheck(
     src: { path: string; remote: FSRemoteConnection | undefined },
-    destination: { path: string; remote: FSRemoteConnection | undefined }
+    destination: { path: string; remote: FSRemoteConnection | undefined },
   ) {
     const result = await rcloneRC("operations/check", [
       "--config=/dev/null",
@@ -382,7 +383,7 @@ export class RCloneFSInterface {
 
   async copyAsync(
     src: { path: string; remote: FSRemoteConnection | undefined },
-    destination: { path: string; remote: FSRemoteConnection | undefined }
+    destination: { path: string; remote: FSRemoteConnection | undefined },
   ): Promise<RCloneJob> {
     const result = await rcloneRC("sync/copy", [
       "--config=/dev/null",

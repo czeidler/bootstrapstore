@@ -4,10 +4,10 @@ import { TreeEntryType } from "./index-repository";
 export type BlobInfo =
   | {
       type: "encrypted";
-      encKey: Buffer;
+      encKey: Uint8Array;
       parts: Hash[];
     }
-  | { type: "inlined"; parts: Buffer[] };
+  | { type: "inlined"; parts: Uint8Array[] };
 
 export type TreeLoader = {
   readTree(hash: DBHash): Promise<Tree>;
@@ -16,11 +16,11 @@ export type TreeLoader = {
 export type TreeWriter = {
   writeTree(
     treeHash: Hash,
-    entries: { name: string; entry: BlobEntry | RepoLinkEntry | TreeEntry }[]
+    entries: { name: string; entry: BlobEntry | RepoLinkEntry | TreeEntry }[],
   ): Promise<DBHash>;
 };
 
-export type DBHash = [number, Buffer];
+export type DBHash = [number, Uint8Array];
 
 export type BlobEntry = {
   type: typeof TreeEntryType.Blob;
@@ -55,7 +55,7 @@ export type Tree = {
 };
 function entryToHashable(
   name: string,
-  entry: BlobEntry | RepoLinkEntry | TreeEntry
+  entry: BlobEntry | RepoLinkEntry | TreeEntry,
 ): HashPart[] {
   const blob: HashPart[] =
     entry.type === TreeEntryType.Blob
@@ -120,7 +120,7 @@ export class TreeBuilder {
     {
       createMissingDirs,
       writeable,
-    }: { createMissingDirs: boolean; writeable: boolean }
+    }: { createMissingDirs: boolean; writeable: boolean },
   ): Promise<Tree | string> {
     let tree: Tree = this.root;
     for (const p of dirPath) {
@@ -168,7 +168,7 @@ export class TreeBuilder {
   async insertEntry(
     loader: TreeLoader,
     path: string[],
-    blob: BlobEntry | RepoLinkEntry | TreeEntry
+    blob: BlobEntry | RepoLinkEntry | TreeEntry,
   ) {
     const tree = await this.loadTree(loader, path.slice(0, -1), {
       createMissingDirs: true,
@@ -201,7 +201,7 @@ export class TreeBuilder {
 
   async readBlob(
     loader: TreeLoader,
-    path: string[]
+    path: string[],
   ): Promise<BlobEntry | undefined> {
     const tree = await this.loadTree(loader, path.slice(0, -1), {
       createMissingDirs: false,
@@ -222,7 +222,7 @@ export class TreeBuilder {
 
   async readRepoLink(
     loader: TreeLoader,
-    path: string[]
+    path: string[],
   ): Promise<RepoLinkEntry | undefined> {
     const tree = await this.loadTree(loader, path.slice(0, -1), {
       createMissingDirs: false,
@@ -247,13 +247,13 @@ export class TreeBuilder {
 
   private static async finalizeTree(
     writer: TreeWriter,
-    tree: Tree
+    tree: Tree,
   ): Promise<DBHash | undefined> {
     if (tree.entries.size === 0) {
       return undefined;
     }
     const entries = Array.from(tree.entries.entries()).sort(([a], [b]) =>
-      a.localeCompare(b)
+      a.localeCompare(b),
     );
     const finalizedEntries: {
       name: string;
@@ -269,7 +269,7 @@ export class TreeBuilder {
         case "mutateTree": {
           const entryDataHash = await TreeBuilder.finalizeTree(
             writer,
-            entry.data
+            entry.data,
           );
           const finalizedEntry: TreeEntry = {
             type: TreeEntryType.Tree,

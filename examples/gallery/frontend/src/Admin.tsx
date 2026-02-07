@@ -13,12 +13,14 @@ import { AccountView } from "./AccountView";
 import { MainLayout } from "./MainLayout";
 import { getRepoIOConfig } from "./io-config";
 import { queryClient } from "./account-hooks";
+import { stringToUint8Array } from "lib/src/utils";
 
 // TEMP
-function create16ByteBuffer(str: string): Buffer {
-  const buffer = Buffer.alloc(16);
-  Buffer.from(str).copy(buffer, 0, 0, 16);
-  return buffer;
+function create16ByteBuffer(str: string): Uint8Array {
+  const array = stringToUint8Array(str);
+  const result = new Uint8Array(16);
+  result.set(array.subarray(0, 16), 0);
+  return result;
 }
 
 const AccountCreation = () => {
@@ -33,7 +35,7 @@ const AccountCreation = () => {
         store,
         storeGetter,
         getRepoIOConfig(),
-        create16ByteBuffer(password)
+        create16ByteBuffer(password),
       );
     },
     onSuccess: () => {

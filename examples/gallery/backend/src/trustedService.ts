@@ -9,6 +9,7 @@ import {
 import { storeGetter } from "./service";
 import fs from "fs/promises";
 import path from "path";
+import { base64ToUint8Array } from "lib/src/utils";
 
 export const syncRepoStatus = async ({
   repoId,
@@ -21,14 +22,14 @@ export const syncRepoStatus = async ({
 }): Promise<DiffEntry[]> => {
   const output: DiffEntry[] = [];
   const repo = await Repository.open(repoId, getRepoIOConfig(), storeGetter, {
-    key: Buffer.from(encKey, "base64"),
+    key: base64ToUint8Array(encKey),
     branch: "main",
     inlined: false,
   });
   await diffWalk(
     new FSDirReader([checkoutPath]),
     new RepoDirReader(repo),
-    (entry) => output.push(entry)
+    (entry) => output.push(entry),
   );
   return output;
 };
@@ -44,14 +45,14 @@ export const syncRepo = async ({
 }) => {
   const output: DiffEntry[] = [];
   const repo = await Repository.open(repoId, getRepoIOConfig(), storeGetter, {
-    key: Buffer.from(encKey, "base64"),
+    key: base64ToUint8Array(encKey),
     branch: "main",
     inlined: false,
   });
   await diffWalk(
     new FSDirReader([checkoutPath]),
     new RepoDirReader(repo),
-    (entry) => output.push(entry)
+    (entry) => output.push(entry),
   );
 
   for (const out of output) {
@@ -65,7 +66,7 @@ export const syncRepo = async ({
           out.path,
           blob,
           Math.floor(stat.ctimeMs),
-          Math.floor(stat.mtimeMs)
+          Math.floor(stat.mtimeMs),
         );
         break;
       }

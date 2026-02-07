@@ -19,19 +19,21 @@ import { useEffect, useState } from "react";
 import { AccountData } from "lib/src/account";
 import { DevicesView } from "./DeviceView";
 import { useCreateDevice, useDevices } from "./account-hooks";
-import { shortId } from "lib/src/utils";
+import { shortId, stringToUint8Array } from "lib/src/utils";
 import HomeTwoToneIcon from "@mui/icons-material/HomeTwoTone";
 import { MainLayout } from "./MainLayout";
 import { getRepoIOConfig } from "./io-config";
 import { tsr } from "./tsr";
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
 import { TreeItem } from "@mui/x-tree-view/TreeItem";
+import { Group, Tree } from "@mantine/core";
 
 // TEMP
-function create16ByteBuffer(str: string): Buffer {
-  const buffer = Buffer.alloc(16);
-  Buffer.from(str).copy(buffer, 0, 0, 16);
-  return buffer;
+function create16ByteBuffer(str: string): Uint8Array {
+  const array = stringToUint8Array(str);
+  const result = new Uint8Array(16);
+  result.set(array.subarray(0, 16), 0);
+  return result;
 }
 
 const OpenAccount = ({

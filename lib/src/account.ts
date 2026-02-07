@@ -2,7 +2,13 @@ import { BlobStore, BlobStoreGetter } from "./blob-store";
 import { AESGCMEncryption, Encryption } from "./encryption";
 import { MetadataRepository } from "./main-repo";
 import { RepoIOConfig, Repository } from "./repository";
-import { shortId } from "./utils";
+import {
+  arrayToString,
+  base64ToUint8Array,
+  shortId,
+  stringToUint8Array,
+  uint8ArrayToBase64,
+} from "./utils";
 
 export type AccountFile = {
   encDataBase64: string;
@@ -21,7 +27,7 @@ export type AccountData = {
 };
 
 export async function readAccountFile(
-  blobStore: BlobStore
+  blobStore: BlobStore,
 ): Promise<AccountFile | undefined> {
   const accountPath = ["account.json"];
   if (!(await blobStore.exists(accountPath))) {
@@ -29,36 +35,36 @@ export async function readAccountFile(
   }
 
   const content = await blobStore.read(accountPath);
-  return JSON.parse(content.toString()) as AccountFile;
+  return JSON.parse(arrayToString(content)) as AccountFile;
 }
 
 async function writeAccountFile(
   blobStore: BlobStore,
-  file: AccountFile
+  file: AccountFile,
 ): Promise<void> {
   const accountPath = ["account.json"];
-  await blobStore.write(accountPath, Buffer.from(JSON.stringify(file)));
+  await blobStore.write(accountPath, stringToUint8Array(JSON.stringify(file)));
 }
 
 export class Account {
   private constructor(
     private storeGetter: BlobStoreGetter,
     private ioConfig: RepoIOConfig,
-    public accountData: AccountData
+    public accountData: AccountData,
   ) {}
 
   static async openAccount(
     storeGetter: BlobStoreGetter,
     ioConfig: RepoIOConfig,
-    key: Buffer,
-    file: AccountFile
+    key: Uint8Array,
+    file: AccountFile,
   ): Promise<Account> {
     const enc: Encryption = new AESGCMEncryption();
     const plain = await enc.decrypt(
-      Buffer.from(file.encDataBase64, "base64"),
-      key
+      base64ToUint8Array(file.encDataBase64),
+      key,
     );
-    const data = JSON.parse(plain.toString()) as AccountData;
+    const data = JSON.parse(arrayToString(plain)) as AccountData;
     return new Account(storeGetter, ioConfig, data);
   }
 
@@ -66,25 +72,25 @@ export class Account {
     store: BlobStore,
     storeGetter: BlobStoreGetter,
     ioConfig: RepoIOConfig,
-    key: Buffer
+    key: Uint8Array,
   ): Promise<Account> {
     const enc: Encryption = new AESGCMEncryption();
 
     const repoId = shortId();
-    const repoKey = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
+    const repoKey = crypto.getRandomValues(new Uint8Array(16));
     await Repository.create(repoId, ioConfig, storeGetter, repoKey);
 
     const metadataRepo = await MetadataRepository.open(
       repoId,
       storeGetter,
       ioConfig,
-      repoKey
+      repoKey,
     );
     const deviceId = shortId();
     await metadataRepo.addDevice({
       id: deviceId,
     });
-    const repoKeyBase64 = repoKey.toString("base64");
+    const repoKeyBase64 = uint8ArrayToBase64(repoKey);
     await metadataRepo.writeLocation(deviceId, {
       id: repoId,
       type: "repository",
@@ -98,11 +104,11 @@ export class Account {
       repoKeyBase64,
     };
     const cipher = await enc.encrypt(
-      Buffer.from(JSON.stringify(accountData)),
-      key
+      stringToUint8Array(JSON.stringify(accountData)),
+      key,
     );
     const file: AccountFile = {
-      encDataBase64: cipher.toString("base64"),
+      encDataBase64: uint8ArrayToBase64(cipher),
     };
 
     await writeAccountFile(store, file);
@@ -114,7 +120,7 @@ export class Account {
       this.accountData.repoId,
       this.storeGetter,
       this.ioConfig,
-      Buffer.from(this.accountData.repoKeyBase64, "base64")
+      base64ToUint8Array(this.accountData.repoKeyBase64),
     );
   }
 }

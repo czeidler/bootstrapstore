@@ -1,6 +1,12 @@
 import { BlobStoreGetter } from "./blob-store";
 import { DirEntry, RepoIOConfig, Repository } from "./repository";
-import { shortId } from "./utils";
+import {
+  arrayToString,
+  base64ToUint8Array,
+  shortId,
+  stringToUint8Array,
+  uint8ArrayToBase64,
+} from "./utils";
 
 const deviceDir = "devices";
 const devicePath = (deviceId: string) => [deviceDir, deviceId, "device.json"];
@@ -101,7 +107,7 @@ export class MetadataRepository {
     repoId: string,
     storeGetter: BlobStoreGetter,
     ioConfig: RepoIOConfig,
-    key: Buffer,
+    key: Uint8Array,
   ): Promise<MetadataRepository> {
     const metaRepo = await Repository.open(repoId, ioConfig, storeGetter, {
       key,
@@ -124,7 +130,7 @@ export class MetadataRepository {
     const now = Date.now();
     await this.metaRepo.insertFile(
       path,
-      Buffer.from(JSON.stringify(obj)),
+      stringToUint8Array(JSON.stringify(obj)),
       now,
       now,
     );
@@ -135,7 +141,7 @@ export class MetadataRepository {
     if (buf === undefined) {
       return undefined;
     }
-    return JSON.parse(buf.toString()) as T;
+    return JSON.parse(arrayToString(buf)) as T;
   }
 
   async addDevice(device: DeviceInfo) {
@@ -214,7 +220,7 @@ export class MetadataRepository {
 
   async createChild(profileId: string, repoName?: string): Promise<Repository> {
     const repoId = shortId();
-    const key = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
+    const key = crypto.getRandomValues(new Uint8Array(16));
     await Repository.create(repoId, this.ioConfig, this.storeGetter, key);
     const repo = Repository.open(repoId, this.ioConfig, this.storeGetter, {
       key,
@@ -225,7 +231,7 @@ export class MetadataRepository {
     await this.writeLocation(profileId, {
       id: repoId,
       type: "repository",
-      encKey: key.toString("base64"),
+      encKey: uint8ArrayToBase64(key),
       name: repoName,
     });
 
@@ -243,7 +249,7 @@ export class MetadataRepository {
       return undefined;
     }
     const repo = Repository.open(repoId, this.ioConfig, this.storeGetter, {
-      key: Buffer.from(repoInfo.encKey, "base64"),
+      key: base64ToUint8Array(repoInfo.encKey),
       branch: "main",
       inlined: false,
     });

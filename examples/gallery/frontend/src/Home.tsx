@@ -6,6 +6,7 @@ import { MetadataRepository, Repository } from "lib";
 import { storeGetter } from "./utils";
 import { FileBrowser } from "./FileBrowser";
 import { getRepoIOConfig } from "./io-config";
+import { hexToUint8Array } from "lib/src/utils";
 
 export const Home = () => {
   const [searchParams] = useSearchParams();
@@ -19,7 +20,7 @@ export const Home = () => {
 
   useEffect(() => {
     (async () => {
-      const key = Buffer.from(keyParam ?? "", "hex");
+      const key = hexToUint8Array(keyParam ?? "");
       const repo = await Repository.open(
         repoId,
         getRepoIOConfig(),
@@ -28,12 +29,12 @@ export const Home = () => {
           key,
           branch: "main",
           inlined: false,
-        }
+        },
       );
       const metadataRepository = await MetadataRepository.fromRepo(
         repo,
         storeGetter,
-        getRepoIOConfig()
+        getRepoIOConfig(),
       );
       setRepo({ repo, metadataRepository });
     })();

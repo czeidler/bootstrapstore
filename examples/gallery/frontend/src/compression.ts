@@ -6,12 +6,12 @@ import brotli from "brotli-wasm";
  * Annotates the compressed data with the type of compression
  */
 export class BrotliCompression implements Compression {
-  async compress(plain: Buffer): Promise<Buffer> {
+  async compress(plain: Uint8Array): Promise<Uint8Array> {
     const deflated = (await brotli).compress(plain);
-    return Buffer.from(deflated);
+    return deflated;
   }
 
-  async decompress(data: Buffer): Promise<Buffer> {
-    return Buffer.from((await brotli).decompress(data));
+  async decompress(data: Uint8Array): Promise<Uint8Array> {
+    return (await brotli).decompress(data);
   }
 }

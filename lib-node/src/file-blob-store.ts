@@ -25,12 +25,12 @@ export class FileBlobStore implements BlobStore {
     const fullPath = p.join(...this.baseDir, ...path);
     return existsSync(fullPath);
   }
-  read(path: string[]): Promise<Buffer> {
+  read(path: string[]): Promise<Uint8Array> {
     this.validatePath(path);
     const fullPath = p.join(...this.baseDir, ...path);
     return fs.readFile(fullPath);
   }
-  async write(path: string[], data: Buffer): Promise<void> {
+  async write(path: string[], data: Uint8Array): Promise<void> {
     this.validatePath(path);
     const fullPathArray = [...this.baseDir, ...path];
     const fullPath = p.join(...fullPathArray);

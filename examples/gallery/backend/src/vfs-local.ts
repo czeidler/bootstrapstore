@@ -4,7 +4,7 @@ import path from "path";
 
 export class LocalFile implements VFSFile {
   constructor(private path: string) {}
-  read(): Promise<Buffer> {
+  read(): Promise<Uint8Array> {
     return readFile(this.path);
   }
   async stats(): Promise<{

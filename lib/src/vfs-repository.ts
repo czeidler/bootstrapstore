@@ -11,10 +11,10 @@ class RepoFile implements VFSFile {
       size: number;
       creationTime: number;
       modificationTime: number;
-    }
+    },
   ) {}
 
-  async read(): Promise<Buffer> {
+  async read(): Promise<Uint8Array> {
     const content = await this.repo.readFile(this.path);
     if (content === undefined) {
       throw Error("Failed to read file content");
@@ -36,7 +36,7 @@ class ChildRepoDir implements VFSDir {
 
   constructor(
     private metadataRepo: MetadataRepository,
-    private repoId: string
+    private repoId: string,
   ) {}
 
   private async getRepo(): Promise<Repository> {
@@ -63,7 +63,7 @@ class RepoDir implements VFSDir {
   constructor(
     private repo: Repository,
     private metadataRepo: MetadataRepository,
-    private path: string[]
+    private path: string[],
   ) {}
 
   async list(): Promise<VFSEntry[]> {
@@ -100,7 +100,7 @@ class RepoDir implements VFSDir {
 
 export function rootDir(
   repository: Repository,
-  metadataRepo: MetadataRepository
+  metadataRepo: MetadataRepository,
 ): VFSDir {
   return new RepoDir(repository, metadataRepo, []);
 }

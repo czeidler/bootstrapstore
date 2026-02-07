@@ -1,8 +1,8 @@
 export type BlobStore = {
   list(path: string[]): Promise<string[]>;
   exists(path: string[]): Promise<boolean>;
-  read(path: string[]): Promise<Buffer>;
-  write(path: string[], data: Buffer): Promise<void>;
+  read(path: string[]): Promise<Uint8Array>;
+  write(path: string[], data: Uint8Array): Promise<void>;
 };
 
 export interface BlobStoreGetter {
@@ -23,7 +23,10 @@ export class RepoBlobStoreGetter implements BlobStoreGetter {
 }
 
 class RepoBlobStore implements BlobStore {
-  constructor(private parent: BlobStore, private basePath: string[]) {}
+  constructor(
+    private parent: BlobStore,
+    private basePath: string[],
+  ) {}
 
   list(path: string[]): Promise<string[]> {
     return this.parent.list([...this.basePath, ...path]);
@@ -31,10 +34,10 @@ class RepoBlobStore implements BlobStore {
   exists(path: string[]): Promise<boolean> {
     return this.parent.exists([...this.basePath, ...path]);
   }
-  read(path: string[]): Promise<Buffer> {
+  read(path: string[]): Promise<Uint8Array> {
     return this.parent.read([...this.basePath, ...path]);
   }
-  write(path: string[], data: Buffer): Promise<void> {
+  write(path: string[], data: Uint8Array): Promise<void> {
     return this.parent.write([...this.basePath, ...path], data);
   }
 }

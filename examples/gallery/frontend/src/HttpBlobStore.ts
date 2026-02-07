@@ -14,7 +14,7 @@ export class HttpBlobStore implements BlobStore {
     return result.body.content.map((it) => it.name);
   }
 
-  async read(path: string[]): Promise<Buffer> {
+  async read(path: string[]): Promise<Uint8Array> {
     const result = await tsr.getFile.query({
       query: { repoId: this.repoId, path },
     });
@@ -22,7 +22,7 @@ export class HttpBlobStore implements BlobStore {
       throw Error(`HTTP error: ${result.status}`);
     }
     const blob = result.body as Blob;
-    return Buffer.from(await blob.arrayBuffer());
+    return new Uint8Array(await blob.arrayBuffer());
   }
 
   async exists(path: string[]): Promise<boolean> {
@@ -35,11 +35,13 @@ export class HttpBlobStore implements BlobStore {
     return result.body;
   }
 
-  async write(path: string[], data: Buffer): Promise<void> {
+  async write(path: string[], data: Uint8Array): Promise<void> {
     const result = await tsr.postBlob.mutate({
       query: { repoId: this.repoId, path },
       body: {
-        blob: new File([data], "blob", { type: "application/octet-stream" }),
+        blob: new File([data.buffer], "blob", {
+          type: "application/octet-stream",
+        }),
       },
     });
     if (result.status !== 201) {

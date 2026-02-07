@@ -18,7 +18,7 @@ class RemoteProxyFileVFS implements VFSFile {
     },
   ) {}
 
-  read(): Promise<Buffer> {
+  read(): Promise<Uint8Array> {
     throw new Error("Method not implemented.");
   }
 

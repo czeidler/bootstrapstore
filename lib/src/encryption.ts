@@ -1,36 +1,42 @@
 import { createHash } from "crypto";
 
 export interface Encryption {
-  encrypt(plain: Buffer, key: Buffer): Promise<Buffer>;
-  decrypt(cipher: Buffer, key: Buffer): Promise<Buffer>;
+  encrypt(plain: Uint8Array, key: Uint8Array): Promise<Uint8Array>;
+  decrypt(cipher: Uint8Array, key: Uint8Array): Promise<Uint8Array>;
 }
 
 export class AESGCMEncryption implements Encryption {
-  async encrypt(plain: Buffer, key: Buffer): Promise<Buffer> {
+  async encrypt(plain: Uint8Array, key: Uint8Array): Promise<Uint8Array> {
     const cryptoKey = await crypto.subtle.importKey(
       "raw",
       key,
       { name: "AES-GCM" },
       false,
-      ["encrypt"]
+      ["encrypt"],
     );
-    const iv = crypto.getRandomValues(new Uint8Array(16));
+    const ivLength = 16;
+    const iv = crypto.getRandomValues(new Uint8Array(ivLength));
     const cipher = await crypto.subtle.encrypt(
       { name: "AES-GCM", iv: iv },
       cryptoKey,
-      plain
+      plain,
     );
 
-    return Buffer.concat([iv, new Uint8Array(cipher)]);
+    const result = new Uint8Array(
+      new ArrayBuffer(ivLength + cipher.byteLength),
+    );
+    result.set(iv);
+    result.set(new Uint8Array(cipher), ivLength);
+    return result;
   }
 
-  async decrypt(cipher: Buffer, key: Buffer): Promise<Buffer> {
+  async decrypt(cipher: Uint8Array, key: Uint8Array): Promise<Uint8Array> {
     const cryptoKey = await crypto.subtle.importKey(
       "raw",
       key,
       { name: "AES-GCM" },
       false,
-      ["decrypt"]
+      ["decrypt"],
     );
     const iv = cipher.subarray(0, 16);
     const encrypted = cipher.subarray(16);
@@ -38,9 +44,9 @@ export class AESGCMEncryption implements Encryption {
       const data = await crypto.subtle.decrypt(
         { name: "AES-GCM", iv: iv },
         cryptoKey,
-        encrypted
+        encrypted,
       );
-      return Buffer.from(data);
+      return new Uint8Array(data);
     } catch (e) {
       console.error(e);
       throw e;
@@ -48,6 +54,6 @@ export class AESGCMEncryption implements Encryption {
   }
 }
 
-export function sha256(data: Buffer): Buffer {
+export function sha256(data: Uint8Array): Uint8Array {
   return createHash("sha256").update(data).digest();
 }

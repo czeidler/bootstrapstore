@@ -5,6 +5,7 @@ import * as fs from "node:fs";
 import path from "node:path";
 import { RepoBlobStoreGetter, arrayToHex } from "lib";
 import { getRepoIOConfig } from "./io-config";
+import { arrayToString } from "lib/src/utils";
 
 describe("Main repo test", () => {
   const testDir = ["./test-main-repo"];
@@ -18,7 +19,7 @@ describe("Main repo test", () => {
       repoId,
       storeGetter,
       getRepoIOConfig(),
-      key
+      key,
     );
     const child = await mainRepo.createChild("default");
     const now = Date.now();
@@ -26,7 +27,9 @@ describe("Main repo test", () => {
     await child.createSnapshot(new Date());
 
     const child1 = await mainRepo.openChild("default", child.repoId);
-    assert.equal((await child1?.readFile(["child1"]))?.toString(), "child");
+    const file = await child1?.readFile(["child1"]);
+    assert.isDefined(file);
+    assert.equal(arrayToString(file), "child");
   });
 
   afterAll(() => {

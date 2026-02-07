@@ -1,6 +1,7 @@
 import { FileBlobStore } from "lib-node";
 import { BlobStore, RepoBlobStoreGetter } from "lib";
 import { argv } from "node:process";
+import { arrayToString, stringToUint8Array } from "lib/src/utils";
 
 export const repoDir = argv[2] ?? "testRepo";
 
@@ -21,12 +22,12 @@ class AccountFileIO {
     }
 
     const content = await this.blobStore.read(accountPath);
-    return JSON.parse(content.toString());
+    return JSON.parse(arrayToString(content));
   }
 
   async writeAccountFile(file: AccountFile): Promise<void> {
     const accountPath = ["account.json"];
-    this.blobStore.write(accountPath, Buffer.from(JSON.stringify(file)));
+    this.blobStore.write(accountPath, stringToUint8Array(JSON.stringify(file)));
   }
 }
 
