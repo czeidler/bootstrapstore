@@ -44,7 +44,7 @@ export function hexToUint8Array(hex: string): Uint8Array {
   hex = hex.replace(/\s/g, ""); // Remove whitespace
   const bytes = hex.match(/.{2}/g);
   if (bytes === null) {
-    throw Error("Invalid hex string");
+    throw Error(`Invalid hex string: ${hex}`);
   }
   return Uint8Array.from(bytes.map((byte) => parseInt(byte, 16)));
 }
