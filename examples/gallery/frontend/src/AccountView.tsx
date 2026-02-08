@@ -12,7 +12,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { AccountFile, Account, MetadataRepository } from "lib";
 import { storeGetter } from "./utils";
 import { useEffect, useState } from "react";
@@ -27,6 +27,7 @@ import { tsr } from "./tsr";
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
 import { TreeItem } from "@mui/x-tree-view/TreeItem";
 import { Group, Tree } from "@mantine/core";
+import { contract } from "../../backend/src/contract";
 
 // TEMP
 function create16ByteBuffer(str: string): Uint8Array {
@@ -135,7 +136,16 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
     MetadataRepository | undefined
   >();
 
-  const { data: me } = tsr.me.useQuery({ queryKey: ["me"] });
+  const { data: me } = useQuery({
+    queryFn: async () => {
+      const response = await tsr.me();
+      if (response.status !== 200) {
+        throw Error(JSON.stringify(response));
+      }
+      return response;
+    },
+    queryKey: ["me"],
+  });
 
   const [openAddDeviceDialog, setOpenAddDeviceDialog] = useState(false);
   const { data: devices } = useDevices(metadataRepo);

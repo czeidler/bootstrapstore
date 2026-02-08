@@ -2,9 +2,19 @@ import { CircularProgress } from "@mui/material";
 import { tsr } from "./tsr";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 export const AdminAuth = ({ children }: { children: React.ReactNode }) => {
-  const { data, isLoading } = tsr.me.useQuery({ queryKey: ["me"] });
+  const { data, isLoading } = useQuery({
+    queryFn: async () => {
+      const response = await tsr.me();
+      if (response.status !== 200) {
+        throw Error(JSON.stringify(response));
+      }
+      return response;
+    },
+    queryKey: ["me"],
+  });
   const navigate = useNavigate();
 
   useEffect(() => {

@@ -23,7 +23,7 @@
     "@trpc/client": "11.9.0",
     "@trpc/react-query": "11.9.0",
     "@trpc/server": "11.9.0",
-    "@ts-rest/react-query": "3.52.1",
+    "@ts-rest/core": "3.52.1",
     "brotli-wasm": "3.0.1",
     "kysely": "^0.27.5",
     "lib": "workspace:*",

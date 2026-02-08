@@ -28,9 +28,12 @@ import {
   DirectoryLocationInfo,
   RepositoryLocationInfo,
 } from "lib/src/main-repo";
-import { trustedTsr } from "./tsr";
 import { shortId } from "lib/src/utils";
 import { RemoteTab } from "./RemoteTab";
+import { useMutation } from "@tanstack/react-query";
+import { trustedTsr } from "./tsr";
+import { trustedContract } from "../../backend/src/contract";
+import { ClientInferRequest } from "@ts-rest/core";
 
 const CreateRepoDialog = ({
   open,
@@ -289,8 +292,20 @@ export const DevicesView = ({
 
   const [openCreateSyncDialog, setOpenCreateSyncDialog] = useState(false);
 
-  const { mutateAsync: syncStatus } = trustedTsr.syncRepoStatus.useMutation();
-  const { mutateAsync: sync } = trustedTsr.syncRepo.useMutation();
+  const { mutateAsync: syncStatus } = useMutation({
+    mutationFn: async (
+      params: ClientInferRequest<typeof trustedContract.syncRepoStatus>,
+    ) => {
+      return trustedTsr.syncRepoStatus(params);
+    },
+  });
+  const { mutateAsync: sync } = useMutation({
+    mutationFn: async (
+      params: ClientInferRequest<typeof trustedContract.syncRepo>,
+    ) => {
+      return trustedTsr.syncRepo(params);
+    },
+  });
   type TabValue = "data" | "sync" | "remote";
   const [tabValue, setTabValue] = useState<TabValue>("data");
 

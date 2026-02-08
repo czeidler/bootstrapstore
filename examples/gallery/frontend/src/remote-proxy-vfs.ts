@@ -42,9 +42,10 @@ export class RemoteProxyDirVFS implements VFSDir {
   ) {}
 
   async list(): Promise<VFSEntry[]> {
-    const result = await trustedTsr.ls.mutate({
+    const result = await trustedTsr.ls({
       body: { remote: this.remote, path: this.path.join("/") },
     });
+
     if (result.status !== 201) {
       throw new Error(`Network error`);
     }

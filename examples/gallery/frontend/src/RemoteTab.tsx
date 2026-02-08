@@ -18,6 +18,9 @@ import { shortId } from "lib/src/utils";
 import { useFileNavigation } from "./useFileNavigation";
 import FileView from "./FileView";
 import { RemoteProxyDirVFS } from "./remote-proxy-vfs";
+import { useMutation } from "@tanstack/react-query";
+import { ClientInferRequest } from "@ts-rest/core";
+import { trustedContract } from "../../backend/src/contract";
 
 const FileViewDialog = ({
   root,
@@ -177,7 +180,13 @@ export const RemoteTab = ({
     { connection?: ConnectionInfo } | undefined
   >(undefined);
 
-  const { mutate: ls } = trustedTsr.ls.useMutation();
+  const { mutateAsync: ls } = useMutation({
+    mutationFn: async (
+      params: ClientInferRequest<typeof trustedContract.ls>,
+    ) => {
+      return trustedTsr.ls(params);
+    },
+  });
 
   const [openDir, setOpenDir] = useState<RemoteProxyDirVFS | undefined>();
 

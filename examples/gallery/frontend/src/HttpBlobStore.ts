@@ -5,7 +5,7 @@ export class HttpBlobStore implements BlobStore {
   constructor(private repoId?: string) {}
 
   async list(path: string[]): Promise<string[]> {
-    const result = await tsr.list.query({
+    const result = await tsr.list({
       query: { repoId: this.repoId, path },
     });
     if (result.status !== 200) {
@@ -15,7 +15,7 @@ export class HttpBlobStore implements BlobStore {
   }
 
   async read(path: string[]): Promise<Uint8Array> {
-    const result = await tsr.getFile.query({
+    const result = await tsr.getFile({
       query: { repoId: this.repoId, path },
     });
     if (result.status !== 200) {
@@ -26,7 +26,7 @@ export class HttpBlobStore implements BlobStore {
   }
 
   async exists(path: string[]): Promise<boolean> {
-    const result = await tsr.fileExists.query({
+    const result = await tsr.fileExists({
       query: { repoId: this.repoId, path },
     });
     if (result.status !== 200) {
@@ -36,7 +36,7 @@ export class HttpBlobStore implements BlobStore {
   }
 
   async write(path: string[], data: Uint8Array): Promise<void> {
-    const result = await tsr.postBlob.mutate({
+    const result = await tsr.postBlob({
       query: { repoId: this.repoId, path },
       body: {
         blob: new File([data.buffer], "blob", {
