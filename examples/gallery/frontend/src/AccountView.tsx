@@ -27,7 +27,6 @@ import { tsr } from "./tsr";
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
 import { TreeItem } from "@mui/x-tree-view/TreeItem";
 import { Group, Tree } from "@mantine/core";
-import { contract } from "../../backend/src/contract";
 
 // TEMP
 function create16ByteBuffer(str: string): Uint8Array {

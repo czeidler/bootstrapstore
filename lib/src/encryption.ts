@@ -17,7 +17,7 @@ export class AESGCMEncryption implements Encryption {
     const ivLength = 16;
     const iv = crypto.getRandomValues(new Uint8Array(ivLength));
     const cipher = await crypto.subtle.encrypt(
-      { name: "AES-GCM", iv: iv },
+      { name: "AES-GCM", iv },
       cryptoKey,
       plain,
     );
@@ -42,7 +42,7 @@ export class AESGCMEncryption implements Encryption {
     const encrypted = cipher.subarray(16);
     try {
       const data = await crypto.subtle.decrypt(
-        { name: "AES-GCM", iv: iv },
+        { name: "AES-GCM", iv },
         cryptoKey,
         encrypted,
       );
