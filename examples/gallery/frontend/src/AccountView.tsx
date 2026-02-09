@@ -9,7 +9,6 @@ import {
   ListSubheader,
   Stack,
   TextField,
-  Tooltip,
   Typography,
 } from "@mui/material";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -24,9 +23,8 @@ import HomeTwoToneIcon from "@mui/icons-material/HomeTwoTone";
 import { MainLayout } from "./MainLayout";
 import { getRepoIOConfig } from "./io-config";
 import { tsr } from "./tsr";
-import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
-import { TreeItem } from "@mui/x-tree-view/TreeItem";
-import { Group, Tree } from "@mantine/core";
+import { IconChevronDown } from "@tabler/icons-react";
+import { Group, Space, Text, Tooltip, Tree } from "@mantine/core";
 
 // TEMP
 function create16ByteBuffer(str: string): Uint8Array {
@@ -148,6 +146,7 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
 
   const [openAddDeviceDialog, setOpenAddDeviceDialog] = useState(false);
   const { data: devices } = useDevices(metadataRepo);
+
   const [selectedDevice, setSelectedDevice] = useState<string | undefined>();
   useEffect(() => {
     setSelectedDevice(accountData?.deviceId);
@@ -164,12 +163,34 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
     );
   }
 
+  const data = [
+    {
+      value: accountData.deviceId,
+      label: (
+        <Tooltip label={`${me?.body?.admin?.path}`}>
+          <Text>{`${accountData.deviceId} (Local)`}</Text>
+        </Tooltip>
+      ),
+      children: [{ value: "account-repo", label: <Text>Account repo</Text> }],
+    },
+    ...(devices
+      ?.filter((device) => device.id !== accountData.deviceId)
+      .map((device) => ({
+        value: device.id,
+        label: (
+          <Text onClick={() => setSelectedDevice(device.id)}>
+            {device.name ?? device.id}
+          </Text>
+        ),
+      })) ?? []),
+  ];
+
   return (
     <MainLayout
       Header={
         <>
           <Tooltip
-            title={`Open: repo: ${accountData.repoId}, local device: ${accountData.deviceId}`}
+            label={`Open: repo: ${accountData.repoId}, local device: ${accountData.deviceId}`}
           >
             <HomeTwoToneIcon sx={{ alignSelf: "center" }} />
           </Tooltip>
@@ -201,23 +222,28 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
               >
                 <Divider />
               </List>
-              <SimpleTreeView sx={{ textAlign: "start" }}>
-                <TreeItem
-                  itemId={accountData.deviceId}
-                  label={`${accountData.deviceId} (Local) ${me?.body?.admin?.path}`}
-                >
-                  <TreeItem itemId={"account-repo"} label={"Account repo"} />
-                </TreeItem>
-                {devices
-                  ?.filter((device) => device.id !== accountData.deviceId)
-                  .map((device) => (
-                    <TreeItem
-                      itemId={device.id}
-                      label={device.name ?? device.id}
-                      onClick={() => setSelectedDevice(device.id)}
-                    />
-                  ))}
-              </SimpleTreeView>
+
+              <Tree
+                data={data}
+                levelOffset={20}
+                renderNode={({ node, expanded, hasChildren, elementProps }) => (
+                  <Group {...elementProps}>
+                    {hasChildren ? (
+                      <IconChevronDown
+                        size={18}
+                        style={{
+                          transform: expanded
+                            ? "rotate(180deg)"
+                            : "rotate(0deg)",
+                        }}
+                      />
+                    ) : (
+                      <Space w={18} />
+                    )}
+                    {node.label}
+                  </Group>
+                )}
+              />
             </Stack>
             <Divider orientation="vertical" sx={{ marginRight: 1 }} />
             <DevicesView
