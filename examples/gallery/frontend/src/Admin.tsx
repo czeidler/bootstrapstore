@@ -1,10 +1,3 @@
-import {
-  Button,
-  CircularProgress,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { readAccountFile, Account } from "lib";
 import { storeGetter } from "./utils";
@@ -14,6 +7,7 @@ import { MainLayout } from "./MainLayout";
 import { getRepoIOConfig } from "./io-config";
 import { queryClient } from "./account-hooks";
 import { stringToUint8Array } from "lib/src/utils";
+import { Button, Flex, Loader, PasswordInput, Text } from "@mantine/core";
 
 // TEMP
 function create16ByteBuffer(str: string): Uint8Array {
@@ -44,17 +38,18 @@ const AccountCreation = () => {
   });
   return (
     <MainLayout
-      Header={<Typography>Create Account</Typography>}
+      Header={<Text>Create Account</Text>}
       Content={
-        <>
-          <TextField
+        <Flex m={5} direction={"column"}>
+          <PasswordInput
+            size="sm"
             label="Password"
             onChange={(e) => setPassword(e.target.value)}
           />
           <Button disabled={!password || isPending} onClick={() => onClick()}>
             Create
           </Button>
-        </>
+        </Flex>
       }
     />
   );
@@ -72,9 +67,9 @@ export const Admin = () => {
   return (
     <>
       {isLoading ? (
-        <Stack height="100%" justifyContent={"center"} alignItems={"center"}>
-          <CircularProgress />
-        </Stack>
+        <Flex h="100%" justify={"center"} align={"center"}>
+          <Loader color="blue" />;
+        </Flex>
       ) : !accountFile ? (
         <AccountCreation />
       ) : (

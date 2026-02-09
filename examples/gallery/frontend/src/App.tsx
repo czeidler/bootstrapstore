@@ -12,11 +12,29 @@ import { ThemeProvider } from "@mui/material";
 import { theme } from "./theme";
 import "@mantine/core/styles.css";
 
-import { MantineProvider } from "@mantine/core";
+import { createTheme, MantineProvider } from "@mantine/core";
+
+const mantineTheme = createTheme({
+  primaryColor: "green",
+  colors: {
+    green: [
+      "#eafcf3",
+      "#daf5e8",
+      "#b4e8cf",
+      "#8bdcb5",
+      "#6ad19e",
+      "#54cb90",
+      "#47c888",
+      "#38b075",
+      "#2a9461",
+      "#1a8856",
+    ],
+  },
+});
 
 const App = () => {
   return (
-    <MantineProvider>
+    <MantineProvider theme={mantineTheme}>
       <ThemeProvider theme={theme}>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter

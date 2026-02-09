@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Stack } from "@mui/material";
+import { Flex, Group } from "@mantine/core";
 
 export const MainLayout = ({
   Header,
@@ -9,17 +9,11 @@ export const MainLayout = ({
   Content: ReactNode;
 }) => {
   return (
-    <Stack height="100%" gap={1} width={"100%"}>
-      <Stack
-        direction={"row"}
-        bgcolor="primary.light"
-        width={"100%"}
-        boxSizing="border-box"
-        paddingLeft={1}
-      >
+    <Flex h="100%" gap={1} w={"100%"} direction={"column"}>
+      <Group bg="green" w={"100%"} style={{ boxSizing: "border-box" }} pl={1}>
         {Header}
-      </Stack>
+      </Group>
       {Content}
-    </Stack>
+    </Flex>
   );
 };

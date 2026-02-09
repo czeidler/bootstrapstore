@@ -24,7 +24,7 @@ import { MainLayout } from "./MainLayout";
 import { getRepoIOConfig } from "./io-config";
 import { tsr } from "./tsr";
 import { IconChevronDown } from "@tabler/icons-react";
-import { Group, Space, Text, Tooltip, Tree } from "@mantine/core";
+import { Flex, Group, Space, Text, Tooltip, Tree } from "@mantine/core";
 
 // TEMP
 function create16ByteBuffer(str: string): Uint8Array {
@@ -68,7 +68,7 @@ const OpenAccount = ({
         </Typography>
       }
       Content={
-        <>
+        <Flex m={5} direction={"column"}>
           <TextField
             label="Password"
             onChange={(e) => setPassword(e.target.value)}
@@ -76,7 +76,7 @@ const OpenAccount = ({
           <Button disabled={!password} onClick={() => openAccount()}>
             Open
           </Button>
-        </>
+        </Flex>
       }
     />
   );

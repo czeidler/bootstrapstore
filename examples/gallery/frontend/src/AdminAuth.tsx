@@ -1,8 +1,8 @@
-import { CircularProgress } from "@mui/material";
 import { tsr } from "./tsr";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Loader } from "@mantine/core";
 
 export const AdminAuth = ({ children }: { children: React.ReactNode }) => {
   const { data, isLoading } = useQuery({
@@ -24,7 +24,7 @@ export const AdminAuth = ({ children }: { children: React.ReactNode }) => {
   }, [isLoading, data, navigate]);
 
   if (isLoading) {
-    return <CircularProgress />;
+    return <Loader color="blue" />;
   }
 
   return <>{children}</>;
