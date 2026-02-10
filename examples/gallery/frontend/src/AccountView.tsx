@@ -24,6 +24,8 @@ import {
   Title,
   Tooltip,
   Tree,
+  useMantineTheme,
+  useTree,
 } from "@mantine/core";
 
 // TEMP
@@ -139,6 +141,11 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
     queryKey: ["me"],
   });
 
+  const theme = useMantineTheme();
+  const tree = useTree({
+    initialSelectedState: [], // Set initial selected nodes
+  });
+
   const [openAddDeviceDialog, setOpenAddDeviceDialog] = useState(false);
   const { data: devices } = useDevices(metadataRepo);
 
@@ -219,13 +226,33 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
               </List>
 
               <Tree
+                ml="xs"
+                tree={tree}
                 data={data}
                 levelOffset={20}
-                renderNode={({ node, expanded, hasChildren, elementProps }) => (
-                  <Group {...elementProps}>
+                renderNode={({
+                  node,
+                  selected,
+                  expanded,
+                  hasChildren,
+                  elementProps,
+                }) => (
+                  <Group
+                    gap={5}
+                    {...elementProps}
+                    style={{
+                      backgroundColor: selected
+                        ? theme.colors.green[1]
+                        : "transparent", // Highlight color
+                    }}
+                    onClick={() => {
+                      tree.toggleSelected(node.value);
+                      tree.toggleExpanded(node.value);
+                    }}
+                  >
                     {hasChildren ? (
                       <IconChevronDown
-                        size={18}
+                        size={16}
                         style={{
                           transform: expanded
                             ? "rotate(180deg)"
@@ -233,7 +260,7 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
                         }}
                       />
                     ) : (
-                      <Space w={18} />
+                      <Space w={16} />
                     )}
                     {node.label}
                   </Group>
