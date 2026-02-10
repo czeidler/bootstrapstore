@@ -1,16 +1,4 @@
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
-  List,
-  ListSubheader,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { List, ListSubheader, TextField } from "@mui/material";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AccountFile, Account, MetadataRepository } from "lib";
 import { storeGetter } from "./utils";
@@ -24,7 +12,19 @@ import { MainLayout } from "./MainLayout";
 import { getRepoIOConfig } from "./io-config";
 import { tsr } from "./tsr";
 import { IconChevronDown } from "@tabler/icons-react";
-import { Flex, Group, Space, Text, Tooltip, Tree } from "@mantine/core";
+import {
+  Button,
+  Divider,
+  Flex,
+  Group,
+  Modal,
+  Space,
+  Text,
+  TextInput,
+  Title,
+  Tooltip,
+  Tree,
+} from "@mantine/core";
 
 // TEMP
 function create16ByteBuffer(str: string): Uint8Array {
@@ -63,12 +63,12 @@ const OpenAccount = ({
   return (
     <MainLayout
       Header={
-        <Typography padding={0.5} variant="h5">
+        <Title p="sx" size="h4">
           Open Account
-        </Typography>
+        </Title>
       }
       Content={
-        <Flex m={5} direction={"column"}>
+        <Flex gap={"xs"} m={"xs"} direction={"column"}>
           <TextField
             label="Password"
             onChange={(e) => setPassword(e.target.value)}
@@ -102,28 +102,23 @@ const AddDeviceDialog = ({
     onClose();
   };
   return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle id="alert-dialog-title">Add Device</DialogTitle>
-      <DialogContent>
-        <TextField
-          value={deviceName}
-          autoFocus
-          margin="dense"
-          id="name"
-          name="reponame"
-          label="Device Name"
-          fullWidth
-          variant="standard"
-          onChange={(event) => setDeviceName(event.target.value)}
-        />
-      </DialogContent>
-      <DialogActions>
+    <Modal opened={open} onClose={onClose} centered>
+      <Title>Add Device</Title>
+
+      <TextInput
+        autoFocus={true}
+        value={deviceName}
+        label="Device Name"
+        placeholder="First input"
+        onChange={(event) => setDeviceName(event.target.value)}
+      />
+      <Group mt="xs">
         <Button onClick={onClose}>Cancel</Button>
         <Button onClick={create} autoFocus>
           Create
         </Button>
-      </DialogActions>
-    </Dialog>
+      </Group>
+    </Modal>
   );
 };
 
@@ -194,29 +189,29 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
           >
             <HomeTwoToneIcon sx={{ alignSelf: "center" }} />
           </Tooltip>
-          <Typography padding={0.5} variant="h5">
+          <Title p="sx" size="h4">
             Account
-          </Typography>
+          </Title>
         </>
       }
       Content={
         <>
-          <Stack direction={"row"} height={"100%"} marginRight={1}>
-            <Stack minWidth="400px">
+          <Flex direction={"row"} h={"100%"} mr="xs">
+            <Flex direction="column" miw="400px">
               <List
                 subheader={
                   <ListSubheader sx={{ textAlign: "start" }}>
-                    <Stack
-                      paddingLeft={1}
+                    <Flex
+                      pl="xs"
                       direction={"row"}
-                      justifyContent={"space-between"}
-                      alignItems={"center"}
+                      justify={"space-between"}
+                      align={"center"}
                     >
-                      <Typography>Devices:</Typography>
+                      <Text>Devices:</Text>
                       <Button onClick={() => setOpenAddDeviceDialog(true)}>
                         Add
                       </Button>
-                    </Stack>
+                    </Flex>
                   </ListSubheader>
                 }
               >
@@ -244,13 +239,13 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
                   </Group>
                 )}
               />
-            </Stack>
-            <Divider orientation="vertical" sx={{ marginRight: 1 }} />
+            </Flex>
+            <Divider orientation="vertical" mr="xs" />
             <DevicesView
               deviceId={selectedDevice ?? accountData.deviceId}
               metadataRepo={metadataRepo}
             />
-          </Stack>
+          </Flex>
           <AddDeviceDialog
             open={openAddDeviceDialog}
             onClose={() => setOpenAddDeviceDialog(false)}

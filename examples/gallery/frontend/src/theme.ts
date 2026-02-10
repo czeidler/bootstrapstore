@@ -1,10 +1,19 @@
-import { createTheme } from "@mui/material/styles";
+import { createTheme } from "@mantine/core";
 
 export const theme = createTheme({
-  palette: {
-    primary: {
-      main: "#2a9461", // Your primary color
-      contrastText: "#fff", // Text color against primary background
-    },
+  primaryColor: "green",
+  colors: {
+    green: [
+      "#eafcf3",
+      "#daf5e8",
+      "#b4e8cf",
+      "#8bdcb5",
+      "#6ad19e",
+      "#54cb90",
+      "#47c888",
+      "#38b075",
+      "#2a9461",
+      "#1a8856",
+    ],
   },
 });
