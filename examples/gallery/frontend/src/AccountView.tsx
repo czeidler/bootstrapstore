@@ -2,7 +2,7 @@ import { List, ListSubheader, TextField } from "@mui/material";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AccountFile, Account, MetadataRepository } from "lib";
 import { storeGetter } from "./utils";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AccountData } from "lib/src/account";
 import { DevicesView } from "./DeviceView";
 import { useCreateDevice, useDevices } from "./account-hooks";
@@ -124,12 +124,38 @@ const AddDeviceDialog = ({
   );
 };
 
-export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
+export function AccountViewPage({ accountFile }: { accountFile: AccountFile }) {
   const [accountData, setAccountData] = useState<AccountData | undefined>();
   const [metadataRepo, setMetadataRepo] = useState<
     MetadataRepository | undefined
   >();
 
+  if (accountData === undefined || metadataRepo === undefined) {
+    return (
+      <OpenAccount
+        accountFile={accountFile}
+        onOpen={(accountData, metadataRepo) => {
+          setAccountData(accountData);
+          setMetadataRepo(metadataRepo);
+        }}
+      />
+    );
+  }
+  return (
+    <AccountView
+      accountData={accountData}
+      metadataRepo={metadataRepo}
+      key={accountData.deviceId}
+    />
+  );
+}
+const AccountView = ({
+  accountData,
+  metadataRepo,
+}: {
+  accountData: AccountData;
+  metadataRepo: MetadataRepository;
+}) => {
   const { data: me } = useQuery({
     queryFn: async () => {
       const response = await tsr.me();
@@ -150,20 +176,6 @@ export const AccountView = ({ accountFile }: { accountFile: AccountFile }) => {
   const { data: devices } = useDevices(metadataRepo);
 
   const [selectedDevice, setSelectedDevice] = useState<string | undefined>();
-  useEffect(() => {
-    setSelectedDevice(accountData?.deviceId);
-  }, [accountData]);
-  if (accountData === undefined || metadataRepo === undefined) {
-    return (
-      <OpenAccount
-        accountFile={accountFile}
-        onOpen={(accountData, metadataRepo) => {
-          setAccountData(accountData);
-          setMetadataRepo(metadataRepo);
-        }}
-      />
-    );
-  }
 
   const data = [
     {

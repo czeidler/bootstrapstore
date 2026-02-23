@@ -2,7 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { readAccountFile, Account } from "lib";
 import { storeGetter } from "./utils";
 import { useState } from "react";
-import { AccountView } from "./AccountView";
+import { AccountViewPage } from "./AccountView";
 import { MainLayout } from "./MainLayout";
 import { getRepoIOConfig } from "./io-config";
 import { queryClient } from "./account-hooks";
@@ -73,7 +73,7 @@ export const Admin = () => {
       ) : !accountFile ? (
         <AccountCreation />
       ) : (
-        <AccountView accountFile={accountFile} />
+        <AccountViewPage accountFile={accountFile} />
       )}
     </>
   );
