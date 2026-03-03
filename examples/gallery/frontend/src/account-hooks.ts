@@ -37,6 +37,47 @@ export const useDevices = (metadataRepo: MetadataRepository | undefined) =>
     enabled: metadataRepo !== undefined,
   });
 
+type DeviceWithLocations = { device: DeviceInfo; locations: LocationInfo[] };
+export const useDevicesWithLocations = (
+  metadataRepo: MetadataRepository | undefined,
+) =>
+  useQuery({
+    queryKey: ["devices", "all", "locations", "all"],
+    queryFn: async (): Promise<DeviceWithLocations[]> => {
+      const repoList = await metadataRepo?.listDevices();
+      const repos = await Promise.all(
+        repoList
+          ?.filter((it) => it !== undefined)
+          .map((it) => metadataRepo?.getDevice(it.name)) ?? [],
+      );
+      const devices = repos.filter((it): it is DeviceInfo => it !== undefined);
+      return Promise.all(
+        devices.map(async (device) => {
+          const locationEntries = await metadataRepo?.listLocations(device.id);
+          if (locationEntries === undefined) {
+            return { device, locations: [] };
+          }
+          const locations = (
+            await Promise.all(
+              locationEntries?.map(async (locEntry) => {
+                const location = await metadataRepo?.readLocation(
+                  device.id,
+                  locEntry.name,
+                );
+                return location;
+              }),
+            )
+          )?.filter((it) => it !== undefined);
+          return {
+            device,
+            locations,
+          } satisfies DeviceWithLocations;
+        }),
+      );
+    },
+    enabled: metadataRepo !== undefined,
+  });
+
 export const useConnections = (
   metadataRepo: MetadataRepository,
   deviceId: string,
@@ -78,7 +119,7 @@ export const useCreateChildRepo = (
     mutationFn: () => metadataRepo.createChild(deviceId, repoName),
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: ["devices", deviceId, "locations"],
+        queryKey: ["devices"],
       }),
   });
 
@@ -110,7 +151,7 @@ export const useCreateCheckout = (
     },
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: ["devices", deviceId, "locations"],
+        queryKey: ["devices"],
       }),
   });
 

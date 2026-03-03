@@ -1,11 +1,15 @@
 import { List, ListSubheader, TextField } from "@mui/material";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AccountFile, Account, MetadataRepository } from "lib";
+import { AccountFile, Account, MetadataRepository, LocationInfo } from "lib";
 import { storeGetter } from "./utils";
 import { useState } from "react";
 import { AccountData } from "lib/src/account";
 import { DevicesView } from "./DeviceView";
-import { useCreateDevice, useDevices } from "./account-hooks";
+import {
+  useCreateDevice,
+  useDevices,
+  useDevicesWithLocations,
+} from "./account-hooks";
 import { shortId, stringToUint8Array } from "lib/src/utils";
 import HomeTwoToneIcon from "@mui/icons-material/HomeTwoTone";
 import { MainLayout } from "./MainLayout";
@@ -173,10 +177,22 @@ const AccountView = ({
   });
 
   const [openAddDeviceDialog, setOpenAddDeviceDialog] = useState(false);
-  const { data: devices } = useDevices(metadataRepo);
+  const { data: devicesWithLocations } = useDevicesWithLocations(metadataRepo);
 
   const [selectedDevice, setSelectedDevice] = useState<string | undefined>();
 
+  const locationToTreeChild = (location: LocationInfo) => {
+    if (location.type === "directory") {
+      return {
+        value: location.id,
+        label: <Text>Directory: {location.path}</Text>,
+      };
+    }
+    return {
+      value: location.id,
+      label: <Text>Repository {location.id}</Text>,
+    };
+  };
   const data = [
     {
       value: accountData.deviceId,
@@ -185,17 +201,21 @@ const AccountView = ({
           <Text>{`${accountData.deviceId} (Local)`}</Text>
         </Tooltip>
       ),
-      children: [{ value: "account-repo", label: <Text>Account repo</Text> }],
+      children:
+        devicesWithLocations
+          ?.find((it) => it.device.id === accountData.deviceId)
+          ?.locations.map(locationToTreeChild) ?? [],
     },
-    ...(devices
-      ?.filter((device) => device.id !== accountData.deviceId)
+    ...(devicesWithLocations
+      ?.filter((device) => device.device.id !== accountData.deviceId)
       .map((device) => ({
-        value: device.id,
+        value: device.device.id,
         label: (
-          <Text onClick={() => setSelectedDevice(device.id)}>
-            {device.name ?? device.id}
+          <Text onClick={() => setSelectedDevice(device.device.id)}>
+            {device.device.name ?? device.device.id}
           </Text>
         ),
+        children: device.locations.map(locationToTreeChild),
       })) ?? []),
   ];
 
