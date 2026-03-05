@@ -5,11 +5,7 @@ import { storeGetter } from "./utils";
 import { useState } from "react";
 import { AccountData } from "lib/src/account";
 import { DevicesView } from "./DeviceView";
-import {
-  useCreateDevice,
-  useDevices,
-  useDevicesWithLocations,
-} from "./account-hooks";
+import { useCreateDevice, useDevicesWithLocations } from "./account-hooks";
 import { shortId, stringToUint8Array } from "lib/src/utils";
 import HomeTwoToneIcon from "@mui/icons-material/HomeTwoTone";
 import { MainLayout } from "./MainLayout";
@@ -20,6 +16,7 @@ import {
   Button,
   Divider,
   Flex,
+  getTreeExpandedState,
   Group,
   Modal,
   Space,
@@ -31,6 +28,7 @@ import {
   useMantineTheme,
   useTree,
 } from "@mantine/core";
+import { LocationRepoView } from "./LocationRepoView";
 
 // TEMP
 function create16ByteBuffer(str: string): Uint8Array {
@@ -172,24 +170,19 @@ const AccountView = ({
   });
 
   const theme = useMantineTheme();
-  const tree = useTree({
-    initialSelectedState: [], // Set initial selected nodes
-  });
 
   const [openAddDeviceDialog, setOpenAddDeviceDialog] = useState(false);
   const { data: devicesWithLocations } = useDevicesWithLocations(metadataRepo);
 
-  const [selectedDevice, setSelectedDevice] = useState<string | undefined>();
-
-  const locationToTreeChild = (location: LocationInfo) => {
+  const locationToTreeChild = (deviceId: string, location: LocationInfo) => {
     if (location.type === "directory") {
       return {
-        value: location.id,
+        value: `${deviceId}#${location.id}`,
         label: <Text>Directory: {location.path}</Text>,
       };
     }
     return {
-      value: location.id,
+      value: `${deviceId}#${location.id}`,
       label: <Text>Repository {location.id}</Text>,
     };
   };
@@ -204,20 +197,29 @@ const AccountView = ({
       children:
         devicesWithLocations
           ?.find((it) => it.device.id === accountData.deviceId)
-          ?.locations.map(locationToTreeChild) ?? [],
+          ?.locations.map((it) =>
+            locationToTreeChild(accountData.deviceId, it),
+          ) ?? [],
     },
     ...(devicesWithLocations
       ?.filter((device) => device.device.id !== accountData.deviceId)
       .map((device) => ({
         value: device.device.id,
-        label: (
-          <Text onClick={() => setSelectedDevice(device.device.id)}>
-            {device.device.name ?? device.device.id}
-          </Text>
+        label: <Text>{device.device.name ?? device.device.id}</Text>,
+        children: device.locations.map((it) =>
+          locationToTreeChild(device.device.id, it),
         ),
-        children: device.locations.map(locationToTreeChild),
       })) ?? []),
   ];
+  const tree = useTree({
+    initialSelectedState: [accountData.deviceId], // Set initial selected nodes
+    initialExpandedState: getTreeExpandedState(data, "*"),
+  });
+
+  const [selected, setSelected] = useState<{
+    deviceId: string;
+    locationId?: string;
+  }>({ deviceId: accountData.deviceId });
 
   return (
     <MainLayout
@@ -280,6 +282,8 @@ const AccountView = ({
                     onClick={() => {
                       tree.toggleSelected(node.value);
                       tree.toggleExpanded(node.value);
+                      const [deviceId, locationId] = node.value.split("#");
+                      setSelected({ deviceId, locationId });
                     }}
                   >
                     {hasChildren ? (
@@ -300,10 +304,14 @@ const AccountView = ({
               />
             </Flex>
             <Divider orientation="vertical" mr="xs" />
-            <DevicesView
-              deviceId={selectedDevice ?? accountData.deviceId}
-              metadataRepo={metadataRepo}
-            />
+            {selected.locationId === undefined ? (
+              <DevicesView
+                deviceId={selected.deviceId}
+                metadataRepo={metadataRepo}
+              />
+            ) : (
+              <LocationRepoView />
+            )}
           </Flex>
           <AddDeviceDialog
             open={openAddDeviceDialog}
