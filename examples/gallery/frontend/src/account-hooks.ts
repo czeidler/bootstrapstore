@@ -123,6 +123,19 @@ export const useCreateChildRepo = (
       }),
   });
 
+export const useChildRepo = (
+  metadataRepo: MetadataRepository,
+  deviceId: string,
+  repoId: string,
+) =>
+  useQuery({
+    queryKey: ["devices", deviceId, "child-repos", repoId],
+    queryFn: async () => {
+      const repo = await metadataRepo.openChild(deviceId, repoId);
+      return repo;
+    },
+  });
+
 export const useLocations = (
   metadataRepo: MetadataRepository,
   deviceId: string,

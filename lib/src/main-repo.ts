@@ -241,10 +241,10 @@ export class MetadataRepository {
   }
 
   async openChild(
-    profileId: string,
+    deviceId: string,
     repoId: string,
   ): Promise<Repository | undefined> {
-    const repoInfo = await this.readLocation(profileId, repoId);
+    const repoInfo = await this.readLocation(deviceId, repoId);
     if (repoInfo?.type !== "repository") {
       return undefined;
     }

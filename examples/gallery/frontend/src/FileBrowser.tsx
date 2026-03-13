@@ -13,7 +13,7 @@ import {
 import CollectionsTwoToneIcon from "@mui/icons-material/CollectionsTwoTone";
 import FolderTwoToneIcon from "@mui/icons-material/FolderTwoTone";
 import DriveFolderUploadTwoToneIcon from "@mui/icons-material/DriveFolderUploadTwoTone";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MetadataRepository, Repository } from "lib";
 
 import FileView from "./FileView";
@@ -36,9 +36,11 @@ export const FileBrowser = ({
 }) => {
   const [viewType, setViewType] = useState<"gallery" | "file">("file");
 
-  const { currentPath, dirEntries, openFolder, onBack } = useFileNavigation(
-    repo && metadataRepo ? rootDir(repo, metadataRepo) : undefined,
-  );
+  const root = useMemo(() => {
+    return repo && metadataRepo ? rootDir(repo, metadataRepo) : undefined;
+  }, [metadataRepo, repo]);
+  const { currentPath, dirEntries, openFolder, onBack } =
+    useFileNavigation(root);
 
   const onDirEntryClicked = async (entry: VFSEntry) => {
     if (entry.type !== "file") {

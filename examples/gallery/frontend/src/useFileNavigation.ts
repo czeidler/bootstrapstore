@@ -10,7 +10,7 @@ export type PathStackEntry = {
 
 export const useFileNavigation = (root: VFSDir | undefined) => {
   const [pathStack, setPathStack] = useState<{ path: string[]; dir: VFSDir }[]>(
-    root ? [{ path: [], dir: root }] : []
+    root ? [{ path: [], dir: root }] : [],
   );
   const currentPath: { path: string[]; dir: VFSDir } | undefined =
     pathStack[pathStack.length - 1];
@@ -24,14 +24,6 @@ export const useFileNavigation = (root: VFSDir | undefined) => {
       setDirEntries(content);
     })();
   }, [currentPath]);
-
-  useEffect(() => {
-    if (!root) {
-      setPathStack([]);
-      return;
-    }
-    setPathStack([{ path: [], dir: root }]);
-  }, [root]);
 
   const onBack = useCallback(() => {
     if (!currentPath) {
@@ -52,7 +44,7 @@ export const useFileNavigation = (root: VFSDir | undefined) => {
         ]);
       }
     },
-    [pathStack, currentPath, dirEntries]
+    [pathStack, currentPath, dirEntries],
   );
 
   return {

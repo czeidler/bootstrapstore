@@ -2,7 +2,7 @@ import { List, ListSubheader, TextField } from "@mui/material";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AccountFile, Account, MetadataRepository, LocationInfo } from "lib";
 import { storeGetter } from "./utils";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AccountData } from "lib/src/account";
 import { DevicesView } from "./DeviceView";
 import { useCreateDevice, useDevicesWithLocations } from "./account-hooks";
@@ -186,31 +186,34 @@ const AccountView = ({
       label: <Text>Repository {location.id}</Text>,
     };
   };
-  const data = [
-    {
-      value: accountData.deviceId,
-      label: (
-        <Tooltip label={`${me?.body?.admin?.path}`}>
-          <Text>{`${accountData.deviceId} (Local)`}</Text>
-        </Tooltip>
-      ),
-      children:
-        devicesWithLocations
-          ?.find((it) => it.device.id === accountData.deviceId)
-          ?.locations.map((it) =>
-            locationToTreeChild(accountData.deviceId, it),
-          ) ?? [],
-    },
-    ...(devicesWithLocations
-      ?.filter((device) => device.device.id !== accountData.deviceId)
-      .map((device) => ({
-        value: device.device.id,
-        label: <Text>{device.device.name ?? device.device.id}</Text>,
-        children: device.locations.map((it) =>
-          locationToTreeChild(device.device.id, it),
+  const data = useMemo(
+    () => [
+      {
+        value: accountData.deviceId,
+        label: (
+          <Tooltip label={`${me?.body?.admin?.path}`}>
+            <Text>{`${accountData.deviceId} (Local)`}</Text>
+          </Tooltip>
         ),
-      })) ?? []),
-  ];
+        children:
+          devicesWithLocations
+            ?.find((it) => it.device.id === accountData.deviceId)
+            ?.locations.map((it) =>
+              locationToTreeChild(accountData.deviceId, it),
+            ) ?? [],
+      },
+      ...(devicesWithLocations
+        ?.filter((device) => device.device.id !== accountData.deviceId)
+        .map((device) => ({
+          value: device.device.id,
+          label: <Text>{device.device.name ?? device.device.id}</Text>,
+          children: device.locations.map((it) =>
+            locationToTreeChild(device.device.id, it),
+          ),
+        })) ?? []),
+    ],
+    [accountData.deviceId, devicesWithLocations, me?.body?.admin?.path],
+  );
   const tree = useTree({
     initialSelectedState: [accountData.deviceId], // Set initial selected nodes
     initialExpandedState: getTreeExpandedState(data, "*"),
@@ -218,7 +221,7 @@ const AccountView = ({
 
   const [selected, setSelected] = useState<{
     deviceId: string;
-    locationId?: string;
+    location?: LocationInfo;
   }>({ deviceId: accountData.deviceId });
 
   return (
@@ -283,7 +286,11 @@ const AccountView = ({
                       tree.toggleSelected(node.value);
                       tree.toggleExpanded(node.value);
                       const [deviceId, locationId] = node.value.split("#");
-                      setSelected({ deviceId, locationId });
+                      const location = devicesWithLocations
+                        ?.find((it) => it.device.id === deviceId)
+                        ?.locations.find((it) => it.id === locationId);
+
+                      setSelected({ deviceId, location });
                     }}
                   >
                     {hasChildren ? (
@@ -304,13 +311,17 @@ const AccountView = ({
               />
             </Flex>
             <Divider orientation="vertical" mr="xs" />
-            {selected.locationId === undefined ? (
+            {selected.location === undefined ? (
               <DevicesView
                 deviceId={selected.deviceId}
                 metadataRepo={metadataRepo}
               />
             ) : (
-              <LocationRepoView />
+              <LocationRepoView
+                deviceId={selected.deviceId}
+                location={selected.location}
+                metadataRepo={metadataRepo}
+              />
             )}
           </Flex>
           <AddDeviceDialog
