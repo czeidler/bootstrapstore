@@ -23,8 +23,8 @@ export function LocationRepoView({
 
   return (
     <Flex direction="column" style={{ width: "100%" }}>
-      <Text>{location.name}</Text>
-      <Text>{location.path}</Text>
+      <Text>Name: {location.name}</Text>
+      <Text>Path: {location.path}</Text>
 
       {repo === undefined ? null : (
         <FileBrowser repo={repo} metadataRepo={metadataRepo} />
