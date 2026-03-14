@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { DataGrid, GridRowParams } from "@mui/x-data-grid";
 import FolderTwoToneIcon from "@mui/icons-material/FolderTwoTone";
 import InsertDriveFileTwoToneIcon from "@mui/icons-material/InsertDriveFileTwoTone";
 import DriveFileMoveTwoToneIcon from "@mui/icons-material/DriveFileMoveTwoTone";
 import { VFSEntry } from "lib/src/vfs";
+import { DataTable } from "mantine-datatable";
+import "mantine-datatable/styles.layer.css";
 
 type ViewEntry = {
   id: string;
@@ -40,7 +41,7 @@ export default function FileView({
             return { id: entry.name, entry, stats };
           }
           return { id: entry.name, entry };
-        })
+        }),
       );
 
       viewEntries.sort((a, b) => {
@@ -54,15 +55,19 @@ export default function FileView({
   }, [content]);
 
   return (
-    <DataGrid
-      rows={dirEntries}
+    <DataTable
+      withTableBorder
+      withColumnBorders
+      // provide data
+      records={dirEntries}
+      // define columns
       columns={[
         {
-          field: "icon",
-          headerName: "",
-          width: 30,
-          renderCell: (params) => {
-            const type = params.row.entry.type;
+          title: "",
+          accessor: "entry.type",
+          width: 50,
+          render: (row) => {
+            const type = row.entry.type;
             if (type === "dir") {
               return <FolderTwoToneIcon />;
             }
@@ -73,52 +78,41 @@ export default function FileView({
           },
         },
         {
-          field: "name",
-          headerName: "Name",
-          flex: 2,
-          renderCell: (params) => {
-            return params.row.entry.name;
-          },
+          accessor: "entry.name",
+          title: "Name",
+          textAlign: "left",
         },
         {
-          field: "size",
-          headerName: "Size",
+          accessor: "stats.size",
+          title: "Size",
           width: 110,
-          renderCell: (params) => {
-            return params.row.stats?.size;
-          },
         },
         {
-          field: "type",
-          headerName: "Type",
+          accessor: "entry.type",
+          title: "Type",
           width: 110,
-          renderCell: (params) => {
-            return params.row.entry.type === "file"
+          render: (row) => {
+            return row.entry.type === "file"
               ? "File"
-              : params.row.entry.type === "dir"
-              ? "Dir"
-              : "Repo";
+              : row.entry.type === "dir"
+                ? "Dir"
+                : "Repo";
           },
         },
         {
-          field: "creationTime",
-          headerName: "Created",
+          accessor: "stats.creationTime",
+          title: "Created",
           width: 170,
-          valueGetter: (_value, row) => formatTime(row.stats?.creationTime),
+          render: (row) => formatTime(row.stats?.creationTime),
         },
         {
-          field: "modificationTime",
-          headerName: "Last modified",
+          accessor: "stats.modificationTime",
+          title: "Last modified",
           width: 170,
-          valueGetter: (_value, row) => formatTime(row.stats?.modificationTime),
+          render: (row) => formatTime(row.stats?.modificationTime),
         },
       ]}
-      onRowClick={async (params: GridRowParams<ViewEntry>) => {
-        onDirEntryClicked(params.row.entry);
-      }}
-      sx={{
-        border: 0,
-      }}
+      onRowClick={(row) => onDirEntryClicked(row.record.entry)}
     />
   );
 }
