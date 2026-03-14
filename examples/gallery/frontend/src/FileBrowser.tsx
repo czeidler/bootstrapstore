@@ -13,32 +13,17 @@ import {
 import CollectionsTwoToneIcon from "@mui/icons-material/CollectionsTwoTone";
 import FolderTwoToneIcon from "@mui/icons-material/FolderTwoTone";
 import DriveFolderUploadTwoToneIcon from "@mui/icons-material/DriveFolderUploadTwoTone";
-import { useEffect, useMemo, useState } from "react";
-import { MetadataRepository, Repository } from "lib";
+import { useEffect, useState } from "react";
+import { VFSDir } from "lib";
 
 import FileView from "./FileView";
 import { imageExtensions } from "./utils";
 import { useFileNavigation } from "./useFileNavigation";
 import { VFSEntry } from "lib";
-import { rootDir } from "lib";
 
-export type PathStackEntry = {
-  repo: Repository;
-  repoPath: string[];
-  path: string[];
-};
-export const FileBrowser = ({
-  repo,
-  metadataRepo,
-}: {
-  repo: Repository | undefined;
-  metadataRepo: MetadataRepository | undefined;
-}) => {
+export const FileBrowser = ({ root }: { root: VFSDir | undefined }) => {
   const [viewType, setViewType] = useState<"gallery" | "file">("file");
 
-  const root = useMemo(() => {
-    return repo && metadataRepo ? rootDir(repo, metadataRepo) : undefined;
-  }, [metadataRepo, repo]);
   const { currentPath, dirEntries, openFolder, onBack } =
     useFileNavigation(root);
 
@@ -102,7 +87,7 @@ export const FileBrowser = ({
         </ToggleButtonGroup>
       </Stack>
       <Divider />
-      {repo === undefined ? (
+      {root === undefined ? (
         <Stack
           height="100%"
           justifyContent={"center"}

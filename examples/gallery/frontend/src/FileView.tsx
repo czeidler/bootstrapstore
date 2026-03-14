@@ -58,13 +58,12 @@ export default function FileView({
     <DataTable
       withTableBorder
       withColumnBorders
-      // provide data
       records={dirEntries}
-      // define columns
+      idAccessor={"entry.name"}
       columns={[
         {
           title: "",
-          accessor: "entry.type",
+          accessor: "",
           width: 50,
           render: (row) => {
             const type = row.entry.type;

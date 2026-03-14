@@ -37,7 +37,7 @@ class RemoteProxyFileVFS implements VFSFile {
 
 export class RemoteProxyDirVFS implements VFSDir {
   constructor(
-    private remote: ConnectionInfo,
+    private remote: ConnectionInfo | undefined,
     private path: string[],
   ) {}
 

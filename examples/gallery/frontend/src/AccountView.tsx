@@ -29,6 +29,7 @@ import {
   useTree,
 } from "@mantine/core";
 import { LocationRepoView } from "./LocationRepoView";
+import { DirRepoView } from "./LocationDirView";
 
 // TEMP
 function create16ByteBuffer(str: string): Uint8Array {
@@ -316,11 +317,16 @@ const AccountView = ({
                 deviceId={selected.deviceId}
                 metadataRepo={metadataRepo}
               />
-            ) : (
+            ) : selected.location.type === "repository" ? (
               <LocationRepoView
                 deviceId={selected.deviceId}
                 location={selected.location}
                 metadataRepo={metadataRepo}
+              />
+            ) : (
+              <DirRepoView
+                deviceId={selected.deviceId}
+                location={selected.location}
               />
             )}
           </Flex>

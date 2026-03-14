@@ -1,7 +1,8 @@
-import { LocationInfo, MetadataRepository } from "lib";
+import { LocationInfo, MetadataRepository, rootDir } from "lib";
 import { FileBrowser } from "./FileBrowser";
 import { Flex, Text } from "@mantine/core";
 import { useChildRepo } from "./account-hooks";
+import { useMemo } from "react";
 
 export function LocationRepoView({
   deviceId,
@@ -21,14 +22,15 @@ export function LocationRepoView({
   const repo =
     metadataRepo.metaRepo.repoId === location.id ? metadataRepo.metaRepo : data;
 
+  const root = useMemo(() => {
+    return repo && metadataRepo ? rootDir(repo, metadataRepo) : undefined;
+  }, [metadataRepo, repo]);
   return (
     <Flex direction="column" style={{ width: "100%" }}>
       <Text>Name: {location.name}</Text>
       <Text>Path: {location.path}</Text>
 
-      {repo === undefined ? null : (
-        <FileBrowser repo={repo} metadataRepo={metadataRepo} />
-      )}
+      {repo === undefined ? null : <FileBrowser root={root} />}
     </Flex>
   );
 }

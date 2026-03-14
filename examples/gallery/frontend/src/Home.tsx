@@ -1,7 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import { Stack } from "@mui/material";
-import { useEffect, useState } from "react";
-import { MetadataRepository, Repository } from "lib";
+import { useEffect, useMemo, useState } from "react";
+import { MetadataRepository, Repository, rootDir } from "lib";
 
 import { storeGetter } from "./utils";
 import { FileBrowser } from "./FileBrowser";
@@ -40,9 +40,15 @@ export const Home = () => {
     })();
   }, [repoId, keyParam]);
 
+  const root = useMemo(() => {
+    return repo?.repo && repo?.metadataRepository
+      ? rootDir(repo?.repo, repo?.metadataRepository)
+      : undefined;
+  }, [repo?.metadataRepository, repo?.repo]);
+
   return (
     <Stack style={{ width: "100%", height: "100%" }} gap={1}>
-      <FileBrowser repo={repo?.repo} metadataRepo={repo?.metadataRepository} />
+      <FileBrowser root={root} />
     </Stack>
   );
 };
