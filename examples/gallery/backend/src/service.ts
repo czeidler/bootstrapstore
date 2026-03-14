@@ -2,8 +2,9 @@ import { FileBlobStore } from "lib-node";
 import { BlobStore, RepoBlobStoreGetter } from "lib";
 import { argv } from "node:process";
 import { arrayToString, stringToUint8Array } from "lib/src/utils";
+import path from "node:path";
 
-export const repoDir = argv[2] ?? "testRepo";
+export const repoDir = path.resolve(argv[2] ?? "testRepo");
 
 const store = new FileBlobStore([repoDir, ".storage"]);
 export const storeGetter = new RepoBlobStoreGetter(store);
