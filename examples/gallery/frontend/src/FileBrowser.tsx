@@ -1,15 +1,4 @@
 import GalleryView from "./GalleryView";
-import {
-  Breadcrumbs,
-  CircularProgress,
-  Divider,
-  IconButton,
-  Stack,
-  ToggleButton,
-  ToggleButtonGroup,
-  Tooltip,
-  Typography,
-} from "@mui/material";
 import CollectionsTwoToneIcon from "@mui/icons-material/CollectionsTwoTone";
 import FolderTwoToneIcon from "@mui/icons-material/FolderTwoTone";
 import DriveFolderUploadTwoToneIcon from "@mui/icons-material/DriveFolderUploadTwoTone";
@@ -20,6 +9,16 @@ import FileView from "./FileView";
 import { imageExtensions } from "./utils";
 import { useFileNavigation } from "./useFileNavigation";
 import { VFSEntry } from "lib";
+import {
+  Breadcrumbs,
+  Flex,
+  Loader,
+  Text,
+  Divider,
+  ActionIcon,
+  Tooltip,
+  Group,
+} from "@mantine/core";
 
 export const FileBrowser = ({ root }: { root: VFSDir | undefined }) => {
   const [viewType, setViewType] = useState<"gallery" | "file">("file");
@@ -50,52 +49,49 @@ export const FileBrowser = ({ root }: { root: VFSDir | undefined }) => {
 
   return (
     <>
-      <Stack direction={"row"} alignItems={"center"}>
-        <Tooltip title="Navigate to parent directory">
+      <Flex direction={"row"} align={"center"} gap={5}>
+        <Tooltip label="Navigate to parent directory">
           <span>
-            <IconButton
+            <ActionIcon
               disabled={(currentPath.length ?? 0) === 0}
               onClick={onBack}
             >
               <DriveFolderUploadTwoToneIcon />
-            </IconButton>
+            </ActionIcon>
           </span>
         </Tooltip>
         <Breadcrumbs aria-label="breadcrumb">
           {currentPath.map((it, i) => (
-            <Typography key={`${i}`}>{it}</Typography>
+            <Text key={`${i}`}>{it}</Text>
           ))}
         </Breadcrumbs>
 
-        <ToggleButtonGroup
-          value={viewType}
-          exclusive
-          onChange={(_, value) => setViewType(value)}
-          aria-label="text alignment"
-          sx={{ marginLeft: "auto", marginRight: 0 }}
-        >
-          <Tooltip title="Gallery">
-            <ToggleButton value="gallery" aria-label="Gallery" size="small">
+        <Group gap={0} ml="auto" mr={0}>
+          <Tooltip label="Gallery">
+            <ActionIcon
+              aria-label="Gallery"
+              disabled={viewType === "gallery"}
+              onClick={() => setViewType("gallery")}
+            >
               <CollectionsTwoToneIcon />
-            </ToggleButton>
+            </ActionIcon>
           </Tooltip>
-          <Tooltip title="Files">
-            <ToggleButton value="file" aria-label="File" size="small">
+          <Tooltip label="Files">
+            <ActionIcon
+              aria-label="File"
+              disabled={viewType === "file"}
+              onClick={() => setViewType("file")}
+            >
               <FolderTwoToneIcon />
-            </ToggleButton>
+            </ActionIcon>
           </Tooltip>
-        </ToggleButtonGroup>
-      </Stack>
+        </Group>
+      </Flex>
       <Divider />
       {root === undefined ? (
-        <Stack
-          height="100%"
-          justifyContent={"center"}
-          marginLeft="auto"
-          marginRight="auto"
-        >
-          <CircularProgress />
-        </Stack>
+        <Flex h="100%" justify={"center"} ml="auto" mr="auto">
+          <Loader />
+        </Flex>
       ) : viewType === "gallery" ? (
         <GalleryView dirPath={currentPath} content={dirEntries} />
       ) : (
