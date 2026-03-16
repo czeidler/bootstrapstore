@@ -1,8 +1,8 @@
 import { LocationInfo, MetadataRepository, rootDir } from "lib";
 import { FileBrowser } from "./FileBrowser";
-import { Flex, Text } from "@mantine/core";
+import { Flex, Tabs, Text } from "@mantine/core";
 import { useChildRepo } from "./account-hooks";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 export function LocationRepoView({
   deviceId,
@@ -25,12 +25,23 @@ export function LocationRepoView({
   const root = useMemo(() => {
     return repo && metadataRepo ? rootDir(repo, metadataRepo) : undefined;
   }, [metadataRepo, repo]);
+  const [activeTab, setActiveTab] = useState<string | null>("details");
   return (
     <Flex direction="column" style={{ width: "100%" }}>
-      <Text>Name: {location.name}</Text>
-      <Text>Path: {location.path}</Text>
+      <Tabs value={activeTab} onChange={setActiveTab}>
+        <Tabs.List>
+          <Tabs.Tab value="details">Detail</Tabs.Tab>
+          <Tabs.Tab value="browse">Browser</Tabs.Tab>
+        </Tabs.List>
 
-      {repo === undefined ? null : <FileBrowser root={root} />}
+        <Tabs.Panel value="details">
+          <Text>Name: {location.name}</Text>
+          <Text>Path: {location.path}</Text>
+        </Tabs.Panel>
+        <Tabs.Panel value="browse">
+          {repo === undefined ? null : <FileBrowser root={root} />}
+        </Tabs.Panel>
+      </Tabs>
     </Flex>
   );
 }

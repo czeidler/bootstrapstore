@@ -1,8 +1,8 @@
 import { LocationInfo } from "lib";
 import { FileBrowser } from "./FileBrowser";
-import { Flex, Text } from "@mantine/core";
+import { Flex, Tabs, Text } from "@mantine/core";
 import { RemoteProxyDirVFS } from "./remote-proxy-vfs";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 export function DirRepoView({
   deviceId,
@@ -17,12 +17,22 @@ export function DirRepoView({
   const root = useMemo(() => {
     return new RemoteProxyDirVFS(undefined, location.path?.split("/") ?? []);
   }, []);
-
+  const [activeTab, setActiveTab] = useState<string | null>("details");
   return (
     <Flex direction="column" style={{ width: "100%" }}>
-      <Text>Path: {location.path}</Text>
+      <Tabs value={activeTab} onChange={setActiveTab}>
+        <Tabs.List>
+          <Tabs.Tab value="details">Detail</Tabs.Tab>
+          <Tabs.Tab value="browse">Browser</Tabs.Tab>
+        </Tabs.List>
 
-      <FileBrowser root={root} />
+        <Tabs.Panel value="details">
+          <Text>Path: {location.path}</Text>
+        </Tabs.Panel>
+        <Tabs.Panel value="browse">
+          <FileBrowser root={root} />
+        </Tabs.Panel>
+      </Tabs>
     </Flex>
   );
 }
