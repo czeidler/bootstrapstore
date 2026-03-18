@@ -49,16 +49,14 @@ export const FileBrowser = ({ root }: { root: VFSDir | undefined }) => {
 
   return (
     <>
-      <Flex direction={"row"} align={"center"} gap={5}>
+      <Flex direction={"row"} align={"center"} gap={5} pt={2} pb={2}>
         <Tooltip label="Navigate to parent directory">
-          <span>
-            <ActionIcon
-              disabled={(currentPath.length ?? 0) === 0}
-              onClick={onBack}
-            >
-              <DriveFolderUploadTwoToneIcon />
-            </ActionIcon>
-          </span>
+          <ActionIcon
+            disabled={(currentPath.length ?? 0) === 0}
+            onClick={onBack}
+          >
+            <DriveFolderUploadTwoToneIcon />
+          </ActionIcon>
         </Tooltip>
         <Breadcrumbs aria-label="breadcrumb">
           {currentPath.map((it, i) => (
