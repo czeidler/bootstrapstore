@@ -29,7 +29,7 @@ export type DiffEntry = {
 export const diffWalk = async (
   ours: DirReader,
   theirs: DirReader,
-  callback: (entry: DiffEntry) => void
+  callback: (entry: DiffEntry) => void,
 ) => {
   const ongoingDirs: string[][] = [[]];
   let currentDir;
@@ -48,8 +48,8 @@ export const diffWalk = async (
         their === undefined
           ? -1
           : our === undefined
-          ? 1
-          : our.name.localeCompare(their.name);
+            ? 1
+            : our.name.localeCompare(their.name);
       if (cmp === 1) {
         // theirs is missing, i.e. their is deleted
         indexTheir++;

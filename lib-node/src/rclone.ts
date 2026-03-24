@@ -13,8 +13,10 @@ import {
   VFSDir,
   VFSEntry,
   VFSFile,
+  DirEntry,
 } from "lib";
 import { arrayToString } from "lib/src/utils";
+import { DirReader } from "./diff";
 
 const exec = util.promisify(execRaw);
 
@@ -233,16 +235,87 @@ function remoteToRClone(connection: FSRemoteConnection | undefined): string {
   }
 }
 
-type RCloneLsResponse = {
-  list: {
-    IsDir: boolean;
-    MimeType: string;
-    ModTime: string;
-    Name: string;
-    Path: string;
-    Size: number;
-  }[];
+type RCloneLsEntry = {
+  IsDir: boolean;
+  MimeType: string;
+  ModTime: string;
+  Name: string;
+  Path: string;
+  Size: number;
 };
+type RCloneLsResponse = {
+  list: RCloneLsEntry[];
+};
+
+export function lsEntryLSEntryToDirEntry(entry: RCloneLsEntry): DirEntry {
+  if (entry.IsDir) {
+    return {
+      type: "dir",
+      name: entry.Name,
+    } satisfies DirEntry;
+  } else {
+    return {
+      type: "file",
+      name: entry.Name,
+      size: entry.Size,
+      creationTime: 0,
+      modificationTime: new Date(entry.ModTime).getTime(),
+    } satisfies DirEntry;
+  }
+}
+
+export function lsEntryLSEntryToDirReader(entries: RCloneLsEntry[]): DirReader {
+  type DirItem = { entry: DirEntry; content?: Dir };
+  type Dir = Map<string, DirItem>;
+  const root: Dir = new Map();
+  const getDir = (path: string[], create: boolean): Dir => {
+    return path.reduce<Dir>((prev, p) => {
+      const existing = prev.get(p);
+      if (existing !== undefined) {
+        if (existing.content === undefined) {
+          throw Error("Not a dir");
+        }
+        return existing.content;
+      }
+
+      if (!create) {
+        throw Error("Internal error");
+      }
+      const nDir = {
+        entry: { type: "dir", name: p },
+        content: new Map<string, DirItem>(),
+      } satisfies DirItem;
+      prev.set(p, nDir);
+      return nDir.content;
+    }, root);
+  };
+  for (const entry of entries) {
+    const path = entry.Path.split("/");
+    if (entry.IsDir) {
+      getDir(path, true);
+    } else {
+      const dirPath = path.slice(0, -1);
+      const fileName = path.slice(-1)[0];
+      const dir = getDir(dirPath, true);
+      dir.set(fileName, {
+        entry: {
+          type: "file",
+          name: entry.Name,
+          size: entry.Size,
+          creationTime: 0,
+          modificationTime: new Date(entry.ModTime).getTime(),
+        } satisfies DirEntry,
+      });
+    }
+  }
+
+  return {
+    list: async (path: string[]) => {
+      const dir = getDir(path, false);
+      return Array.from(dir.values()).map((it) => it.entry);
+    },
+  };
+}
 
 type RCloneJob = { jobid: number };
 
@@ -314,14 +387,11 @@ export class RCloneVFSDir implements VFSDir {
   ) {}
 
   async list(): Promise<VFSEntry[]> {
-    const result = await rcloneRC("operations/list", [
-      "--config=/dev/null",
-      `fs=${remoteToRClone(this.remote)}${this.path}`,
-      `remote=""`,
-      "--max-depth",
-      "1",
-    ]);
-    const response = JSON.parse(result) as RCloneLsResponse;
+    const response = await RCloneRCCommands.operationsList(
+      this.remote,
+      this.path,
+      1,
+    );
     return response.list.map((it) => {
       return it.IsDir
         ? ({
@@ -366,22 +436,23 @@ class RCloneVFSFile implements VFSFile {
   }
 }
 
-export class RCloneFSInterface {
-  async operationsCheck(
-    src: { path: string; remote: FSRemoteConnection | undefined },
-    destination: { path: string; remote: FSRemoteConnection | undefined },
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
+export class RCloneRCCommands {
+  static async operationsList(
+    remote: FSRemoteConnection | undefined,
+    path: string,
+    maxDepth: number = 0,
   ) {
-    const result = await rcloneRC("operations/check", [
+    const result = await rcloneRC("operations/list", [
       "--config=/dev/null",
-      `srcFs=${remoteToRClone(src.remote)}${src.path}`,
-      `srcRemote=""`,
-      `dstFs=${remoteToRClone(destination.remote)}${destination.path}`,
-      `dstRemote=""`,
+      `fs=${remoteToRClone(remote)}${path}`,
+      `remote=""`,
+      `_config='{"MaxDepth": ${maxDepth}}'`,
     ]);
-    return JSON.parse(result) as RCloneCheck;
+    return JSON.parse(result) as RCloneLsResponse;
   }
 
-  async copyAsync(
+  static async copyAsync(
     src: { path: string; remote: FSRemoteConnection | undefined },
     destination: { path: string; remote: FSRemoteConnection | undefined },
   ): Promise<RCloneJob> {
@@ -396,7 +467,7 @@ export class RCloneFSInterface {
     return JSON.parse(result) as RCloneJob;
   }
 
-  async jobStats(job: number): Promise<RCloneJobStats> {
+  static async jobStats(job: number): Promise<RCloneJobStats> {
     const result = await rcloneRC("core/stats", [
       "--config=/dev/null",
       `group=job/${job}`,
@@ -404,7 +475,7 @@ export class RCloneFSInterface {
     return JSON.parse(result) as RCloneJobStats;
   }
 
-  async jobStatus(job: number): Promise<RCloneJobStatus> {
+  static async jobStatus(job: number): Promise<RCloneJobStatus> {
     const result = await rcloneRC("job/status", [
       "--config=/dev/null",
       `jobid=${job}`,

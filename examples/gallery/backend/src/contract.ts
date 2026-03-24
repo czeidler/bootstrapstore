@@ -86,6 +86,13 @@ export const contract = c.router({
   },
 });
 
+const Remote = z.object({
+  type: z.enum(["sftp"]),
+  host: z.string(),
+  user: z.string(),
+  keyPem: z.string(),
+});
+
 /** Endpoints for a trusted server, e.g. when run locally. */
 export const trustedContract = c.router({
   syncRepo: {
@@ -123,14 +130,7 @@ export const trustedContract = c.router({
     method: "POST",
     path: "/ls",
     body: z.object({
-      remote: z
-        .object({
-          type: z.enum(["sftp"]),
-          host: z.string(),
-          user: z.string(),
-          keyPem: z.string(),
-        })
-        .optional(),
+      remote: Remote.optional(),
       path: z.string(),
     }),
     responses: {
@@ -151,6 +151,34 @@ export const trustedContract = c.router({
           ]),
         ),
       }),
+    },
+  },
+  diff: {
+    method: "POST",
+    path: "/diff",
+    body: z.object({
+      left: z.object({ remote: Remote.optional(), path: z.string() }),
+      right: z.object({ remote: Remote.optional(), path: z.string() }),
+    }),
+    responses: {
+      200: z.object({
+        added: z.array(
+          z.object({
+            name: z.string(),
+          }),
+        ),
+        removed: z.array(
+          z.object({
+            name: z.string(),
+          }),
+        ),
+        modified: z.array(
+          z.object({
+            name: z.string(),
+          }),
+        ),
+      }),
+      403: z.undefined(),
     },
   },
 });

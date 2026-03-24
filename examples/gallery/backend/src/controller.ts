@@ -7,8 +7,14 @@ import cors from "cors";
 import { Readable } from "stream";
 import { authValidation } from "./auth";
 import { syncRepo, syncRepoStatus } from "./trustedService";
-import { RCloneVFSDir } from "lib-node";
+import { DiffEntry, diffWalk, RCloneVFSDir } from "lib-node";
 import { ExhaustiveCheckError } from "lib";
+import {
+  lsEntryLSEntryToDirEntry,
+  lsEntryLSEntryToDirReader,
+  rcloneRC,
+  RCloneRCCommands,
+} from "lib-node/src/rclone";
 
 const upload = multer();
 const s = initServer();
@@ -158,6 +164,30 @@ export const buildApp = (config: AppConfig) => {
             }
           });
           return { status: 201, body: { entries: await Promise.all(entries) } };
+        },
+      },
+      diff: {
+        handler: async ({ body }) => {
+          const left = await RCloneRCCommands.operationsList(
+            body.left.remote,
+            body.left.path,
+          );
+          const leftReader = lsEntryLSEntryToDirReader(left.list);
+          const right = await RCloneRCCommands.operationsList(
+            body.right.remote,
+            body.right.path,
+          );
+          const rightReader = lsEntryLSEntryToDirReader(right.list);
+
+          const result: DiffEntry[] = [];
+          diffWalk(leftReader, rightReader, (it) => {
+            result.push(it);
+          });
+
+          return {
+            status: 201,
+            body: { added: [], removed: [], modified: [] },
+          };
         },
       },
     });
