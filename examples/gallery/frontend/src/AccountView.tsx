@@ -327,6 +327,8 @@ const AccountView = ({
               <DirRepoView
                 deviceId={selected.deviceId}
                 location={selected.location}
+                metadataRepo={metadataRepo}
+                devicesWithLocations={devicesWithLocations}
               />
             )}
           </Flex>

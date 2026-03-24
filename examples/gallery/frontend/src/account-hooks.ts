@@ -37,7 +37,10 @@ export const useDevices = (metadataRepo: MetadataRepository | undefined) =>
     enabled: metadataRepo !== undefined,
   });
 
-type DeviceWithLocations = { device: DeviceInfo; locations: LocationInfo[] };
+export type DeviceWithLocations = {
+  device: DeviceInfo;
+  locations: LocationInfo[];
+};
 export const useDevicesWithLocations = (
   metadataRepo: MetadataRepository | undefined,
 ) =>
