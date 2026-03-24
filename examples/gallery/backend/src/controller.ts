@@ -179,14 +179,26 @@ export const buildApp = (config: AppConfig) => {
           );
           const rightReader = lsEntryLSEntryToDirReader(right.list);
 
-          const result: DiffEntry[] = [];
-          diffWalk(leftReader, rightReader, (it) => {
-            result.push(it);
+          const result: {
+            added: { path: string[] }[];
+            deleted: { path: string[] }[];
+            changed: { path: string[] }[];
+          } = { added: [], deleted: [], changed: [] };
+          await diffWalk(leftReader, rightReader, (it) => {
+            if (it.type === "Added") {
+              result.added.push({ path: it.path });
+            }
+            if (it.type === "Deleted") {
+              result.deleted.push({ path: it.path });
+            }
+            if (it.type === "Changed") {
+              result.changed.push({ path: it.path });
+            }
           });
 
           return {
             status: 201,
-            body: { added: [], removed: [], modified: [] },
+            body: result,
           };
         },
       },

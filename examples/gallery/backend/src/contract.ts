@@ -164,17 +164,17 @@ export const trustedContract = c.router({
       200: z.object({
         added: z.array(
           z.object({
-            name: z.string(),
+            path: z.array(z.string()),
           }),
         ),
         removed: z.array(
           z.object({
-            name: z.string(),
+            path: z.array(z.string()),
           }),
         ),
         modified: z.array(
           z.object({
-            name: z.string(),
+            path: z.array(z.string()),
           }),
         ),
       }),
