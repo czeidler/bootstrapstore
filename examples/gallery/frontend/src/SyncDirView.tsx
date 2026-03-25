@@ -1,9 +1,10 @@
 import { Button, Modal, Flex, Text, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { MetadataRepository, shortId } from "lib";
+import { MetadataRepository, shortId, SyncInfo } from "lib";
 import { useState } from "react";
 import { DeviceWithLocations, useCreateSync, useSyncs } from "./account-hooks";
 import { Divider } from "@mui/material";
+import { SyncDirStatus } from "./SyncDirStatus";
 
 const CreateSyncDialog = ({
   open,
@@ -58,6 +59,33 @@ const CreateSyncDialog = ({
   );
 };
 
+function SyncDirEntry({ syncInfo }: { syncInfo: SyncInfo }) {
+  const [openDryRunDialog, { toggle, close }] = useDisclosure(false);
+  return (
+    <>
+      <Flex key={syncInfo.id} direction={"column"} gap={5} align={"start"}>
+        <Text>Id: {syncInfo.id}</Text>
+        <Text>Type: {syncInfo.type}</Text>
+        {syncInfo.type === "cp" ? (
+          <>
+            <Text>From: {syncInfo.fromPath}</Text>
+            <Text>To: {syncInfo.toPath}</Text>
+          </>
+        ) : null}
+        <Button onClick={toggle}>Dry Run</Button>
+      </Flex>
+      {syncInfo.type === "cp" && (
+        <Modal opened={openDryRunDialog} onClose={close} size={"80vw"}>
+          <SyncDirStatus
+            fromPath={syncInfo.fromPath}
+            toPath={syncInfo.toPath}
+          />
+        </Modal>
+      )}
+    </>
+  );
+}
+
 export function SyncDirView({
   metadataRepo,
   deviceId,
@@ -70,6 +98,7 @@ export function SyncDirView({
   devicesWithLocations: DeviceWithLocations[] | undefined;
 }) {
   const { data: syncs } = useSyncs(metadataRepo, deviceId, locationId);
+
   const [openCreateSyncDialog, { toggle, close }] = useDisclosure(false);
   return (
     <>
@@ -80,11 +109,7 @@ export function SyncDirView({
         <Divider />
         <Text>Syncs</Text>
         {syncs?.map((it) => (
-          <Flex key={it.id} direction={"row"} gap={5}>
-            <Text>Id: {it.id}</Text>
-            <Text>Type: {it.type}</Text>
-            <Button>Dry Run</Button>
-          </Flex>
+          <SyncDirEntry key={it.id} syncInfo={it} />
         ))}
       </Flex>
       <CreateSyncDialog
