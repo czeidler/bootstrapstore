@@ -153,6 +153,17 @@ export const trustedContract = c.router({
       }),
     },
   },
+  cp: {
+    method: "POST",
+    path: "/cp",
+    body: z.object({
+      from: z.string(),
+      to: z.string(),
+    }),
+    responses: {
+      201: z.void(),
+    },
+  },
   diff: {
     method: "POST",
     path: "/diff",
@@ -161,18 +172,18 @@ export const trustedContract = c.router({
       right: z.object({ remote: Remote.optional(), path: z.string() }),
     }),
     responses: {
-      200: z.object({
+      201: z.object({
         added: z.array(
           z.object({
             path: z.array(z.string()),
           }),
         ),
-        removed: z.array(
+        deleted: z.array(
           z.object({
             path: z.array(z.string()),
           }),
         ),
-        modified: z.array(
+        changed: z.array(
           z.object({
             path: z.array(z.string()),
           }),
