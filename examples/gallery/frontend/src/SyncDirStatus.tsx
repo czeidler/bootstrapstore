@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { trustedTsr } from "./tsr";
 import { DataTable } from "mantine-datatable";
+import { IconEdit, IconFilePlus, IconTrash } from "@tabler/icons-react";
 
 export function SyncDirStatus({
   fromPath,
@@ -47,11 +48,11 @@ export function SyncDirStatus({
           render: (row) => {
             switch (row.type) {
               case "added":
-                return "A";
+                return <IconFilePlus />;
               case "deleted":
-                return "D";
+                return <IconTrash />;
               case "changed":
-                return "C";
+                return <IconEdit />;
             }
           },
         },

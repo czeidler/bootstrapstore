@@ -12,22 +12,24 @@ const CreateSyncDialog = ({
   deviceId,
   locationId,
   metadataRepo,
+  init,
 }: {
   open: boolean;
   onClose: () => void;
   deviceId: string;
   locationId: string;
   metadataRepo: MetadataRepository;
+  init?: SyncInfo;
 }) => {
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [from, setFrom] = useState(init?.type === "cp" ? init.fromPath : "");
+  const [to, setTo] = useState(init?.type === "cp" ? init.toPath : "");
   const { mutateAsync } = useCreateSync(metadataRepo, deviceId, locationId);
   const create = async () => {
     if (to === "" || from === "") {
       return;
     }
     await mutateAsync({
-      id: shortId(),
+      id: init?.id ?? shortId(),
       type: "cp",
       fromPath: from,
       toPath: to,
@@ -36,30 +38,48 @@ const CreateSyncDialog = ({
   };
   return (
     <Modal opened={open} onClose={onClose}>
-      <Text id="alert-dialog-title">Copy to</Text>
-      <Flex direction={"column"}>
-        <Text>From</Text>
-        <TextInput
-          value={from}
-          onChange={(event) => setFrom(event.currentTarget.value)}
-        />
-        <Text>To</Text>
-        <TextInput
-          value={to}
-          onChange={(event) => setTo(event.currentTarget.value)}
-        />
-      </Flex>
-      <Flex>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={create} autoFocus disabled={to === "" || from === ""}>
-          Create
-        </Button>
+      <Flex direction={"column"} gap={10}>
+        <Text id="alert-dialog-title">Copy</Text>
+        <Flex direction={"column"}>
+          <Text>From</Text>
+          <TextInput
+            value={from}
+            onChange={(event) => setFrom(event.currentTarget.value)}
+          />
+          <Text>To</Text>
+          <TextInput
+            value={to}
+            onChange={(event) => setTo(event.currentTarget.value)}
+          />
+        </Flex>
+        <Flex gap={10} justify={"end"}>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button
+            onClick={create}
+            autoFocus
+            disabled={to === "" || from === ""}
+          >
+            Save
+          </Button>
+        </Flex>
       </Flex>
     </Modal>
   );
 };
 
-function SyncDirEntry({ syncInfo }: { syncInfo: SyncInfo }) {
+function SyncDirEntry({
+  syncInfo,
+  metadataRepo,
+  deviceId,
+  locationId,
+}: {
+  syncInfo: SyncInfo;
+  metadataRepo: MetadataRepository;
+  deviceId: string;
+  locationId: string;
+}) {
+  const [openEditDialog, { toggle: toogleEdit, close: closeEdit }] =
+    useDisclosure(false);
   const [openDryRunDialog, { toggle, close }] = useDisclosure(false);
   return (
     <>
@@ -73,6 +93,7 @@ function SyncDirEntry({ syncInfo }: { syncInfo: SyncInfo }) {
           </>
         ) : null}
         <Button onClick={toggle}>Dry Run</Button>
+        <Button onClick={toogleEdit}>Edit</Button>
       </Flex>
       {syncInfo.type === "cp" && (
         <Modal opened={openDryRunDialog} onClose={close} size={"80vw"}>
@@ -81,6 +102,16 @@ function SyncDirEntry({ syncInfo }: { syncInfo: SyncInfo }) {
             toPath={syncInfo.toPath}
           />
         </Modal>
+      )}
+      {openEditDialog && (
+        <CreateSyncDialog
+          deviceId={deviceId}
+          locationId={locationId}
+          metadataRepo={metadataRepo}
+          open={openEditDialog}
+          init={syncInfo}
+          onClose={closeEdit}
+        />
       )}
     </>
   );
@@ -109,7 +140,13 @@ export function SyncDirView({
         <Divider />
         <Text>Syncs</Text>
         {syncs?.map((it) => (
-          <SyncDirEntry key={it.id} syncInfo={it} />
+          <SyncDirEntry
+            key={it.id}
+            metadataRepo={metadataRepo}
+            deviceId={deviceId}
+            locationId={locationId}
+            syncInfo={it}
+          />
         ))}
       </Flex>
       <CreateSyncDialog
