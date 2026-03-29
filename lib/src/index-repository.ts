@@ -259,14 +259,31 @@ export class IndexRepository
     return [contentId, plainBlobHash];
   }
 
-  async readLatestSnapshot(branch: string): Promise<Snapshot | undefined> {
-    const data = await this.db
+  /**
+   * If no snapshotHash256 is specified the latest snapshot is returned
+   */
+  async readSnapshot(
+    branch: string,
+    snapshotHash256?: Hash,
+  ): Promise<Snapshot | undefined> {
+    let query = this.db
       .selectFrom("commit")
       .innerJoin("branch", "branch.commit_id", "commit.id")
       .leftJoin("content", "commit.tree_content_id", "content.id")
       .selectAll("commit")
       .select("content.hash265 as treeHash")
-      .where("branch.name", "=", branch)
+      .where("branch.name", "=", branch);
+    if (snapshotHash256 !== undefined) {
+      query = query.where(
+        "commit.hash256",
+        "=",
+        arrayToBuffer(snapshotHash256),
+      );
+    }
+
+    const data = await query
+      .orderBy("timestamp", "desc")
+      .limit(1)
       .executeTakeFirst();
     if (data === undefined) {
       return undefined;
