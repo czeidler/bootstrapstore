@@ -4,10 +4,11 @@ import { DB } from "./db/db";
 import { migrateToLatest } from "./migration";
 import { SerializableDB, SerializableDBInstance } from "./sqlite";
 import { AESGCMEncryption, Encryption, sha256 } from "./encryption";
-import { IndexRepository, TreeEntryType } from "./index-repository";
+import { IndexRepository, Snapshot, TreeEntryType } from "./index-repository";
 import { BlobInfo, TreeBuilder } from "./tree-builder";
 import { arrayToHex, concatArrayBuffers, ExhaustiveCheckError } from "./utils";
 import { AnnotatedCompression, Compression } from "./compression";
+import { Hash } from "./hasher";
 
 export type DirEntry =
   | {
@@ -54,13 +55,16 @@ export class Repository {
   private indexRepo!: IndexRepository;
   private treeBuilder!: TreeBuilder;
 
-  private async init() {
+  private async init(snapshotHash?: Hash) {
     const kysely = new Kysely<DB>({
       dialect: this.instance.dialect,
     });
     this.indexRepo = new IndexRepository(kysely);
 
-    const snapshot = await this.indexRepo.readSnapshot(this.config.branch);
+    const snapshot = await this.indexRepo.readSnapshot(
+      this.config.branch,
+      snapshotHash,
+    );
     if (snapshot === undefined) {
       this.treeBuilder = new TreeBuilder({ entries: new Map() });
     } else {
@@ -124,7 +128,15 @@ export class Repository {
     return repo;
   }
 
-  async branch(branch: string, inlined: boolean): Promise<Repository> {
+  async listSnapshot(): Promise<Snapshot[]> {
+    return this.indexRepo.listSnapshots(this.config.branch);
+  }
+
+  async branch(
+    branch: string,
+    inlined: boolean,
+    snapshot?: Hash,
+  ): Promise<Repository> {
     const repo = new Repository(
       this.repoId,
       this.store,
@@ -137,7 +149,7 @@ export class Repository {
         inlined,
       },
     );
-    await repo.init();
+    await repo.init(snapshot);
     return repo;
   }
 

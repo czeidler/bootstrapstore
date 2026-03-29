@@ -27,7 +27,7 @@ type EncryptedBlobInfoWriter = {
   ): Promise<DBHash>;
 };
 
-type Snapshot = {
+export type Snapshot = {
   hash256: Hash;
   /** If undefined it points to an empty directory */
   tree: DBHash | undefined;
@@ -257,6 +257,29 @@ export class IndexRepository
       )
       .execute();
     return [contentId, plainBlobHash];
+  }
+
+  async listSnapshots(branch: string, limit?: number): Promise<Snapshot[]> {
+    let query = this.db
+      .selectFrom("commit")
+      .innerJoin("branch", "branch.commit_id", "commit.id")
+      .leftJoin("content", "commit.tree_content_id", "content.id")
+      .selectAll("commit")
+      .select("content.hash265 as treeHash")
+      .where("branch.name", "=", branch);
+    if (limit !== undefined) {
+      query = query.limit(limit);
+    }
+    const data = await query.execute();
+    return data.map((it) => ({
+      hash256: it.hash256,
+      tree:
+        it.tree_content_id !== null && it.treeHash !== null
+          ? [it.tree_content_id, it.treeHash]
+          : undefined,
+      timestamp: new Date(it.timestamp),
+      parents: JSON.parse(it.parents) as string[],
+    }));
   }
 
   /**
