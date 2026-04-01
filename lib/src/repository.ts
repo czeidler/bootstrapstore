@@ -128,8 +128,40 @@ export class Repository {
     return repo;
   }
 
-  async listSnapshot(): Promise<Snapshot[]> {
-    return this.indexRepo.listSnapshots(this.config.branch);
+  async listCommits(): Promise<Snapshot[]> {
+    const head = await this.indexRepo.readSnapshot(this.config.branch);
+    if (head === undefined) {
+      return [];
+    }
+    const commits = await this.indexRepo.listCommits();
+    const commitsMap = commits.reduce((prev, cur) => {
+      prev.set(arrayToHex(cur.hash256), cur);
+      return prev;
+    }, new Map<string, Snapshot>());
+
+    const branchCommits = [];
+    const ongoing = [head];
+    const handled = new Set([arrayToHex(head.hash256)]);
+    while (ongoing.length > 0) {
+      const cur = ongoing.pop();
+      if (cur === undefined) {
+        throw Error("Unexpected");
+      }
+      branchCommits.push(cur);
+      for (const p of cur.parents) {
+        if (handled.has(p)) {
+          continue;
+        }
+        handled.add(p);
+        const curCommit = commitsMap.get(p);
+        if (curCommit === undefined) {
+          continue;
+        }
+        ongoing.push(curCommit);
+      }
+    }
+
+    return branchCommits;
   }
 
   async branch(

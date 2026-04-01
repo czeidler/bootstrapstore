@@ -259,14 +259,12 @@ export class IndexRepository
     return [contentId, plainBlobHash];
   }
 
-  async listSnapshots(branch: string, limit?: number): Promise<Snapshot[]> {
+  async listCommits(limit?: number): Promise<Snapshot[]> {
     let query = this.db
       .selectFrom("commit")
-      .innerJoin("branch", "branch.commit_id", "commit.id")
       .leftJoin("content", "commit.tree_content_id", "content.id")
       .selectAll("commit")
-      .select("content.hash265 as treeHash")
-      .where("branch.name", "=", branch);
+      .select("content.hash265 as treeHash");
     if (limit !== undefined) {
       query = query.limit(limit);
     }
