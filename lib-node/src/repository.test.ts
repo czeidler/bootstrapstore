@@ -170,6 +170,9 @@ const buildTest = (name: string, config: RepoConfig) => {
       const file3 = await repo2.readFile(path);
       assert.isDefined(file3);
       assert.equal(arrayToString(file3), "filedata2");
+
+      const commits = await repo2.listCommits();
+      assert.equal(commits.length, 2);
     });
 
     test("should be able to store repo links", async () => {
