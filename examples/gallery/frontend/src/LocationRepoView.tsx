@@ -7,15 +7,19 @@ import {
   VFSDir,
 } from "lib";
 import { FileBrowser } from "./FileBrowser";
-import { Flex, Tabs, Text } from "@mantine/core";
+import { Combobox, Flex, Tabs, Text, ThemeIcon } from "@mantine/core";
 import { useChildRepo } from "./account-hooks";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { IconClock } from "@tabler/icons-react";
+import { hexToUint8Array } from "lib/src/utils";
 
 function RepoHistoryFileBrowser({
+  metadataRepo,
   repo,
   root,
 }: {
+  metadataRepo: MetadataRepository;
   repo: Repository;
   root: VFSDir | undefined;
 }) {
@@ -24,17 +28,58 @@ function RepoHistoryFileBrowser({
     queryFn: () => repo.listCommits(),
   });
 
+  const [currentRepo, setCurrentRepo] = useState(
+    root
+      ? {
+          root,
+          hash256: repo.commitHash256 ? arrayToHex(repo.commitHash256) : "",
+        }
+      : undefined,
+  );
+  const [selectedCommit, setSelectedCommit] = useState(
+    repo.commitHash256 ? arrayToHex(repo.commitHash256) : "",
+  );
+  useEffect(() => {
+    if (selectedCommit.length === 0) {
+      return;
+    }
+    const current = selectedCommit;
+    repo
+      .branch(repo.config.branch, repo.config.inlined, hexToUint8Array(current))
+      .then((it) => {
+        setCurrentRepo({ root: rootDir(it, metadataRepo), hash256: current });
+      })
+      .catch((e) => console.log(e));
+  }, [metadataRepo, repo, selectedCommit]);
   return (
     <Flex direction={"row"} gap={5}>
-      <Flex direction={"column"}>
-        {data?.map((it) => (
-          <Text
-            key={arrayToHex(it.hash256)}
-          >{`${it.timestamp.toLocaleString()} ${arrayToHex(it.hash256).slice(0, 8)}, parents: ${it.parents.map((it) => it.slice(0, 8))}`}</Text>
-        ))}
+      <Flex direction={"column"} justify={"start"}>
+        <Combobox>
+          <Combobox.Options mt="sm" style={{ justifyItems: "start" }}>
+            {data?.map((it) => {
+              const hashStr = arrayToHex(it.hash256);
+              return (
+                <Combobox.Option
+                  key={hashStr}
+                  value={hashStr}
+                  onClick={() => setSelectedCommit(hashStr)}
+                  selected={selectedCommit === hashStr}
+                >
+                  <Flex direction={"row"} gap={5} align={"center"}>
+                    <ThemeIcon color="teal" size={24} radius="xl">
+                      <IconClock size={16} />
+                    </ThemeIcon>
+
+                    {`${it.timestamp.toLocaleString()} ${arrayToHex(it.hash256).slice(0, 8)}, parents: ${it.parents.map((it) => it.slice(0, 8))}`}
+                  </Flex>
+                </Combobox.Option>
+              );
+            })}
+          </Combobox.Options>
+        </Combobox>
       </Flex>
       <Flex direction={"column"} style={{ flexGrow: 1 }}>
-        <FileBrowser root={root} />
+        <FileBrowser key={currentRepo?.hash256} root={currentRepo?.root} />
       </Flex>
     </Flex>
   );
@@ -76,7 +121,11 @@ export function LocationRepoView({
         </Tabs.Panel>
         <Tabs.Panel value="browse">
           {repo === undefined ? null : (
-            <RepoHistoryFileBrowser repo={repo} root={root} />
+            <RepoHistoryFileBrowser
+              metadataRepo={metadataRepo}
+              repo={repo}
+              root={root}
+            />
           )}
         </Tabs.Panel>
       </Tabs>
