@@ -283,26 +283,41 @@ export class IndexRepository
   /**
    * If no snapshotHash256 is specified the latest snapshot is returned
    */
-  async readSnapshot(
-    branch: string,
-    snapshotHash256?: Hash,
-  ): Promise<Snapshot | undefined> {
-    let query = this.db
+  async readSnapshot(snapshotHash256: Hash): Promise<Snapshot | undefined> {
+    const data = await this.db
+      .selectFrom("commit")
+      .leftJoin("content", "commit.tree_content_id", "content.id")
+      .selectAll("commit")
+      .select("content.hash265 as treeHash")
+      .where("commit.hash256", "=", arrayToBuffer(snapshotHash256))
+      .orderBy("timestamp", "desc")
+      .limit(1)
+      .executeTakeFirst();
+    if (data === undefined) {
+      return undefined;
+    }
+    return {
+      hash256: data.hash256,
+      tree:
+        data.tree_content_id !== null && data.treeHash !== null
+          ? [data.tree_content_id, data.treeHash]
+          : undefined,
+      timestamp: new Date(data.timestamp),
+      parents: JSON.parse(data.parents) as string[],
+    };
+  }
+
+  /**
+   * If no snapshotHash256 is specified the latest snapshot is returned
+   */
+  async readBranchHead(branch: string): Promise<Snapshot | undefined> {
+    const data = await this.db
       .selectFrom("commit")
       .innerJoin("branch", "branch.commit_id", "commit.id")
       .leftJoin("content", "commit.tree_content_id", "content.id")
       .selectAll("commit")
       .select("content.hash265 as treeHash")
-      .where("branch.name", "=", branch);
-    if (snapshotHash256 !== undefined) {
-      query = query.where(
-        "commit.hash256",
-        "=",
-        arrayToBuffer(snapshotHash256),
-      );
-    }
-
-    const data = await query
+      .where("branch.name", "=", branch)
       .orderBy("timestamp", "desc")
       .limit(1)
       .executeTakeFirst();
@@ -325,7 +340,7 @@ export class IndexRepository
     timestamp: Date,
     parents: Hash[],
     branch: string,
-  ) {
+  ): Promise<Hash> {
     const snapshotHash = await hashParts([
       { key: "t", value: tree?.[1] ?? "" },
       { key: "ts", value: timestamp },
@@ -355,5 +370,7 @@ export class IndexRepository
           .where("name", "=", branch),
       )
       .execute();
+
+    return snapshotHash;
   }
 }

@@ -49,11 +49,12 @@ export class Repository {
 
     private ioConfig: RepoIOConfig,
     private instance: SerializableDBInstance,
-    private config: RepoConfig,
+    public config: RepoConfig,
   ) {}
 
   private indexRepo!: IndexRepository;
   private treeBuilder!: TreeBuilder;
+  public commitHash256?: Hash;
 
   private async init(snapshotHash?: Hash) {
     const kysely = new Kysely<DB>({
@@ -61,10 +62,10 @@ export class Repository {
     });
     this.indexRepo = new IndexRepository(kysely);
 
-    const snapshot = await this.indexRepo.readSnapshot(
-      this.config.branch,
-      snapshotHash,
-    );
+    const snapshot = snapshotHash
+      ? await this.indexRepo.readSnapshot(snapshotHash)
+      : await this.indexRepo.readBranchHead(this.config.branch);
+    this.commitHash256 = snapshot?.hash256;
     if (snapshot === undefined) {
       this.treeBuilder = new TreeBuilder({ entries: new Map() });
     } else {
@@ -129,7 +130,7 @@ export class Repository {
   }
 
   async listCommits(): Promise<Snapshot[]> {
-    const head = await this.indexRepo.readSnapshot(this.config.branch);
+    const head = await this.indexRepo.readBranchHead(this.config.branch);
     if (head === undefined) {
       return [];
     }
@@ -250,9 +251,9 @@ export class Repository {
   }
 
   async createSnapshot(timestamp: Date): Promise<void> {
-    const head = await this.indexRepo.readSnapshot(this.config.branch);
+    const head = await this.indexRepo.readBranchHead(this.config.branch);
     const treeHash = await this.treeBuilder.finalize(this.indexRepo);
-    await this.indexRepo.writeSnapshot(
+    this.commitHash256 = await this.indexRepo.writeSnapshot(
       treeHash,
       timestamp,
       head ? [head.hash256] : [],
