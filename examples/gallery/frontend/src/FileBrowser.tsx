@@ -13,11 +13,11 @@ import {
   Breadcrumbs,
   Flex,
   Loader,
-  Text,
   Divider,
   ActionIcon,
   Tooltip,
   Group,
+  Anchor,
 } from "@mantine/core";
 
 export const FileBrowser = ({ root }: { root: VFSDir | undefined }) => {
@@ -53,14 +53,16 @@ export const FileBrowser = ({ root }: { root: VFSDir | undefined }) => {
         <Tooltip label="Navigate to parent directory">
           <ActionIcon
             disabled={(currentPath.length ?? 0) === 0}
-            onClick={onBack}
+            onClick={() => onBack()}
           >
             <DriveFolderUploadTwoToneIcon />
           </ActionIcon>
         </Tooltip>
         <Breadcrumbs aria-label="breadcrumb">
           {currentPath.map((it, i) => (
-            <Text key={`${i}`}>{it}</Text>
+            <Anchor key={`${i}`} onClick={() => onBack(i)}>
+              {it}
+            </Anchor>
           ))}
         </Breadcrumbs>
 

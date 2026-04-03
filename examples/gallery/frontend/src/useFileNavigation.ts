@@ -25,12 +25,16 @@ export const useFileNavigation = (root: VFSDir | undefined) => {
     })();
   }, [currentPath]);
 
-  const onBack = useCallback(() => {
-    if (!currentPath) {
-      return;
-    }
-    setPathStack([...pathStack.slice(0, -1)]);
-  }, [currentPath, pathStack]);
+  const onBack = useCallback(
+    (pathIndex?: number) => {
+      if (!currentPath) {
+        return;
+      }
+      // +2 because the root has an extra entry in the pathStack
+      setPathStack([...pathStack.slice(0, pathIndex ? pathIndex + 2 : -1)]);
+    },
+    [currentPath, pathStack],
+  );
   const openFolder = useCallback(
     async (name: string) => {
       const entry = dirEntries.find((it) => it.name === name);
