@@ -7,7 +7,7 @@ import {
   VFSDir,
 } from "lib";
 import { FileBrowser } from "./FileBrowser";
-import { Combobox, Flex, Tabs, Text, ThemeIcon } from "@mantine/core";
+import { Combobox, Flex, Tabs, Text, ThemeIcon, Tooltip } from "@mantine/core";
 import { useChildRepo } from "./account-hooks";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -52,10 +52,10 @@ function RepoHistoryFileBrowser({
       .catch((e) => console.log(e));
   }, [metadataRepo, repo, selectedCommit]);
   return (
-    <Flex direction={"row"} gap={5}>
+    <Flex direction={"row"} gap={5} mt={5}>
       <Flex direction={"column"} justify={"start"}>
         <Combobox>
-          <Combobox.Options mt="sm" style={{ justifyItems: "start" }}>
+          <Combobox.Options style={{ justifyItems: "start" }}>
             {data?.map((it) => {
               const hashStr = arrayToHex(it.hash256);
               return (
@@ -65,13 +65,17 @@ function RepoHistoryFileBrowser({
                   onClick={() => setSelectedCommit(hashStr)}
                   selected={selectedCommit === hashStr}
                 >
-                  <Flex direction={"row"} gap={5} align={"center"}>
-                    <ThemeIcon color="teal" size={24} radius="xl">
-                      <IconClock size={16} />
-                    </ThemeIcon>
+                  <Tooltip
+                    label={`${arrayToHex(it.hash256).slice(0, 8)}, parents: ${it.parents.map((it) => it.slice(0, 8))}`}
+                  >
+                    <Flex direction={"row"} gap={5} align={"center"}>
+                      <ThemeIcon color="teal" size={24} radius="xl">
+                        <IconClock size={16} />
+                      </ThemeIcon>
 
-                    {`${it.timestamp.toLocaleString()} ${arrayToHex(it.hash256).slice(0, 8)}, parents: ${it.parents.map((it) => it.slice(0, 8))}`}
-                  </Flex>
+                      {`${it.timestamp.toLocaleString()}`}
+                    </Flex>
+                  </Tooltip>
                 </Combobox.Option>
               );
             })}
