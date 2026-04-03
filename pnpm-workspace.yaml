@@ -1,9 +1,11 @@
 packages:
-  - "lib"
-  - "lib-node"
-  - "scripts"
-  - "examples/gallery/backend"
-  - "examples/gallery/frontend"
+  - lib
+  - lib-node
+  - scripts
+  - examples/gallery/backend
+  - examples/gallery/frontend
 
-# 1 week:
 minimumReleaseAge: 10080
+
+onlyBuiltDependencies:
+  - better-sqlite3
