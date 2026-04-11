@@ -49,6 +49,10 @@ export function hexToUint8Array(hex: string): Uint8Array {
   return Uint8Array.from(bytes.map((byte) => parseInt(byte, 16)));
 }
 
+export function arraysEqual(a: Uint8Array, b: Uint8Array) {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
 export function shortId() {
   return arrayToHex(crypto.getRandomValues(new Uint8Array(12)));
 }

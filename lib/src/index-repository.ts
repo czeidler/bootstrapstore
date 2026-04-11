@@ -339,7 +339,7 @@ export class IndexRepository
     tree: DBHash | undefined,
     timestamp: Date,
     parents: Hash[],
-    branch: string,
+    branch?: string,
   ): Promise<Hash> {
     const snapshotHash = await hashParts([
       { key: "t", value: tree?.[1] ?? "" },
@@ -360,16 +360,18 @@ export class IndexRepository
     if (commitId === undefined) {
       throw Error("Missing insert id");
     }
-    await this.db
-      .insertInto("branch")
-      .values({ commit_id: commitId, name: branch })
-      .onConflict((oc) =>
-        oc
-          .column("name")
-          .doUpdateSet({ commit_id: commitId })
-          .where("name", "=", branch),
-      )
-      .execute();
+    if (branch !== undefined) {
+      await this.db
+        .insertInto("branch")
+        .values({ commit_id: commitId, name: branch })
+        .onConflict((oc) =>
+          oc
+            .column("name")
+            .doUpdateSet({ commit_id: commitId })
+            .where("name", "=", branch),
+        )
+        .execute();
+    }
 
     return snapshotHash;
   }

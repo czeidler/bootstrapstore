@@ -5,9 +5,14 @@ export type BlobInfo =
   | {
       type: "encrypted";
       encKey: Uint8Array;
+      /** Hash of the encrypted blobs */
       parts: Hash[];
     }
-  | { type: "inlined"; parts: Uint8Array[] };
+  | {
+      type: "inlined";
+      /** Unencrypted parts */
+      parts: Uint8Array[];
+    };
 
 export type TreeLoader = {
   readTree(hash: DBHash): Promise<Tree>;

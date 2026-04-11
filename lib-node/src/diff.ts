@@ -140,6 +140,6 @@ export class RepoDirReader implements DirReader {
   constructor(private repo: Repository) {}
   async list(path: string[]): Promise<DirEntry[]> {
     const content = await this.repo.listDirectory(path);
-    return content ?? [];
+    return content;
   }
 }

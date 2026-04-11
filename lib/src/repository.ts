@@ -6,9 +6,20 @@ import { SerializableDB, SerializableDBInstance } from "./sqlite";
 import { AESGCMEncryption, Encryption, sha256 } from "./encryption";
 import { IndexRepository, Snapshot, TreeEntryType } from "./index-repository";
 import { BlobInfo, TreeBuilder } from "./tree-builder";
-import { arrayToHex, concatArrayBuffers, ExhaustiveCheckError } from "./utils";
+import {
+  arraysEqual,
+  arrayToHex,
+  concatArrayBuffers,
+  ExhaustiveCheckError,
+  hexToUint8Array,
+} from "./utils";
 import { AnnotatedCompression, Compression } from "./compression";
 import { Hash } from "./hasher";
+import {
+  getRelatedCommits,
+  getRepoCommitInfo,
+  pullMissingBlobs,
+} from "./graph-helper";
 
 export type DirEntry =
   | {
@@ -135,34 +146,7 @@ export class Repository {
       return [];
     }
     const commits = await this.indexRepo.listCommits();
-    const commitsMap = commits.reduce((prev, cur) => {
-      prev.set(arrayToHex(cur.hash256), cur);
-      return prev;
-    }, new Map<string, Snapshot>());
-
-    const branchCommits = [];
-    const ongoing = [head];
-    const handled = new Set([arrayToHex(head.hash256)]);
-    while (ongoing.length > 0) {
-      const cur = ongoing.pop();
-      if (cur === undefined) {
-        throw Error("Unexpected");
-      }
-      branchCommits.push(cur);
-      for (const p of cur.parents) {
-        if (handled.has(p)) {
-          continue;
-        }
-        handled.add(p);
-        const curCommit = commitsMap.get(p);
-        if (curCommit === undefined) {
-          continue;
-        }
-        ongoing.push(curCommit);
-      }
-    }
-
-    return branchCommits;
+    return Array.from(getRelatedCommits(head, commits).values());
   }
 
   async branch(
@@ -186,7 +170,7 @@ export class Repository {
     return repo;
   }
 
-  private blobPath(hex: string): string[] {
+  static blobPath(hex: string): string[] {
     return ["blobs", hex.slice(0, 2), hex.slice(2)];
   }
 
@@ -201,7 +185,7 @@ export class Repository {
       const cipher = await this.encryption.encrypt(data, encKey);
       const cipherHash = sha256(cipher);
       const cipherHashHex = arrayToHex(cipherHash);
-      await this.store.write(this.blobPath(cipherHashHex), cipher);
+      await this.store.write(Repository.blobPath(cipherHashHex), cipher);
       return {
         type: "encrypted",
         encKey,
@@ -253,12 +237,36 @@ export class Repository {
   async createSnapshot(timestamp: Date): Promise<void> {
     const head = await this.indexRepo.readBranchHead(this.config.branch);
     const treeHash = await this.treeBuilder.finalize(this.indexRepo);
+    if (
+      (head?.hash256 === undefined && treeHash === undefined) ||
+      (head !== undefined &&
+        treeHash !== undefined &&
+        arraysEqual(head.hash256, treeHash[1]))
+    ) {
+      // no change
+      return;
+    }
     this.commitHash256 = await this.indexRepo.writeSnapshot(
       treeHash,
       timestamp,
       head ? [head.hash256] : [],
       this.config.branch,
     );
+    const plain = await this.instance.serialize();
+    const zipped = await new AnnotatedCompression(
+      this.ioConfig.compression,
+    ).compress(plain);
+    const cipher = await this.encryption.encrypt(zipped, this.config.key);
+    await this.store.write(["index"], cipher);
+  }
+
+  private async resetToSnapshot(snapshot: Snapshot) {
+    this.treeBuilder = new TreeBuilder(
+      snapshot.tree
+        ? await this.indexRepo.readTree(snapshot.tree)
+        : { entries: new Map() },
+    );
+    this.commitHash256 = snapshot.hash256;
     const plain = await this.instance.serialize();
     const zipped = await new AnnotatedCompression(
       this.ioConfig.compression,
@@ -279,7 +287,7 @@ export class Repository {
       const plainParts = await Promise.all(
         info.parts.map(async (part) => {
           const hex = arrayToHex(part);
-          const cipher = await this.store.read(this.blobPath(hex));
+          const cipher = await this.store.read(Repository.blobPath(hex));
           return this.encryption.decrypt(cipher, info.encKey);
         }),
       );
@@ -316,6 +324,7 @@ export class Repository {
             size: entry.size,
             creationTime: entry.creationTime,
             modificationTime: entry.modificationTime,
+            hash256: entry.hash[1],
           };
         case "r":
           return {
@@ -324,6 +333,11 @@ export class Repository {
             repoId: entry.repoId,
           };
         case "t":
+          return {
+            type: "dir",
+            name,
+            hash256: entry.hash?.[1],
+          };
         case "mutateTree":
           return {
             type: "dir",
@@ -333,5 +347,45 @@ export class Repository {
           throw new ExhaustiveCheckError(entry);
       }
     });
+  }
+
+  async pull(theirs: Repository) {
+    // Save existing changes
+    // TODO make it an error if there are changes when calling pull?
+    await this.createSnapshot(new Date());
+
+    const ours = await getRepoCommitInfo(
+      this.config.branch,
+      this.indexRepo,
+      this.store,
+    );
+    const theirsInfo = await getRepoCommitInfo(
+      this.config.branch,
+      theirs.indexRepo,
+      theirs.store,
+    );
+    const pulledCommits = await pullMissingBlobs(ours, theirsInfo);
+    if (pulledCommits.length === 0) {
+      return;
+    }
+
+    const theirHead = theirsInfo.head;
+    if (theirHead === undefined) {
+      return;
+    }
+    if (
+      ours.head === undefined ||
+      theirsInfo.commits.has(arrayToHex(ours.head.hash256))
+    ) {
+      // fast forward to their head
+      await this.indexRepo.writeSnapshot(
+        theirHead.tree,
+        theirHead.timestamp,
+        theirHead.parents.map(hexToUint8Array),
+        this.config.branch,
+      );
+      await this.resetToSnapshot(theirHead);
+      return;
+    }
   }
 }
