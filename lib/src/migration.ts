@@ -8,7 +8,7 @@ const migrations: Record<string, Migration> = {
         .createTable("content")
         .modifyEnd(sql`STRICT`)
         .addColumn("id", "integer", (col) =>
-          col.primaryKey().notNull().autoIncrement()
+          col.primaryKey().notNull().autoIncrement(),
         )
         .addColumn("hash265", "blob", (col) => col.notNull())
         .execute();
@@ -22,11 +22,11 @@ const migrations: Record<string, Migration> = {
         .createTable("tree_entry")
         .modifyEnd(sql`STRICT`)
         .addColumn("id", "integer", (col) =>
-          col.primaryKey().notNull().autoIncrement()
+          col.primaryKey().notNull().autoIncrement(),
         )
         // The parent tree blob id
         .addColumn("tree_id", "integer", (col) =>
-          col.references("content.id").notNull()
+          col.references("content.id").notNull(),
         )
         .addColumn("name", "text", (col) => col.notNull())
         // b | t | l | r (blob | tree | symbolic link | repository)
@@ -38,7 +38,7 @@ const migrations: Record<string, Migration> = {
         .addColumn("modification_time", "integer")
         // The content blob id. Can be null for links or empty directories
         .addColumn("content_id", "integer", (col) =>
-          col.references("content.id")
+          col.references("content.id"),
         )
         .execute();
 
@@ -47,10 +47,10 @@ const migrations: Record<string, Migration> = {
         .createTable("blob")
         .modifyEnd(sql`STRICT`)
         .addColumn("id", "integer", (col) =>
-          col.primaryKey().notNull().autoIncrement()
+          col.primaryKey().notNull().autoIncrement(),
         )
         .addColumn("content_id", "integer", (col) =>
-          col.references("content.id").notNull()
+          col.references("content.id").notNull(),
         )
         // The encryption key. If null data is not encrypted
         .addColumn("enc_key", "blob")
@@ -60,10 +60,10 @@ const migrations: Record<string, Migration> = {
         .createTable("blob_part")
         .modifyEnd(sql`STRICT`)
         .addColumn("id", "integer", (col) =>
-          col.primaryKey().notNull().autoIncrement()
+          col.primaryKey().notNull().autoIncrement(),
         )
         .addColumn("blob_id", "integer", (col) =>
-          col.references("blob.id").notNull()
+          col.references("blob.id").notNull(),
         )
         // Index of the part
         .addColumn("index", "integer", (col) => col.notNull())
@@ -78,12 +78,12 @@ const migrations: Record<string, Migration> = {
         .createTable("commit")
         .modifyEnd(sql`STRICT`)
         .addColumn("id", "integer", (col) =>
-          col.primaryKey().notNull().autoIncrement()
+          col.primaryKey().notNull().autoIncrement(),
         )
         .addColumn("hash256", "blob", (col) => col.notNull())
         // root tree hash, if null its an empty directory
         .addColumn("tree_content_id", "integer", (col) =>
-          col.references("content.id")
+          col.references("content.id"),
         )
         .addColumn("timestamp", "integer", (col) => col.notNull())
         .addColumn("parents", "text", (col) => col.notNull())
@@ -93,11 +93,11 @@ const migrations: Record<string, Migration> = {
         .createTable("branch")
         .modifyEnd(sql`STRICT`)
         .addColumn("id", "integer", (col) =>
-          col.primaryKey().notNull().autoIncrement()
+          col.primaryKey().notNull().autoIncrement(),
         )
         .addColumn("name", "text", (col) => col.notNull().unique())
         .addColumn("commit_id", "integer", (col) =>
-          col.references("commit.id").notNull()
+          col.references("commit.id").notNull(),
         )
         .execute();
     },
