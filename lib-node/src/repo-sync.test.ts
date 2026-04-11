@@ -1,13 +1,20 @@
 import { arrayToHex, RepoBlobStoreGetter, RepoConfig, Repository } from "lib";
-import { describe, test, assert } from "vitest";
+import { describe, test, assert, afterAll } from "vitest";
 import { getRepoIOConfig } from "./io-config";
 import { FileBlobStore } from "./file-blob-store";
 import { arrayToString } from "lib/src/utils";
+import { rmSync } from "node:fs";
+import path from "node:path";
 
 const buildTest = (name: string, config: RepoConfig) => {
-  describe("Repo sync test", () => {
-    test("should copy blobs", async () => {
-      const testDirOurs = ["./testOurs"];
+  describe(name, () => {
+    const testDir = ["./testRepoSync"];
+    afterAll(() => {
+      rmSync(path.join(...testDir), { recursive: true, force: true });
+    });
+
+    const createRepo = async (path: string) => {
+      const testDirOurs = [...testDir, path];
       const storeGetter = new RepoBlobStoreGetter(
         new FileBlobStore(testDirOurs),
       );
@@ -18,32 +25,18 @@ const buildTest = (name: string, config: RepoConfig) => {
         storeGetter,
         config.key,
       );
-      const ours = await Repository.open(
+      const repo = await Repository.open(
         repoId,
         getRepoIOConfig(),
         storeGetter,
         config,
       );
+      return repo;
+    };
 
-      const testDirTheirs = ["./testTheirs"];
-      const storeGetterTheirs = new RepoBlobStoreGetter(
-        new FileBlobStore(testDirTheirs),
-      );
-      const repoIdTheirs = arrayToHex(
-        crypto.getRandomValues(new Uint8Array(12)),
-      );
-      await Repository.create(
-        repoIdTheirs,
-        getRepoIOConfig(),
-        storeGetterTheirs,
-        config.key,
-      );
-      const theirs = await Repository.open(
-        repoIdTheirs,
-        getRepoIOConfig(),
-        storeGetterTheirs,
-        config,
-      );
+    test("should copy blobs", async () => {
+      const ours = await createRepo("simplePullOurs");
+      const theirs = await createRepo("simplePullTheirs");
 
       await ours.pull(theirs);
 
