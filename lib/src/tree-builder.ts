@@ -54,14 +54,12 @@ export type MutatedTreeEntry = {
 };
 
 export type Entry = BlobEntry | RepoLinkEntry | TreeEntry | MutatedTreeEntry;
+export type ReadEntry = BlobEntry | RepoLinkEntry | TreeEntry;
 
 export type Tree = {
   entries: Map<string, Entry>;
 };
-function entryToHashable(
-  name: string,
-  entry: BlobEntry | RepoLinkEntry | TreeEntry,
-): HashPart[] {
+function entryToHashable(name: string, entry: ReadEntry): HashPart[] {
   const blob: HashPart[] =
     entry.type === TreeEntryType.Blob
       ? [

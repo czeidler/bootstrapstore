@@ -5,20 +5,21 @@ import { migrateToLatest } from "./migration";
 import { SerializableDB, SerializableDBInstance } from "./sqlite";
 import { AESGCMEncryption, Encryption, sha256 } from "./encryption";
 import { IndexRepository, Snapshot, TreeEntryType } from "./index-repository";
-import { BlobInfo, TreeBuilder } from "./tree-builder";
+import { BlobInfo, DBHash, TreeBuilder } from "./tree-builder";
 import {
   arraysEqual,
   arrayToHex,
   concatArrayBuffers,
   ExhaustiveCheckError,
-  hexToUint8Array,
 } from "./utils";
 import { AnnotatedCompression, Compression } from "./compression";
 import { Hash } from "./hasher";
 import {
+  findCommonAncestor,
   getRelatedCommits,
   getRepoCommitInfo,
   pullMissingBlobs,
+  threeWayMerge,
 } from "./graph-helper";
 
 export type DirEntry =
@@ -249,7 +250,7 @@ export class Repository {
     this.commitHash256 = await this.indexRepo.writeSnapshot(
       treeHash,
       timestamp,
-      head ? [head.hash256] : [],
+      head ? [arrayToHex(head.hash256)] : [],
       this.config.branch,
     );
     const plain = await this.instance.serialize();
@@ -260,13 +261,11 @@ export class Repository {
     await this.store.write(["index"], cipher);
   }
 
-  private async resetToSnapshot(snapshot: Snapshot) {
+  private async resetToSnapshot(tree: DBHash | undefined, commitHash: Hash) {
     this.treeBuilder = new TreeBuilder(
-      snapshot.tree
-        ? await this.indexRepo.readTree(snapshot.tree)
-        : { entries: new Map() },
+      tree ? await this.indexRepo.readTree(tree) : { entries: new Map() },
     );
-    this.commitHash256 = snapshot.hash256;
+    this.commitHash256 = commitHash;
     const plain = await this.instance.serialize();
     const zipped = await new AnnotatedCompression(
       this.ioConfig.compression,
@@ -349,7 +348,7 @@ export class Repository {
     });
   }
 
-  async pull(theirs: Repository) {
+  async pull(theirs: Repository, timestamp: Date) {
     // Save existing changes
     // TODO make it an error if there are changes when calling pull?
     await this.createSnapshot(new Date());
@@ -381,11 +380,42 @@ export class Repository {
       await this.indexRepo.writeSnapshot(
         theirHead.tree,
         theirHead.timestamp,
-        theirHead.parents.map(hexToUint8Array),
+        theirHead.parents,
         this.config.branch,
       );
-      await this.resetToSnapshot(theirHead);
+      await this.resetToSnapshot(theirHead.tree, theirHead.hash256);
       return;
     }
+
+    const commonAncestor = findCommonAncestor(
+      ours.head,
+      Array.from(ours.commits.values()),
+      theirHead,
+      Array.from(theirsInfo.commits.values()),
+    );
+    if (commonAncestor === undefined) {
+      throw Error("Two way merge not implemented yet");
+    }
+    const { treeHash, parents } = await threeWayMerge(
+      ours.repo,
+      commonAncestor,
+      ours.head,
+      theirHead,
+      ({ our, their }) => {
+        if (
+          (ours.head?.timestamp.getTime() ?? 0) > theirHead.timestamp.getTime()
+        ) {
+          return our;
+        } else {
+          return their;
+        }
+      },
+    );
+    await this.indexRepo.writeSnapshot(
+      treeHash,
+      timestamp,
+      parents.map(arrayToHex),
+      this.config.branch,
+    );
   }
 }

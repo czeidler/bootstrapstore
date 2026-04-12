@@ -6,6 +6,35 @@ import { arrayToString } from "lib/src/utils";
 import { rmSync } from "node:fs";
 import path from "node:path";
 
+const insertFiles = async (
+  repo: Repository,
+  files: Record<string, string | undefined>,
+  now: number,
+) => {
+  for (const [path, data] of Object.entries(files)) {
+    if (data === undefined) {
+      await repo.deleteEntry(path.split("/"));
+    } else {
+      await repo.insertFile(path.split("/"), Buffer.from(data), now, now);
+    }
+  }
+};
+
+const validateFiles = async (
+  repo: Repository,
+  files: Record<string, string | undefined>,
+) => {
+  for (const [path, data] of Object.entries(files)) {
+    const file = await repo.readFile(path.split("/"));
+    if (data === undefined) {
+      assert.isUndefined(file);
+      continue;
+    }
+    assert.isDefined(file);
+    assert.equal(arrayToString(file), data);
+  }
+};
+
 const buildTest = (name: string, config: RepoConfig) => {
   describe(name, () => {
     const testDir = ["./testRepoSync"];
@@ -34,37 +63,53 @@ const buildTest = (name: string, config: RepoConfig) => {
       return repo;
     };
 
-    test("should copy blobs", async () => {
-      const ours = await createRepo("simplePullOurs");
-      const theirs = await createRepo("simplePullTheirs");
+    test("should be able to pull and merge", async () => {
+      const ours = await createRepo("pullMergeOurs");
+      const theirs = await createRepo("pullMergeTheirs");
 
-      await ours.pull(theirs);
+      // check it doesn't fail to pull an empty repo
+      await ours.pull(theirs, new Date(50));
 
-      const now = Date.now();
-      await theirs.insertFile(
-        ["dir1", "dir2", "file1"],
-        Buffer.from("filedata1"),
-        now,
-        now,
-      );
-      await theirs.insertFile(
-        ["dir1", "file2"],
-        Buffer.from("filedata2"),
-        now,
-        now,
-      );
-      await theirs.createSnapshot(new Date());
+      const files = {
+        "dir1/dir2/file1": "filedata1",
+        "dir1/dir2/file2": "filedata2",
+        "dir1/dir2/file3": "filedata3",
+        "dir1/file4": "filedata4",
+      };
+      await insertFiles(theirs, files, 100);
+      await theirs.createSnapshot(new Date(110));
 
-      await ours.pull(theirs);
+      await ours.pull(theirs, new Date(150));
 
       assert.equal((await ours.listCommits()).length, 1);
 
-      const file1 = await ours.readFile(["dir1", "dir2", "file1"]);
-      assert.isDefined(file1);
-      assert.equal(arrayToString(file1), "filedata1");
-      const file2 = await ours.readFile(["dir1", "file2"]);
-      assert.isDefined(file2);
-      assert.equal(arrayToString(file2), "filedata2");
+      await validateFiles(ours, files);
+
+      // 3 way merge
+      const ourChange = {
+        "dir1/dir2/file1": "updatedInOurs",
+        "dir1/dir2/file2": "updatedInBothOurs",
+        "dir1/dir2/file3": undefined,
+        "dir1/dir2/file4": "addedInBoth",
+      };
+      await insertFiles(ours, ourChange, 200);
+      await ours.createSnapshot(new Date(210));
+
+      const theirChange = {
+        "dir1/dir2/file2": "updatedInBothTheirs",
+        "dir1/dir2/file4": "addedInBoth",
+      };
+      await insertFiles(theirs, theirChange, 300);
+      await theirs.createSnapshot(new Date(310));
+
+      await ours.pull(theirs, new Date(350));
+      await validateFiles(ours, {
+        ...files,
+        "dir1/dir2/file1": "updatedInOurs",
+        "dir1/dir2/file2": "updatedInBothTheirs",
+        "dir1/dir2/file3": undefined,
+        "dir1/dir2/file4": "addedInBoth",
+      });
     });
   });
 };

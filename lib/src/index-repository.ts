@@ -11,7 +11,7 @@ import {
   RepoLinkEntry,
 } from "./tree-builder";
 import { Hash, hashParts } from "./hasher";
-import { arrayToHex, ExhaustiveCheckError } from "./utils";
+import { ExhaustiveCheckError } from "./utils";
 
 type EncryptedBlobInfoReader = {
   readBlobInfo(plainBlobHash: Hash): Promise<BlobInfo>;
@@ -338,7 +338,7 @@ export class IndexRepository
   async writeSnapshot(
     tree: DBHash | undefined,
     timestamp: Date,
-    parents: Hash[],
+    parents: string[],
     branch?: string,
   ): Promise<Hash> {
     const snapshotHash = await hashParts([
@@ -352,7 +352,7 @@ export class IndexRepository
         hash256: arrayToBuffer(snapshotHash),
         tree_content_id: tree?.[0],
         timestamp: timestamp.getTime(),
-        parents: JSON.stringify(parents.map((it) => arrayToHex(it))),
+        parents: JSON.stringify(parents),
       })
       .returning("id as id")
       .executeTakeFirst();

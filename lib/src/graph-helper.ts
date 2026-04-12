@@ -2,8 +2,8 @@ import { BlobStore } from "./blob-store";
 import { Hash } from "./hasher";
 import { IndexRepository, Snapshot, TreeEntryType } from "./index-repository";
 import { Repository } from "./repository";
-import { BlobInfo, Tree } from "./tree-builder";
-import { arrayToHex, hexToUint8Array } from "./utils";
+import { BlobInfo, DBHash, ReadEntry, Tree, TreeBuilder } from "./tree-builder";
+import { arraysEqual, arrayToHex } from "./utils";
 
 type CommitNode = { hash256: Hash; parents: string[]; timestamp: Date };
 
@@ -65,36 +65,157 @@ export function findCommonAncestor<T extends CommitNode>(
   return undefined;
 }
 
+export type ConflictSolver = (
+  conflict: /** Ours and theirs was modified */
+    | { our: ReadEntry; their: ReadEntry }
+    /** Theirs was modified while ours was deleted */
+    | { base: ReadEntry; our: ReadEntry | undefined; their: ReadEntry }
+    /** Ours was modified while ours was deleted */
+    | { base: ReadEntry; our: ReadEntry; their: ReadEntry | undefined },
+) => ReadEntry | undefined;
 export async function threeWayMerge(
-  ours: Repository,
-  theirs: Repository,
-  baseCommit: Snapshot,
-) {
-  const base = await ours.branch(
-    ours.config.branch,
-    ours.config.inlined,
-    baseCommit.hash256,
+  repo: IndexRepository,
+  base: Snapshot,
+  ours: Snapshot,
+  theirs: Snapshot,
+  solver: ConflictSolver,
+): Promise<{ treeHash: DBHash | undefined; parents: Hash[] }> {
+  const baseTree = base.tree
+    ? await repo.readTree(base.tree)
+    : { entries: new Map() };
+  const oursTree = ours.tree
+    ? await repo.readTree(ours.tree)
+    : { entries: new Map() };
+  const theirsTree = theirs.tree
+    ? await repo.readTree(theirs.tree)
+    : { entries: new Map() };
+
+  const treeBuilder = new TreeBuilder({ entries: new Map() });
+  await threeWayMergeTree(
+    repo,
+    baseTree,
+    oursTree,
+    theirsTree,
+    [],
+    treeBuilder,
+    solver,
   );
-  const ongoing: { path: string[] }[] = [{ path: [] }];
-  while (ongoing.length > 0) {
-    const current = ongoing.pop();
-    if (current === undefined) {
-      break;
+
+  const treeHash = await treeBuilder.finalize(repo);
+  const parents = [ours.hash256, theirs.hash256];
+  return { treeHash, parents };
+}
+
+async function threeWayMergeTree(
+  repo: IndexRepository,
+  base: Tree | undefined,
+  ours: Tree,
+  theirs: Tree,
+  path: string[],
+  treeBuilder: TreeBuilder,
+  solver: ConflictSolver,
+) {
+  const allNameSet = [...ours.entries.keys(), ...theirs.entries.keys()]
+    .reduce((prev, cur) => {
+      prev.add(cur);
+      return prev;
+    }, new Set<string>())
+    .values();
+  for (const name of allNameSet) {
+    const currentPath = [...path, name];
+    const baseEntry = base?.entries.get(name);
+    const ourEntry = ours.entries.get(name);
+    const theirEntry = theirs.entries.get(name);
+    if (
+      baseEntry?.type === "mutateTree" ||
+      ourEntry?.type === "mutateTree" ||
+      theirEntry?.type === "mutateTree"
+    ) {
+      throw Error("Unexpected mutateTree type");
     }
-    const more = await threeWayMergePath(ours, theirs, base, current.path);
-    ongoing.push(...more);
+
+    if (ourEntry !== undefined && theirEntry !== undefined) {
+      if (
+        (baseEntry === undefined || baseEntry.type === "t") &&
+        ourEntry.type === "t" &&
+        theirEntry.type === "t"
+      ) {
+        const baseChildTree: Tree | undefined = baseEntry?.hash
+          ? await repo.readTree(baseEntry.hash)
+          : undefined;
+        const ourChildTree: Tree = ourEntry.hash
+          ? await repo.readTree(ourEntry.hash)
+          : { entries: new Map() };
+        const theirChildTree: Tree = theirEntry.hash
+          ? await repo.readTree(theirEntry.hash)
+          : { entries: new Map() };
+        await threeWayMergeTree(
+          repo,
+          baseChildTree,
+          ourChildTree,
+          theirChildTree,
+          currentPath,
+          treeBuilder,
+          solver,
+        );
+        continue;
+      }
+
+      // conflict
+      const solved = solver({ our: ourEntry, their: theirEntry });
+      if (solved) {
+        await treeBuilder.insertEntry(repo, currentPath, solved);
+      }
+    } else if (ourEntry !== undefined && theirEntry === undefined) {
+      // added in ours (otherwise it was removed in theirs)
+      // OR it was remove in theirs and modified in ours (in this case keep the modified version)
+      if (baseEntry === undefined) {
+        await treeBuilder.insertEntry(repo, currentPath, ourEntry);
+      } else if (!isEntryEqual(baseEntry, ourEntry)) {
+        const solved = solver({
+          base: baseEntry,
+          our: ourEntry,
+          their: theirEntry,
+        });
+        if (solved) {
+          await treeBuilder.insertEntry(repo, currentPath, solved);
+        }
+      }
+    } else if (theirEntry !== undefined && ourEntry === undefined) {
+      if (baseEntry === undefined) {
+        await treeBuilder.insertEntry(repo, currentPath, theirEntry);
+      } else if (!isEntryEqual(baseEntry, theirEntry)) {
+        const solved = solver({
+          base: baseEntry,
+          our: ourEntry,
+          their: theirEntry,
+        });
+        if (solved) {
+          await treeBuilder.insertEntry(repo, currentPath, solved);
+        }
+      }
+    }
   }
 }
 
-async function threeWayMergePath(
-  ours: Repository,
-  theirs: Repository,
-  base: Repository,
-  path: string[],
-): Promise<{ path: string[] }[]> {
-  // TODO
-  return [];
-}
+const isEntryEqual = (a: ReadEntry, b: ReadEntry) => {
+  if (a.type !== b.type) {
+    return false;
+  }
+  if (a.type === "b" && b.type === "b") {
+    return arraysEqual(a.hash[1], b.hash[1]);
+  }
+  if (a.type === "t" && b.type === "t") {
+    if (a.hash !== undefined && b.hash !== undefined) {
+      return arraysEqual(a.hash[1], b.hash[1]);
+    }
+    return a.hash === b.hash;
+  }
+  if (a.type === "r" && b.type === "r") {
+    return a.repoId === b.repoId;
+  }
+  return false;
+};
 
 /** Return blobs and trees missing ours */
 async function collectBlobs(
@@ -199,7 +320,7 @@ export async function pullMissingBlobs(
         await ours.repo.writeBlobInfo(blob.hash, blob.info);
       }
     }
-    // Revers to write leaf trees first
+    // Reverse, to write leaf trees first
     for (const tree of results.trees.reverse()) {
       await ours.repo.writeTree(
         tree.hash,
@@ -217,7 +338,7 @@ export async function pullMissingBlobs(
     await ours.repo.writeSnapshot(
       commit.tree,
       commit.timestamp,
-      commit.parents.map(hexToUint8Array),
+      commit.parents,
     );
   }
 
