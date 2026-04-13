@@ -418,11 +418,12 @@ export class Repository {
         }
       },
     );
-    await this.indexRepo.writeSnapshot(
+    const commitHash = await this.indexRepo.writeSnapshot(
       treeHash,
       timestamp,
       parents.map(arrayToHex),
       this.config.branch,
     );
+    await this.resetToSnapshot(treeHash, commitHash);
   }
 }
