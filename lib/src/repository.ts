@@ -406,6 +406,9 @@ export class Repository {
       ours.head,
       theirHead,
       ({ our, their }) => {
+        if (our?.type === "b" && their?.type === "b") {
+          return our.modificationTime > their.modificationTime ? our : their;
+        }
         if (
           (ours.head?.timestamp.getTime() ?? 0) > theirHead.timestamp.getTime()
         ) {
