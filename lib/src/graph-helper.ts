@@ -2,7 +2,7 @@ import { BlobStore } from "./blob-store";
 import { Hash } from "./hasher";
 import { IndexRepository, Snapshot, TreeEntryType } from "./index-repository";
 import { Repository } from "./repository";
-import { BlobInfo, DBHash, ReadEntry, Tree, TreeBuilder } from "./tree-builder";
+import { DBHash, ReadEntry, Tree, TreeBuilder } from "./tree-builder";
 import { arraysEqual, arrayToHex } from "./utils";
 
 type CommitNode = { hash256: Hash; parents: string[]; timestamp: Date };
@@ -52,14 +52,14 @@ export function findCommonAncestor<T extends CommitNode>(
   const commitsLeft = getRelatedCommits(headLeft, commitsLeftAll);
   const commitsRight = getRelatedCommits(headRight, commitsRightAll);
 
-  const commitsRDesc = Array.from(commitsRight.entries());
-  commitsRDesc.sort(
+  const commitsLDesc = Array.from(commitsLeft.entries());
+  commitsLDesc.sort(
     (a, b) => b[1].timestamp.getTime() - a[1].timestamp.getTime(),
   );
 
-  for (const commitRight of commitsRDesc) {
-    if (commitsLeft.has(commitRight[0])) {
-      return commitRight[1];
+  for (const commitLeft of commitsLDesc) {
+    if (commitsRight.has(commitLeft[0])) {
+      return commitLeft[1];
     }
   }
   return undefined;
@@ -217,39 +217,6 @@ const isEntryEqual = (a: ReadEntry, b: ReadEntry) => {
   return false;
 };
 
-/** Return blobs and trees missing ours */
-async function collectBlobs(
-  ours: IndexRepository,
-  ourTree: Tree,
-  ourTreeHash: Hash,
-  results: {
-    trees: { hash: Hash; tree: Tree }[];
-    blobs: { hash: Hash; info: BlobInfo }[];
-  },
-) {
-  results.trees.push({ hash: ourTreeHash, tree: ourTree });
-
-  for (const ourEntry of ourTree.entries.values()) {
-    if (ourEntry.type === TreeEntryType.Tree) {
-      if (ourEntry.hash === undefined) {
-        // don't collect empty trees
-        continue;
-      }
-      const childTree =
-        ourEntry.data !== undefined
-          ? ourEntry.data
-          : await ours.readTree(ourEntry.hash);
-
-      await collectBlobs(ours, childTree, ourEntry.hash[1], results);
-    } else if (ourEntry.type === TreeEntryType.Blob) {
-      const blobInfo = await ours.readBlobInfo(ourEntry.hash[1]);
-      results.blobs.push({ hash: ourEntry.hash[1], info: blobInfo });
-    } else if (ourEntry.type === "mutateTree") {
-      throw Error("Unexpected mutateTree type");
-    }
-  }
-}
-
 type RepoCommitInfo = {
   repo: IndexRepository;
   store: BlobStore;
@@ -275,11 +242,84 @@ export async function getRepoCommitInfo(
   };
 }
 
+async function pullTree(
+  ours: RepoCommitInfo,
+  their: RepoCommitInfo,
+  theirTreeHash: DBHash,
+): Promise<DBHash> {
+  const tree: Tree = { entries: new Map() };
+
+  const theirTree = await their.repo.readTree(theirTreeHash);
+  for (const [name, entry] of theirTree.entries.entries()) {
+    switch (entry.type) {
+      case TreeEntryType.Tree: {
+        if (entry.hash === undefined) {
+          tree.entries.set(name, entry);
+          continue;
+        }
+        const childTreeHash = await pullTree(ours, their, entry.hash);
+        tree.entries.set(name, {
+          type: TreeEntryType.Tree,
+          hash: childTreeHash,
+          data: undefined,
+        });
+        break;
+      }
+      case TreeEntryType.Blob: {
+        const blobInfo = await their.repo.readBlobInfo(entry.hash[1]);
+        if (blobInfo.type !== "inlined") {
+          // transfer blobs fr
+          for (const part of blobInfo.parts) {
+            const hex = arrayToHex(part);
+            const path = Repository.blobPath(hex);
+            if (await ours.store.exists(path)) {
+              continue;
+            }
+            const cipherBlob = await their.store.read(path);
+            await ours.store.write(path, cipherBlob);
+          }
+        }
+        const existing = await ours.repo.readContent(entry.hash[1]);
+        const ourBlobHash =
+          existing !== undefined
+            ? existing
+            : await ours.repo.writeBlobInfo(entry.hash[1], blobInfo);
+        tree.entries.set(name, {
+          ...entry,
+          hash: ourBlobHash,
+        });
+
+        break;
+      }
+      case TreeEntryType.RepoLink:
+        tree.entries.set(name, entry);
+        break;
+      case "mutateTree":
+        throw Error("Unexpected mutateTree type");
+      default:
+        entry satisfies never;
+    }
+  }
+
+  return ours.repo.writeTree(
+    theirTreeHash[1],
+    Array.from(tree.entries.entries()).map((it) => {
+      if (it[1].type === "mutateTree") {
+        throw Error("Unexpected entry type");
+      }
+      return {
+        name: it[0],
+        entry: it[1],
+      };
+    }),
+  );
+}
+
 /** Returns the pulled commits */
 export async function pullMissingBlobs(
   ours: RepoCommitInfo,
   theirs: RepoCommitInfo,
-): Promise<Snapshot[]> {
+): Promise<Hash[]> {
   const missingCommits: Snapshot[] = [];
   for (const [hash, entry] of theirs.commits.entries()) {
     if (ours.commits.has(hash)) {
@@ -289,58 +329,12 @@ export async function pullMissingBlobs(
   }
 
   for (const commit of missingCommits) {
-    if (commit.tree === undefined) {
-      continue;
-    }
-    const commitTree = await theirs.repo.readTree(commit.tree);
-    const results: {
-      trees: { hash: Hash; tree: Tree }[];
-      blobs: { hash: Hash; info: BlobInfo }[];
-    } = {
-      trees: [],
-      blobs: [],
-    };
-    await collectBlobs(theirs.repo, commitTree, commit.tree[1], results);
-
-    for (const blob of results.blobs) {
-      if (blob.info.type !== "inlined") {
-        // transfer blobs fr
-        for (const part of blob.info.parts) {
-          const hex = arrayToHex(part);
-          const path = Repository.blobPath(hex);
-          if (await ours.store.exists(path)) {
-            continue;
-          }
-          const cipherBlob = await theirs.store.read(path);
-          await ours.store.write(path, cipherBlob);
-        }
-      }
-      const existing = await ours.repo.readContent(blob.hash);
-      if (existing === undefined) {
-        await ours.repo.writeBlobInfo(blob.hash, blob.info);
-      }
-    }
-    // Reverse, to write leaf trees first
-    for (const tree of results.trees.reverse()) {
-      await ours.repo.writeTree(
-        tree.hash,
-        Array.from(tree.tree.entries.entries()).map((it) => {
-          if (it[1].type === "mutateTree") {
-            throw Error("Unexpected entry type");
-          }
-          return {
-            name: it[0],
-            entry: it[1],
-          };
-        }),
-      );
-    }
-    await ours.repo.writeSnapshot(
-      commit.tree,
-      commit.timestamp,
-      commit.parents,
-    );
+    const treeHash =
+      commit.tree === undefined
+        ? undefined
+        : await pullTree(ours, theirs, commit.tree);
+    await ours.repo.writeSnapshot(treeHash, commit.timestamp, commit.parents);
   }
 
-  return missingCommits;
+  return missingCommits.map((it) => it.hash256);
 }

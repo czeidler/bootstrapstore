@@ -368,10 +368,14 @@ export class Repository {
       return;
     }
 
-    const theirHead = theirsInfo.head;
+    // We need to work with the snapshot pulled into our repo
+    const theirHead = theirsInfo.head?.hash256
+      ? await this.indexRepo.readSnapshot(theirsInfo.head.hash256)
+      : undefined;
     if (theirHead === undefined) {
       return;
     }
+
     if (
       ours.head === undefined ||
       theirsInfo.commits.has(arrayToHex(ours.head.hash256))
