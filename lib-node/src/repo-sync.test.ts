@@ -71,11 +71,14 @@ const buildTest = (name: string, config: RepoConfig) => {
       await ours.pull(theirs, new Date(5000));
 
       const files = {
-        "dir1/dir2/file1": "filedata1",
-        "dir1/dir2/file2": "filedata2",
-        "dir1/dir2/file3": "filedata3",
-        "dir1/file4": "filedata4",
-      };
+        "dir1/dir2/file1": "toBeUpdatedInOurs",
+        "dir1/dir2/file2": "toBeUpdatedInTheirs",
+        "dir1/dir2/file3": "toBeUpdatedInBoth",
+        "dir1/dir2/file4": "toBeDeletedInOurs",
+        "dir1/dir2/file5": "toBeDeletedInTheirs",
+        "dir1/dir2/file6": "nottouched",
+        "dir1/file7": "filedata4",
+      } as const;
       await insertFiles(theirs, files, 10000);
       await theirs.createSnapshot(new Date(11000));
 
@@ -88,17 +91,19 @@ const buildTest = (name: string, config: RepoConfig) => {
       // 3 way merge
       const ourChange = {
         "dir1/dir2/file1": "updatedInOurs",
-        "dir1/dir2/file2": "updatedInBothOurs",
-        "dir1/dir2/file3": undefined,
-        "dir1/dir2/file4": "addedInBoth",
-      };
+        "dir1/dir2/file3": "updatedInBothOurs",
+        "dir1/dir2/file4": undefined,
+        "dir1/dir2/file8": "addedInBoth",
+      } as const;
       await insertFiles(ours, ourChange, 20000);
       await ours.createSnapshot(new Date(21000));
 
       const theirChange = {
-        "dir1/dir2/file2": "updatedInBothTheirs",
-        "dir1/dir2/file4": "addedInBoth",
-      };
+        "dir1/dir2/file2": "updatedInTheirs",
+        "dir1/dir2/file3": "updatedInBothTheirs",
+        "dir1/dir2/file5": undefined,
+        "dir1/dir2/file8": "addedInBoth",
+      } as const;
       await insertFiles(theirs, theirChange, 30000);
       await theirs.createSnapshot(new Date(31000));
 
@@ -107,9 +112,11 @@ const buildTest = (name: string, config: RepoConfig) => {
       await validateFiles(ours, {
         ...files,
         "dir1/dir2/file1": "updatedInOurs",
-        "dir1/dir2/file2": "updatedInBothTheirs",
-        "dir1/dir2/file3": undefined,
-        "dir1/dir2/file4": "addedInBoth",
+        "dir1/dir2/file2": "updatedInTheirs",
+        "dir1/dir2/file3": "updatedInBothTheirs",
+        "dir1/dir2/file4": undefined,
+        "dir1/dir2/file5": undefined,
+        "dir1/dir2/file8": "addedInBoth",
       });
     });
   });
