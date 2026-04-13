@@ -239,10 +239,10 @@ export class Repository {
     const head = await this.indexRepo.readBranchHead(this.config.branch);
     const treeHash = await this.treeBuilder.finalize(this.indexRepo);
     if (
-      (head?.hash256 === undefined && treeHash === undefined) ||
-      (head !== undefined &&
+      (head?.tree === undefined && treeHash === undefined) ||
+      (head?.tree !== undefined &&
         treeHash !== undefined &&
-        arraysEqual(head.hash256, treeHash[1]))
+        arraysEqual(head.tree[1], treeHash[1]))
     ) {
       // no change
       return;
@@ -351,7 +351,7 @@ export class Repository {
   async pull(theirs: Repository, timestamp: Date) {
     // Save existing changes
     // TODO make it an error if there are changes when calling pull?
-    await this.createSnapshot(new Date());
+    await this.createSnapshot(timestamp);
 
     const ours = await getRepoCommitInfo(
       this.config.branch,
