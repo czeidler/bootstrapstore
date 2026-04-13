@@ -68,7 +68,7 @@ const buildTest = (name: string, config: RepoConfig) => {
       const theirs = await createRepo("pullMergeTheirs");
 
       // check it doesn't fail to pull an empty repo
-      await ours.pull(theirs, new Date(50));
+      await ours.pull(theirs, new Date(5000));
 
       const files = {
         "dir1/dir2/file1": "filedata1",
@@ -76,10 +76,10 @@ const buildTest = (name: string, config: RepoConfig) => {
         "dir1/dir2/file3": "filedata3",
         "dir1/file4": "filedata4",
       };
-      await insertFiles(theirs, files, 100);
-      await theirs.createSnapshot(new Date(110));
+      await insertFiles(theirs, files, 10000);
+      await theirs.createSnapshot(new Date(11000));
 
-      await ours.pull(theirs, new Date(150));
+      await ours.pull(theirs, new Date(15000));
 
       assert.equal((await ours.listCommits()).length, 1);
 
@@ -92,17 +92,18 @@ const buildTest = (name: string, config: RepoConfig) => {
         "dir1/dir2/file3": undefined,
         "dir1/dir2/file4": "addedInBoth",
       };
-      await insertFiles(ours, ourChange, 200);
-      await ours.createSnapshot(new Date(210));
+      await insertFiles(ours, ourChange, 20000);
+      await ours.createSnapshot(new Date(21000));
 
       const theirChange = {
         "dir1/dir2/file2": "updatedInBothTheirs",
         "dir1/dir2/file4": "addedInBoth",
       };
-      await insertFiles(theirs, theirChange, 300);
-      await theirs.createSnapshot(new Date(310));
+      await insertFiles(theirs, theirChange, 30000);
+      await theirs.createSnapshot(new Date(31000));
 
-      await ours.pull(theirs, new Date(350));
+      await ours.pull(theirs, new Date(35000));
+      assert.equal((await ours.listCommits()).length, 4);
       await validateFiles(ours, {
         ...files,
         "dir1/dir2/file1": "updatedInOurs",
