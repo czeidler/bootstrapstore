@@ -30,6 +30,7 @@ export const diffWalk = async (
   ours: DirReader,
   theirs: DirReader,
   callback: (entry: DiffEntry) => void,
+  precisionMs: number = 1000,
 ) => {
   const ongoingDirs: string[][] = [[]];
   let currentDir;
@@ -96,7 +97,8 @@ export const diffWalk = async (
         } else if (our.type === "file" && their.type === "file") {
           if (
             their.creationTime !== our.creationTime ||
-            their.modificationTime !== our.modificationTime ||
+            Math.abs(their.modificationTime - our.modificationTime) >
+              precisionMs ||
             their.size !== our.size
           ) {
             callback({
