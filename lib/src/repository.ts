@@ -426,4 +426,40 @@ export class Repository {
     );
     await this.resetToSnapshot(treeHash, commitHash);
   }
+
+  async syncStatus(theirs: Repository): Promise<{
+    commitsMissingInTheirs: Hash[];
+    commitsMissingInOurs: Hash[];
+  }> {
+    const ours = await getRepoCommitInfo(
+      this.config.branch,
+      this.indexRepo,
+      this.store,
+    );
+    const theirsInfo = await getRepoCommitInfo(
+      this.config.branch,
+      theirs.indexRepo,
+      theirs.store,
+    );
+
+    const result: {
+      commitsMissingInTheirs: Hash[];
+      commitsMissingInOurs: Hash[];
+    } = {
+      commitsMissingInOurs: [],
+      commitsMissingInTheirs: [],
+    };
+    for (const ourCommit of Array.from(ours.commits.entries())) {
+      ours.commits.delete(ourCommit[0]);
+      if (!theirsInfo.commits.delete(ourCommit[0])) {
+        result.commitsMissingInTheirs.push(ourCommit[1].hash256);
+      }
+    }
+    for (const theirCommit of theirsInfo.commits.entries()) {
+      if (!ours.commits.has(theirCommit[0])) {
+        result.commitsMissingInOurs.push(theirCommit[1].hash256);
+      }
+    }
+    return result;
+  }
 }
