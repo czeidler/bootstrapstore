@@ -97,6 +97,7 @@ export const diffWalk = async (
         } else if (our.type === "file" && their.type === "file") {
           if (
             their.creationTime !== our.creationTime ||
+            // rclone truncats ms when syncing...
             Math.abs(their.modificationTime - our.modificationTime) >
               precisionMs ||
             their.size !== our.size
