@@ -5,6 +5,8 @@ import { useState } from "react";
 import { DeviceWithLocations, useCreateSync, useSyncs } from "./account-hooks";
 import { Divider } from "@mui/material";
 import { SyncDirStatus } from "./SyncDirStatus";
+import { useMutation } from "@tanstack/react-query";
+import { trustedTsr } from "./tsr";
 
 const CreateSyncDialog = ({
   open,
@@ -81,6 +83,26 @@ function SyncDirEntry({
   const [openEditDialog, { toggle: toogleEdit, close: closeEdit }] =
     useDisclosure(false);
   const [openDryRunDialog, { toggle, close }] = useDisclosure(false);
+
+  const { mutate: cpDir, isPending: isCopying } = useMutation({
+    mutationFn: async () => {
+      if (syncInfo.type !== "cp") {
+        return;
+      }
+
+      const diff = await trustedTsr.syncDir({
+        body: {
+          syncId: syncInfo.id,
+          from: { path: syncInfo.fromPath },
+          to: { path: syncInfo.toPath },
+        },
+      });
+      if (diff.status !== 201) {
+        throw Error(`HTTP status ${diff.status}`);
+      }
+      return diff.body;
+    },
+  });
   return (
     <>
       <Flex key={syncInfo.id} direction={"column"} gap={5} align={"start"}>
@@ -92,8 +114,15 @@ function SyncDirEntry({
             <Text>To: {syncInfo.toPath}</Text>
           </>
         ) : null}
-        <Button onClick={toggle}>Dry Run</Button>
-        <Button onClick={toogleEdit}>Edit</Button>
+        <Button onClick={toggle} disabled={isCopying}>
+          Dry Run
+        </Button>
+        <Button onClick={() => cpDir()} disabled={isCopying}>
+          Run
+        </Button>
+        <Button onClick={toogleEdit} disabled={isCopying}>
+          Edit
+        </Button>
       </Flex>
       {syncInfo.type === "cp" && (
         <Modal opened={openDryRunDialog} onClose={close} size={"80vw"}>

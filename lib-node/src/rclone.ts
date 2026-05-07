@@ -215,7 +215,7 @@ export async function rcloneRC(
   }
 }
 
-type FSRemoteConnection = Omit<ConnectionInfo, "id">;
+export type FSRemoteConnection = Omit<ConnectionInfo, "id">;
 
 function remoteToRClone(connection: FSRemoteConnection | undefined): string {
   if (connection === undefined) {
@@ -317,9 +317,9 @@ export function lsEntryLSEntryToDirReader(entries: RCloneLsEntry[]): DirReader {
   };
 }
 
-type RCloneJob = { jobid: number };
+export type RCloneJob = { jobid: number };
 
-type RCloneJobStats = {
+export type RCloneJobStats = {
   bytes: number;
   checks: number;
   deletedDirs: number;
@@ -357,18 +357,7 @@ type RCloneJobStats = {
   }[];
 };
 
-type RCloneCheck = {
-  differ: unknown[];
-  error: unknown[];
-  hashType: "md5";
-  // Missing paths
-  missingOnDst: string[];
-  missingOnSrc: string[];
-  status: string;
-  success: boolean;
-};
-
-type RCloneJobStatus<Output = Record<string, unknown>> = {
+export type RCloneJobStatus<Output = Record<string, unknown>> = {
   duration: number;
   endTime: string;
   error: string;
@@ -453,15 +442,19 @@ export class RCloneRCCommands {
   }
 
   static async copyAsync(
-    src: { path: string; remote: FSRemoteConnection | undefined },
-    destination: { path: string; remote: FSRemoteConnection | undefined },
+    from: { path: string; remote?: FSRemoteConnection },
+    to: { path: string; remote?: FSRemoteConnection },
   ): Promise<RCloneJob> {
     const result = await rcloneRC("sync/copy", [
       "--config=/dev/null",
-      `srcFs=${remoteToRClone(src.remote)}${src.path}`,
+      `srcFs=${remoteToRClone(from.remote)}${from.path}`,
       `srcRemote=""`,
-      `dstFs=${remoteToRClone(destination.remote)}${destination.path}`,
+      `dstFs=${remoteToRClone(to.remote)}${to.path}`,
       `dstRemote=""`,
+      // only overwrite if source is newer
+      "--update",
+      "--track-renames",
+      "--track-renames-strategy=size,modtime",
       "_async=true",
     ]);
     return JSON.parse(result) as RCloneJob;
@@ -481,5 +474,9 @@ export class RCloneRCCommands {
       `jobid=${job}`,
     ]);
     return JSON.parse(result) as RCloneJobStatus;
+  }
+
+  static async cancelJob(job: number): Promise<void> {
+    await rcloneRC("job/stop", [`jobid=${job}`]);
   }
 }

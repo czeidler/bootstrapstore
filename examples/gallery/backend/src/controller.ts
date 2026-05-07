@@ -7,14 +7,13 @@ import cors from "cors";
 import { Readable } from "stream";
 import { authValidation } from "./auth";
 import { syncRepo, syncRepoStatus } from "./trustedService";
-import { DiffEntry, diffWalk, RCloneVFSDir } from "lib-node";
+import { diffWalk, RCloneVFSDir } from "lib-node";
 import { ExhaustiveCheckError } from "lib";
 import {
-  lsEntryLSEntryToDirEntry,
   lsEntryLSEntryToDirReader,
-  rcloneRC,
   RCloneRCCommands,
 } from "lib-node/src/rclone";
+import { RCloneJobManager } from "./rclone-job-manager";
 
 const upload = multer();
 const s = initServer();
@@ -89,6 +88,7 @@ export type AppConfig = {
 };
 
 export const buildApp = (config: AppConfig) => {
+  const rsyncManager = new RCloneJobManager();
   const app = express();
   app.use(express.json());
 
@@ -164,6 +164,26 @@ export const buildApp = (config: AppConfig) => {
             }
           });
           return { status: 201, body: { entries: await Promise.all(entries) } };
+        },
+      },
+      syncDir: {
+        handler: async ({ body }) => {
+          await rsyncManager.syncDir(body.syncId, body.from, body.to);
+          return {
+            status: 201,
+            body: undefined,
+          };
+        },
+      },
+      syncStatus: {
+        handler: async ({ query }) => {
+          const status = await rsyncManager.jobStatus(query.syncId);
+          return {
+            status: 200,
+            body: {
+              status: status ? { finished: status?.finished } : undefined,
+            },
+          };
         },
       },
       diff: {

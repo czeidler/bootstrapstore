@@ -153,15 +153,32 @@ export const trustedContract = c.router({
       }),
     },
   },
-  cp: {
+  syncDir: {
     method: "POST",
-    path: "/cp",
+    path: "/sync-dir",
     body: z.object({
-      from: z.string(),
-      to: z.string(),
+      syncId: z.string(),
+      from: z.object({ remote: Remote.optional(), path: z.string() }),
+      to: z.object({ remote: Remote.optional(), path: z.string() }),
     }),
     responses: {
       201: z.void(),
+    },
+  },
+  syncStatus: {
+    method: "GET",
+    path: "/sync-status",
+    query: z.object({
+      syncId: z.string(),
+    }),
+    responses: {
+      200: z.object({
+        status: z
+          .object({
+            finished: z.boolean(),
+          })
+          .optional(),
+      }),
     },
   },
   diff: {
