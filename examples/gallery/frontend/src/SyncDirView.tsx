@@ -90,17 +90,17 @@ function SyncDirEntry({
         return;
       }
 
-      const diff = await trustedTsr.syncDir({
+      const result = await trustedTsr.syncDir({
         body: {
           syncId: syncInfo.id,
           from: { path: syncInfo.fromPath },
           to: { path: syncInfo.toPath },
         },
       });
-      if (diff.status !== 201) {
-        throw Error(`HTTP status ${diff.status}`);
+      if (result.status !== 201) {
+        throw Error(`HTTP status ${result.status}`);
       }
-      return diff.body;
+      return result.body;
     },
   });
   return (
