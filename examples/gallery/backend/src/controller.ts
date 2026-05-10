@@ -1,5 +1,11 @@
 import { createExpressEndpoints, initServer } from "@ts-rest/express";
-import { contract, trustedContract } from "./contract";
+import {
+  contract,
+  contractSSE,
+  serverSSEHandler,
+  SyncStatusSEEBodyType,
+  trustedContract,
+} from "./contract";
 import multer from "multer";
 import express from "express";
 import { storeGetter } from "./service";
@@ -109,6 +115,42 @@ export const buildApp = (config: AppConfig) => {
   );
 
   if (config.isLocal) {
+    serverSSEHandler(
+      app,
+      contractSSE.syncStatusEvents,
+      ({ query, onEvent, end }) => {
+        const interval = setInterval(async () => {
+          const status = await rsyncManager.jobStatus(query.syncId);
+          const event: SyncStatusSEEBodyType | undefined =
+            status === undefined
+              ? undefined
+              : !status.finished
+                ? ({
+                    status: "ongoing",
+                  } satisfies SyncStatusSEEBodyType)
+                : status.success
+                  ? ({
+                      status: "success",
+                      endTime: status.endTime,
+                    } satisfies SyncStatusSEEBodyType)
+                  : ({
+                      status: "error",
+                      error: status.error,
+                      endTime: status.endTime,
+                    } satisfies SyncStatusSEEBodyType);
+
+          onEvent(event);
+          if (event?.status !== "ongoing") {
+            clearInterval(interval);
+            end();
+          }
+        }, 300);
+        return () => {
+          clearInterval(interval);
+        };
+      },
+    );
+
     const trustedRouter = s.router(trustedContract, {
       syncRepoStatus: {
         handler: async ({ body }) => {

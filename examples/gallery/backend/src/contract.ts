@@ -1,7 +1,68 @@
 import { initContract } from "@ts-rest/core";
-import { z } from "zod";
+import { Express } from "express";
+import { z, ZodType } from "zod";
 
 const c = initContract();
+
+type SSEEndpoint = {
+  path: string;
+  query: ZodType;
+  streamBody: ZodType;
+};
+export const contractSSE = {
+  syncStatusEvents: {
+    path: "/sync-status-events",
+    query: z.object({ syncId: z.string() }),
+    streamBody: z
+      .discriminatedUnion("status", [
+        z.object({
+          status: z.literal("error"),
+          error: z.string(),
+          endTime: z.string(),
+        }),
+        z.object({ status: z.literal("success"), endTime: z.string() }),
+        z.object({ status: z.literal("ongoing") }),
+      ])
+      .optional(),
+  },
+};
+export type SyncStatusSEEBodyType = z.infer<
+  typeof contractSSE.syncStatusEvents.streamBody
+>;
+
+export function serverSSEHandler<T extends SSEEndpoint>(
+  app: Express,
+  endpoint: T,
+  /** Returns a clean up method to be called when the client terminates the connection */
+  handler: (params: {
+    query: z.infer<T["query"]>;
+    onEvent: (event: z.infer<T["streamBody"]>) => void;
+    /** End the connection to the client (doesn't call the clean up method) */
+    end: () => void;
+  }) => () => void,
+) {
+  app.get(endpoint.path, async (req, res) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    const query =
+      endpoint.query !== undefined
+        ? endpoint.query.parse(req.query)
+        : undefined;
+    const cleanUp = await handler({
+      query,
+      onEvent: (event: T["streamBody"]) => {
+        res.write(`data: ${JSON.stringify({ event })}\n\n`);
+      },
+      end: () => res.end(),
+    });
+    req.on("close", () => {
+      cleanUp();
+      res.end();
+    });
+  });
+}
 
 export const contract = c.router({
   me: {

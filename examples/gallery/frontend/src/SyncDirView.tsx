@@ -1,12 +1,13 @@
 import { Button, Modal, Flex, Text, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { MetadataRepository, shortId, SyncInfo } from "lib";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DeviceWithLocations, useCreateSync, useSyncs } from "./account-hooks";
 import { Divider } from "@mui/material";
 import { SyncDirStatus } from "./SyncDirStatus";
 import { useMutation } from "@tanstack/react-query";
 import { trustedTsr } from "./tsr";
+import { SyncStatusSEEBodyType } from "../../backend/src/contract";
 
 const CreateSyncDialog = ({
   open,
@@ -69,6 +70,41 @@ const CreateSyncDialog = ({
   );
 };
 
+function useSyncStatus(syncId: string) {
+  const [syncStatus, setSyncStatus] = useState<SyncStatusSEEBodyType | null>(
+    null,
+  );
+  const eventSource = useRef<EventSource | null>(null);
+
+  const recheck = useCallback(() => {
+    eventSource.current?.close();
+
+    const es = new EventSource(
+      `http://localhost:8080/sync-status-events?syncId=${syncId}`,
+    );
+    eventSource.current = es;
+
+    es.onmessage = (event: MessageEvent<SyncStatusSEEBodyType>) => {
+      console.log("Received event:", event.data);
+      setSyncStatus(event.data);
+    };
+
+    es.onerror = () => {
+      if (es.readyState === EventSource.CLOSED) {
+        console.log("EventSource closed by server");
+      }
+    };
+  }, [syncId]);
+
+  useEffect(() => {
+    recheck();
+    return () => {
+      eventSource.current?.close();
+      eventSource.current = null;
+    };
+  }, [recheck]);
+  return { syncStatus, recheck };
+}
 function SyncDirEntry({
   syncInfo,
   metadataRepo,
@@ -103,6 +139,9 @@ function SyncDirEntry({
       return result.body;
     },
   });
+
+  const { syncStatus, recheck } = useSyncStatus(syncInfo.id);
+
   return (
     <>
       <Flex key={syncInfo.id} direction={"column"} gap={5} align={"start"}>
@@ -114,10 +153,25 @@ function SyncDirEntry({
             <Text>To: {syncInfo.toPath}</Text>
           </>
         ) : null}
+        {syncStatus === null
+          ? null
+          : syncStatus?.status === "error"
+            ? syncStatus.error
+            : syncStatus?.status === "ongoing"
+              ? "Syncing..."
+              : syncStatus?.status === "success"
+                ? `Synced at ${syncStatus.endTime}`
+                : null}
         <Button onClick={toggle} disabled={isCopying}>
           Dry Run
         </Button>
-        <Button onClick={() => cpDir()} disabled={isCopying}>
+        <Button
+          onClick={() => {
+            cpDir();
+            recheck();
+          }}
+          disabled={isCopying}
+        >
           Run
         </Button>
         <Button onClick={toogleEdit} disabled={isCopying}>
