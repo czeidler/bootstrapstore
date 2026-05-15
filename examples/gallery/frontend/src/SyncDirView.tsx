@@ -84,9 +84,9 @@ function useSyncStatus(syncId: string) {
     );
     eventSource.current = es;
 
-    es.onmessage = (event: MessageEvent<SyncStatusSEEBodyType>) => {
+    es.onmessage = (event: MessageEvent) => {
       console.log("Received event:", event.data);
-      setSyncStatus(event.data);
+      setSyncStatus(JSON.parse(event.data).event);
     };
 
     es.onerror = () => {
@@ -141,7 +141,15 @@ function SyncDirEntry({
   });
 
   const { syncStatus, recheck } = useSyncStatus(syncInfo.id);
-
+  const syncStatusText = !syncStatus
+    ? undefined
+    : syncStatus?.status === "error"
+      ? syncStatus.error
+      : syncStatus?.status === "ongoing"
+        ? "Syncing..."
+        : syncStatus?.status === "success"
+          ? `Last synced at ${syncStatus.endTime}`
+          : undefined;
   return (
     <>
       <Flex key={syncInfo.id} direction={"column"} gap={5} align={"start"}>
@@ -153,27 +161,22 @@ function SyncDirEntry({
             <Text>To: {syncInfo.toPath}</Text>
           </>
         ) : null}
-        {syncStatus === null
-          ? null
-          : syncStatus?.status === "error"
-            ? syncStatus.error
-            : syncStatus?.status === "ongoing"
-              ? "Syncing..."
-              : syncStatus?.status === "success"
-                ? `Synced at ${syncStatus.endTime}`
-                : null}
+
         <Button onClick={toggle} disabled={isCopying}>
           Dry Run
         </Button>
-        <Button
-          onClick={() => {
-            cpDir();
-            recheck();
-          }}
-          disabled={isCopying}
-        >
-          Run
-        </Button>
+        <Flex direction={"row"} align={"center"} gap={5}>
+          <Button
+            onClick={() => {
+              cpDir();
+              recheck();
+            }}
+            disabled={isCopying}
+          >
+            Run
+          </Button>
+          {syncStatusText ? <Text>{syncStatusText}</Text> : null}
+        </Flex>
         <Button onClick={toogleEdit} disabled={isCopying}>
           Edit
         </Button>
