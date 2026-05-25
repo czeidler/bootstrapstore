@@ -54,6 +54,7 @@ export type LocationInfo = RepositoryLocationInfo | DirectoryLocationInfo;
 export type RepositoryLocationInfo = {
   /** The repo id */
   id: string;
+  /** If undefined repo is stored in the default location */
   path?: string;
   type: "repository";
   encKey: string;
@@ -84,17 +85,22 @@ const syncPath = (deviceId: string, locationId: string, syncId: string) => [
 ];
 
 export type SyncInfo =
-  | /** Remote push */
+  | /** Repo push */
   {
       id: string;
-      type: "push";
-      to: {
-        deviceId: string;
-        authId: string;
+      type: "localPush";
+      repo: {
+        locationId: string;
       };
+      to: { path: string };
     }
   /** Local cp */
-  | { id: string; type: "cp"; fromPath: string; toPath: string };
+  | {
+      id: string;
+      type: "cp";
+      from: { path: string; remoteId?: string };
+      to: { path: string; remoteId?: string };
+    };
 
 export class MetadataRepository {
   private constructor(

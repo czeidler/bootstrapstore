@@ -24,8 +24,8 @@ const CreateSyncDialog = ({
   metadataRepo: MetadataRepository;
   init?: SyncInfo;
 }) => {
-  const [from, setFrom] = useState(init?.type === "cp" ? init.fromPath : "");
-  const [to, setTo] = useState(init?.type === "cp" ? init.toPath : "");
+  const [from, setFrom] = useState(init?.type === "cp" ? init.from.path : "");
+  const [to, setTo] = useState(init?.type === "cp" ? init.to.path : "");
   const { mutateAsync } = useCreateSync(metadataRepo, deviceId, locationId);
   const create = async () => {
     if (to === "" || from === "") {
@@ -34,8 +34,8 @@ const CreateSyncDialog = ({
     await mutateAsync({
       id: init?.id ?? shortId(),
       type: "cp",
-      fromPath: from,
-      toPath: to,
+      from: { path: from },
+      to: { path: to },
     });
     onClose();
   };
@@ -129,8 +129,8 @@ function SyncDirEntry({
       const result = await trustedTsr.syncDir({
         body: {
           syncId: syncInfo.id,
-          from: { path: syncInfo.fromPath },
-          to: { path: syncInfo.toPath },
+          from: { path: syncInfo.from.path },
+          to: { path: syncInfo.to.path },
         },
       });
       if (result.status !== 201) {
@@ -157,8 +157,8 @@ function SyncDirEntry({
         <Text>Type: {syncInfo.type}</Text>
         {syncInfo.type === "cp" ? (
           <>
-            <Text>From: {syncInfo.fromPath}</Text>
-            <Text>To: {syncInfo.toPath}</Text>
+            <Text>From: {syncInfo.from.path}</Text>
+            <Text>To: {syncInfo.to.path}</Text>
           </>
         ) : null}
 
@@ -184,8 +184,8 @@ function SyncDirEntry({
       {syncInfo.type === "cp" && (
         <Modal opened={openDryRunDialog} onClose={close} size={"80vw"}>
           <SyncDirStatus
-            fromPath={syncInfo.fromPath}
-            toPath={syncInfo.toPath}
+            fromPath={syncInfo.from.path}
+            toPath={syncInfo.to.path}
           />
         </Modal>
       )}
