@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { SyncDirView } from "./SyncDirView";
 import { DeviceWithLocations } from "./account-hooks";
 
-export function DirRepoView({
+export function LocationDirView({
   deviceId,
   location,
   metadataRepo,
