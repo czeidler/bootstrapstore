@@ -322,6 +322,7 @@ const AccountView = ({
                 deviceId={selected.deviceId}
                 location={selected.location}
                 metadataRepo={metadataRepo}
+                accountData={accountData}
               />
             ) : (
               <LocationDirView

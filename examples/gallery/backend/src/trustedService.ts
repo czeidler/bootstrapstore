@@ -1,15 +1,63 @@
-import { Repository } from "lib";
+import { RepoBlobStoreGetter, Repository } from "lib";
 import {
   DiffEntry,
   diffWalk,
   FSDirReader,
   RepoDirReader,
   getRepoIOConfig,
+  FileBlobStore,
 } from "lib-node";
 import { storeGetter } from "./service";
 import fs from "fs/promises";
 import path from "path";
 import { base64ToUint8Array } from "lib/src/utils";
+
+export const syncRepos = async ({
+  repoId,
+  encKey,
+  from,
+  to,
+}: {
+  repoId: string;
+  encKey: string;
+  from: { path?: string; branch?: string; inlined?: boolean };
+  to: { path: string; branch?: string; inlined?: boolean };
+}) => {
+  const fromStoreGetter =
+    from.path === undefined
+      ? storeGetter
+      : new RepoBlobStoreGetter(new FileBlobStore(from.path.split("/")));
+  const fromRepo = await Repository.open(
+    repoId,
+    getRepoIOConfig(),
+    fromStoreGetter,
+    {
+      key: base64ToUint8Array(encKey),
+      branch: from.branch ?? "main",
+      inlined: from.inlined ?? false,
+    },
+  );
+  const targetStoreGetter = new RepoBlobStoreGetter(
+    new FileBlobStore(to.path.split("/")),
+  );
+  const targetBlobStore = targetStoreGetter.get(repoId);
+  if (!(await targetBlobStore.exists(["index"]))) {
+    const sourceBlobStore = fromStoreGetter.get(repoId);
+    const index = await sourceBlobStore.read(["index"]);
+    await targetBlobStore.write(["index"], index);
+  }
+  const toRepo = await Repository.open(
+    repoId,
+    getRepoIOConfig(),
+    targetStoreGetter,
+    {
+      key: base64ToUint8Array(encKey),
+      branch: to.branch ?? "main",
+      inlined: to.inlined ?? false,
+    },
+  );
+  await toRepo.pull(fromRepo, new Date());
+};
 
 export const syncRepoStatus = async ({
   repoId,

@@ -13,6 +13,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { IconClock } from "@tabler/icons-react";
 import { hexToUint8Array } from "lib/src/utils";
+import { SyncRepoView } from "./SyncRepoView";
+import { AccountData } from "lib/src/account";
 
 function RepoHistoryFileBrowser({
   metadataRepo,
@@ -93,10 +95,12 @@ export function LocationRepoView({
   deviceId,
   location,
   metadataRepo,
+  accountData,
 }: {
   deviceId: string;
   location: LocationInfo;
   metadataRepo: MetadataRepository;
+  accountData: AccountData;
 }) {
   if (location.type !== "repository") {
     throw Error("Location not a repository");
@@ -122,6 +126,12 @@ export function LocationRepoView({
         <Tabs.Panel value="details">
           <Text>Name: {location.name}</Text>
           <Text>Path: {location.path}</Text>
+          <SyncRepoView
+            metadataRepo={metadataRepo}
+            deviceId={deviceId}
+            locationId={location.id}
+            accountData={accountData}
+          />
         </Tabs.Panel>
         <Tabs.Panel value="browse">
           {repo === undefined ? null : (

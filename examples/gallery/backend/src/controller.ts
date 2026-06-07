@@ -12,7 +12,7 @@ import { storeGetter } from "./service";
 import cors from "cors";
 import { Readable } from "stream";
 import { authValidation } from "./auth";
-import { syncRepo, syncRepoStatus } from "./trustedService";
+import { syncRepo, syncRepos, syncRepoStatus } from "./trustedService";
 import { diffWalk, RCloneVFSDir } from "lib-node";
 import { ExhaustiveCheckError } from "lib";
 import {
@@ -152,7 +152,16 @@ export const buildApp = (config: AppConfig) => {
     );
 
     const trustedRouter = s.router(trustedContract, {
-      syncRepoStatus: {
+      syncRepos: {
+        handler: async ({ body }) => {
+          await syncRepos(body);
+          return {
+            status: 201,
+            body: {},
+          };
+        },
+      },
+      snapshotCheckoutStatus: {
         handler: async ({ body }) => {
           const entry = await syncRepoStatus(body);
           return {
@@ -163,7 +172,7 @@ export const buildApp = (config: AppConfig) => {
           };
         },
       },
-      syncRepo: {
+      snapshotCheckout: {
         handler: async ({ body }) => {
           await syncRepo(body);
           return { status: 200, body: {} };

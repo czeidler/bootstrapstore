@@ -156,9 +156,32 @@ const Remote = z.object({
 
 /** Endpoints for a trusted server, e.g. when run locally. */
 export const trustedContract = c.router({
-  syncRepo: {
+  syncRepos: {
     method: "POST",
-    path: "/sync-repo",
+    path: "/sync-repos",
+    description: "Sync repos",
+    body: z.object({
+      encKey: z.string(),
+      repoId: z.string(),
+      from: z.object({
+        path: z.string().optional(),
+        branch: z.string().optional(),
+        inlined: z.boolean().optional(),
+      }),
+      to: z.object({
+        path: z.string(),
+        branch: z.string().optional(),
+        inlined: z.boolean().optional(),
+      }),
+    }),
+    responses: {
+      201: z.object({}),
+    },
+  },
+  snapshotCheckout: {
+    method: "POST",
+    path: "/snapshot-checkout",
+    description: "Snapshots checkout path into a repo",
     body: z.object({
       encKey: z.string(),
       repoId: z.string(),
@@ -168,9 +191,9 @@ export const trustedContract = c.router({
       201: z.object({}),
     },
   },
-  syncRepoStatus: {
+  snapshotCheckoutStatus: {
     method: "POST",
-    path: "/sync-repo-status",
+    path: "/snapshot-checkout-status",
     body: z.object({
       encKey: z.string(),
       repoId: z.string(),

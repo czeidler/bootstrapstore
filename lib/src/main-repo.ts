@@ -88,10 +88,12 @@ export type SyncInfo =
   | /** Repo push */
   {
       id: string;
-      type: "localPush";
+      type: "syncRepos";
+      /*
       repo: {
         locationId: string;
       };
+      */
       to: { path: string };
     }
   /** Local cp */
