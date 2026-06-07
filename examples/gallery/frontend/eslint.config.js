@@ -25,5 +25,9 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
     },
+    parserOptions: {
+      projectService: true,
+      tsconfigRootDir: import.meta.dirname,
+    },
   },
 );
