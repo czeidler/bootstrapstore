@@ -96,11 +96,6 @@ export class Account {
       type: "repository",
       encKey: repoKeyBase64,
     });
-    await metadataRepo.writeLocation(deviceId, {
-      id: "root",
-      type: "directory",
-      path: "/",
-    });
     await metadataRepo.snapshot();
 
     const accountData: AccountData = {

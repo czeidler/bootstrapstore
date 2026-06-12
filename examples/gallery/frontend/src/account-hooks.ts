@@ -174,33 +174,27 @@ export const useCreateCheckout = (
 export const useCreateSync = (
   metadataRepo: MetadataRepository,
   deviceId: string,
-  locationId: string,
 ) =>
   useMutation({
     mutationFn: async (syncInfo: SyncInfo) => {
-      await metadataRepo.writeSync(deviceId, locationId, syncInfo);
+      await metadataRepo.writeSync(deviceId, syncInfo);
       await metadataRepo.snapshot();
     },
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: ["devices", deviceId, "locations", locationId, "syncs"],
+        queryKey: ["devices", deviceId, "syncs"],
       }),
   });
 
-export const useSyncs = (
-  metadataRepo: MetadataRepository,
-  deviceId: string,
-  locationId: string,
-) =>
+export const useSyncs = (metadataRepo: MetadataRepository, deviceId: string) =>
   useQuery({
-    queryKey: ["devices", deviceId, "locations", locationId, "syncs"],
+    queryKey: ["devices", deviceId, "syncs"],
     queryFn: async () => {
-      const repoList = await metadataRepo.listSyncs(deviceId, locationId);
+      const repoList = await metadataRepo.listSyncs(deviceId);
       const repos = await Promise.all(
         repoList
           ?.filter((it) => it !== undefined)
-          .map((it) => metadataRepo.readSync(deviceId, locationId, it.name)) ??
-          [],
+          .map((it) => metadataRepo.readSync(deviceId, it.name)) ?? [],
       );
       return repos.filter((it): it is SyncInfo => it !== undefined);
     },

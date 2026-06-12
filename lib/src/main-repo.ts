@@ -67,42 +67,29 @@ export type DirectoryLocationInfo = {
 };
 
 //sync
-const syncBasePath = (deviceId: string, locationId: string) => [
+const syncBasePath = (deviceId: string) => [deviceDir, deviceId, "syncs"];
+const syncPath = (deviceId: string, syncId: string) => [
   deviceDir,
   deviceId,
-  "locations",
-  locationId,
-  "syncs",
-];
-const syncPath = (deviceId: string, locationId: string, syncId: string) => [
-  deviceDir,
-  deviceId,
-  "locations",
-  locationId,
   "syncs",
   syncId,
   "sync.json",
 ];
 
-export type SyncInfo =
-  | /** Repo push */
-  {
-      id: string;
-      type: "syncRepos";
-      /*
-      repo: {
-        locationId: string;
-      };
-      */
-      to: { path: string };
-    }
-  /** Local cp */
-  | {
-      id: string;
-      type: "cp";
-      from: { path: string; remoteId?: string };
-      to: { path: string; remoteId?: string };
-    };
+export type SyncRepoInfo = {
+  id: string;
+  type: "syncRepos";
+  repoId: string;
+  to: { path: string };
+};
+export type SyncPathInfo = {
+  id: string;
+  type: "cp";
+  from: { path: string; remoteId?: string };
+  to: { path: string; remoteId?: string };
+};
+
+export type SyncInfo = SyncRepoInfo | SyncPathInfo;
 
 export class MetadataRepository {
   private constructor(
@@ -203,23 +190,20 @@ export class MetadataRepository {
     await this.write(locationPath(deviceId, locationInfo.id), locationInfo);
   }
 
-  async listSyncs(deviceId: string, locationId: string): Promise<DirEntry[]> {
-    const entries = await this.metaRepo.listDirectory(
-      syncBasePath(deviceId, locationId),
-    );
+  async listSyncs(deviceId: string): Promise<DirEntry[]> {
+    const entries = await this.metaRepo.listDirectory(syncBasePath(deviceId));
     return entries;
   }
 
-  async writeSync(deviceId: string, locationId: string, syncConfig: SyncInfo) {
-    await this.write(syncPath(deviceId, locationId, syncConfig.id), syncConfig);
+  async writeSync(deviceId: string, syncConfig: SyncInfo) {
+    await this.write(syncPath(deviceId, syncConfig.id), syncConfig);
   }
 
   async readSync(
     profileId: string,
-    locationId: string,
     syncId: string,
   ): Promise<SyncInfo | undefined> {
-    return this.read<SyncInfo>(syncPath(profileId, locationId, syncId));
+    return this.read<SyncInfo>(syncPath(profileId, syncId));
   }
 
   async snapshot() {
