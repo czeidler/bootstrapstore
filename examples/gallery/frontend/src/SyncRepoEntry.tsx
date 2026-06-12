@@ -2,30 +2,30 @@ import { Button, Modal, Flex, Text, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { MetadataRepository, shortId, SyncInfo } from "lib";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useCreateSync, useSyncs } from "./account-hooks";
-import { Divider } from "@mui/material";
+import { useCreateSync } from "./account-hooks";
 import { useMutation } from "@tanstack/react-query";
 import { trustedTsr } from "./tsr";
 import { SyncStatusSEEBodyType } from "../../backend/src/contract";
 import { AccountData } from "lib/src/account";
+import { SyncRepoInfo } from "lib/src/main-repo";
 
 const CreateSyncRepoDialog = ({
   open,
   onClose,
   deviceId,
-  locationId,
+  repoId,
   metadataRepo,
   init,
 }: {
   open: boolean;
   onClose: () => void;
   deviceId: string;
-  locationId: string;
+  repoId: string;
   metadataRepo: MetadataRepository;
   init?: SyncInfo;
 }) => {
   const [to, setTo] = useState(init?.type === "syncRepos" ? init.to.path : "");
-  const { mutateAsync } = useCreateSync(metadataRepo, deviceId, locationId);
+  const { mutateAsync } = useCreateSync(metadataRepo, deviceId);
   const create = async () => {
     if (to === "") {
       return;
@@ -33,6 +33,7 @@ const CreateSyncRepoDialog = ({
     await mutateAsync({
       id: init?.id ?? shortId(),
       type: "syncRepos",
+      repoId,
       to: { path: to },
     });
     onClose();
@@ -94,31 +95,24 @@ function useSyncStatus(syncId: string) {
   }, [recheck]);
   return { syncStatus, recheck };
 }
-function SyncRepoEntry({
+export function SyncRepoEntry({
   syncInfo,
   metadataRepo,
   deviceId,
-  locationId,
+  repoId,
   accountData,
 }: {
-  syncInfo: SyncInfo;
+  syncInfo: SyncRepoInfo;
   metadataRepo: MetadataRepository;
   deviceId: string;
-  locationId: string;
+  repoId: string;
   accountData: AccountData;
 }) {
   const [openEditDialog, { toggle: toogleEdit, close: closeEdit }] =
     useDisclosure(false);
-  const { mutate: cpDir, isPending: isCopying } = useMutation({
+  const { mutate: syncRepo, isPending: isCopying } = useMutation({
     mutationFn: async () => {
-      if (syncInfo.type !== "syncRepos") {
-        return;
-      }
-
-      const fromLocation = await metadataRepo.readLocation(
-        deviceId,
-        locationId,
-      );
+      const fromLocation = await metadataRepo.readLocation(deviceId, repoId);
       if (fromLocation?.type !== "repository") {
         throw Error("Expected repository location");
       }
@@ -163,7 +157,7 @@ function SyncRepoEntry({
         <Flex direction={"row"} align={"center"} gap={5}>
           <Button
             onClick={() => {
-              cpDir();
+              syncRepo();
               recheck();
             }}
             disabled={isCopying}
@@ -180,57 +174,13 @@ function SyncRepoEntry({
       {openEditDialog && (
         <CreateSyncRepoDialog
           deviceId={deviceId}
-          locationId={locationId}
+          repoId={repoId}
           metadataRepo={metadataRepo}
           open={openEditDialog}
           init={syncInfo}
           onClose={closeEdit}
         />
       )}
-    </>
-  );
-}
-
-export function SyncRepoView({
-  metadataRepo,
-  deviceId,
-  locationId,
-  accountData,
-}: {
-  metadataRepo: MetadataRepository;
-  deviceId: string;
-  locationId: string;
-  accountData: AccountData;
-}) {
-  const { data: syncs } = useSyncs(metadataRepo, deviceId, locationId);
-
-  const [openCreateSyncDialog, { toggle, close }] = useDisclosure(false);
-  return (
-    <>
-      <Flex h={"100%"} direction={"column"}>
-        <Flex direction={"row"}>
-          <Button onClick={toggle}>Add Sync</Button>
-        </Flex>
-        <Divider />
-        <Text>Syncs</Text>
-        {syncs?.map((it) => (
-          <SyncRepoEntry
-            key={it.id}
-            metadataRepo={metadataRepo}
-            deviceId={deviceId}
-            locationId={locationId}
-            syncInfo={it}
-            accountData={accountData}
-          />
-        ))}
-      </Flex>
-      <CreateSyncRepoDialog
-        deviceId={deviceId}
-        locationId={locationId}
-        metadataRepo={metadataRepo}
-        open={openCreateSyncDialog}
-        onClose={close}
-      />
     </>
   );
 }

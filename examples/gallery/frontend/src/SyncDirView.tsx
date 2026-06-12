@@ -1,9 +1,8 @@
-import { Button, Modal, Flex, Text, TextInput } from "@mantine/core";
+import { Button, Modal, Flex, Text, TextInput, Divider } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { MetadataRepository, shortId, SyncInfo } from "lib";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DeviceWithLocations, useCreateSync, useSyncs } from "./account-hooks";
-import { Divider } from "@mui/material";
 import { SyncDirStatus } from "./SyncDirStatus";
 import { useMutation } from "@tanstack/react-query";
 import { trustedTsr } from "./tsr";
@@ -13,20 +12,18 @@ const CreateSyncDialog = ({
   open,
   onClose,
   deviceId,
-  locationId,
   metadataRepo,
   init,
 }: {
   open: boolean;
   onClose: () => void;
   deviceId: string;
-  locationId: string;
   metadataRepo: MetadataRepository;
   init?: SyncInfo;
 }) => {
   const [from, setFrom] = useState(init?.type === "cp" ? init.from.path : "");
   const [to, setTo] = useState(init?.type === "cp" ? init.to.path : "");
-  const { mutateAsync } = useCreateSync(metadataRepo, deviceId, locationId);
+  const { mutateAsync } = useCreateSync(metadataRepo, deviceId);
   const create = async () => {
     if (to === "" || from === "") {
       return;
@@ -105,16 +102,14 @@ function useSyncStatus(syncId: string) {
   }, [recheck]);
   return { syncStatus, recheck };
 }
-function SyncDirEntry({
+export function SyncDirEntry({
   syncInfo,
   metadataRepo,
   deviceId,
-  locationId,
 }: {
   syncInfo: SyncInfo;
   metadataRepo: MetadataRepository;
   deviceId: string;
-  locationId: string;
 }) {
   const [openEditDialog, { toggle: toogleEdit, close: closeEdit }] =
     useDisclosure(false);
@@ -192,7 +187,6 @@ function SyncDirEntry({
       {openEditDialog && (
         <CreateSyncDialog
           deviceId={deviceId}
-          locationId={locationId}
           metadataRepo={metadataRepo}
           open={openEditDialog}
           init={syncInfo}
@@ -206,15 +200,13 @@ function SyncDirEntry({
 export function SyncDirView({
   metadataRepo,
   deviceId,
-  locationId,
   devicesWithLocations,
 }: {
   metadataRepo: MetadataRepository;
   deviceId: string;
-  locationId: string;
   devicesWithLocations: DeviceWithLocations[] | undefined;
 }) {
-  const { data: syncs } = useSyncs(metadataRepo, deviceId, locationId);
+  const { data: syncs } = useSyncs(metadataRepo, deviceId);
 
   const [openCreateSyncDialog, { toggle, close }] = useDisclosure(false);
   return (
@@ -230,14 +222,12 @@ export function SyncDirView({
             key={it.id}
             metadataRepo={metadataRepo}
             deviceId={deviceId}
-            locationId={locationId}
             syncInfo={it}
           />
         ))}
       </Flex>
       <CreateSyncDialog
         deviceId={deviceId}
-        locationId={locationId}
         metadataRepo={metadataRepo}
         open={openCreateSyncDialog}
         onClose={close}

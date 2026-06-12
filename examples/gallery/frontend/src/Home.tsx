@@ -1,5 +1,4 @@
 import { useSearchParams } from "react-router-dom";
-import { Stack } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { MetadataRepository, Repository, rootDir } from "lib";
 
@@ -7,6 +6,7 @@ import { storeGetter } from "./utils";
 import { FileBrowser } from "./FileBrowser";
 import { getRepoIOConfig } from "./io-config";
 import { hexToUint8Array } from "lib/src/utils";
+import { Flex } from "@mantine/core";
 
 export const Home = () => {
   const [searchParams] = useSearchParams();
@@ -47,8 +47,8 @@ export const Home = () => {
   }, [repo?.metadataRepository, repo?.repo]);
 
   return (
-    <Stack style={{ width: "100%", height: "100%" }} gap={1}>
+    <Flex direction="column" style={{ width: "100%", height: "100%" }} gap={1}>
       <FileBrowser root={root} />
-    </Stack>
+    </Flex>
   );
 };

@@ -1,4 +1,3 @@
-import { List, ListSubheader, TextField } from "@mui/material";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AccountFile, Account, MetadataRepository, LocationInfo } from "lib";
 import { storeGetter } from "./utils";
@@ -19,6 +18,7 @@ import {
   getTreeExpandedState,
   Group,
   Modal,
+  PasswordInput,
   Space,
   Text,
   TextInput,
@@ -74,7 +74,7 @@ const OpenAccount = ({
       }
       Content={
         <Flex gap={"xs"} m={"xs"} direction={"column"}>
-          <TextField
+          <PasswordInput
             label="Password"
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -243,25 +243,18 @@ const AccountView = ({
         <>
           <Flex direction={"row"} h={"100%"} mr="xs">
             <Flex direction="column" miw="400px">
-              <List
-                subheader={
-                  <ListSubheader sx={{ textAlign: "start" }}>
-                    <Flex
-                      pl="xs"
-                      direction={"row"}
-                      justify={"space-between"}
-                      align={"center"}
-                    >
-                      <Text>Devices:</Text>
-                      <Button onClick={() => setOpenAddDeviceDialog(true)}>
-                        Add
-                      </Button>
-                    </Flex>
-                  </ListSubheader>
-                }
+              <Flex
+                pl="xs"
+                direction={"row"}
+                justify={"space-between"}
+                align={"center"}
               >
-                <Divider />
-              </List>
+                <Text>Devices:</Text>
+                <Button onClick={() => setOpenAddDeviceDialog(true)}>
+                  Add
+                </Button>
+              </Flex>
+              <Divider />
 
               <Tree
                 ml="xs"
@@ -316,6 +309,7 @@ const AccountView = ({
               <DevicesView
                 deviceId={selected.deviceId}
                 metadataRepo={metadataRepo}
+                accountData={accountData}
               />
             ) : selected.location.type === "repository" ? (
               <LocationRepoView

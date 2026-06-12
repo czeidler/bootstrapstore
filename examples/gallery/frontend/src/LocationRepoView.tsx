@@ -13,7 +13,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { IconClock } from "@tabler/icons-react";
 import { hexToUint8Array } from "lib/src/utils";
-import { SyncRepoView } from "./SyncRepoView";
 import { AccountData } from "lib/src/account";
 
 function RepoHistoryFileBrowser({
@@ -126,12 +125,6 @@ export function LocationRepoView({
         <Tabs.Panel value="details">
           <Text>Name: {location.name}</Text>
           <Text>Path: {location.path}</Text>
-          <SyncRepoView
-            metadataRepo={metadataRepo}
-            deviceId={deviceId}
-            locationId={location.id}
-            accountData={accountData}
-          />
         </Tabs.Panel>
         <Tabs.Panel value="browse">
           {repo === undefined ? null : (

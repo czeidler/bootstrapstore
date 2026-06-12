@@ -37,7 +37,6 @@ export function LocationDirView({
           <SyncDirView
             metadataRepo={metadataRepo}
             deviceId={deviceId}
-            locationId={location.id}
             devicesWithLocations={devicesWithLocations}
           />
         </Tabs.Panel>
