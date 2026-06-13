@@ -97,7 +97,7 @@ export function SyncsView({
               />
             );
           }
-          if (it.type === "syncRepos") {
+          if (it.type === "push") {
             return (
               <SyncRepoEntry
                 key={it.id}

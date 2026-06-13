@@ -12,7 +12,7 @@ import fs from "fs/promises";
 import path from "path";
 import { base64ToUint8Array } from "lib/src/utils";
 
-export const syncRepos = async ({
+export const pushRepo = async ({
   repoId,
   encKey,
   from,

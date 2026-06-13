@@ -156,9 +156,9 @@ const Remote = z.object({
 
 /** Endpoints for a trusted server, e.g. when run locally. */
 export const trustedContract = c.router({
-  syncRepos: {
+  pushRepo: {
     method: "POST",
-    path: "/sync-repos",
+    path: "/repos/push",
     description: "Sync repos",
     body: z.object({
       encKey: z.string(),

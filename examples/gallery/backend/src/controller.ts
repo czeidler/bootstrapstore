@@ -12,7 +12,7 @@ import { storeGetter } from "./service";
 import cors from "cors";
 import { Readable } from "stream";
 import { authValidation } from "./auth";
-import { syncRepo, syncRepos, syncRepoStatus } from "./trustedService";
+import { syncRepo, pushRepo, syncRepoStatus } from "./trustedService";
 import { diffWalk, RCloneVFSDir } from "lib-node";
 import { ExhaustiveCheckError } from "lib";
 import {
@@ -152,9 +152,9 @@ export const buildApp = (config: AppConfig) => {
     );
 
     const trustedRouter = s.router(trustedContract, {
-      syncRepos: {
+      pushRepo: {
         handler: async ({ body }) => {
-          await syncRepos(body);
+          await pushRepo(body);
           return {
             status: 201,
             body: {},

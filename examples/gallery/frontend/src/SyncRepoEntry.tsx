@@ -7,7 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import { trustedTsr } from "./tsr";
 import { SyncStatusSEEBodyType } from "../../backend/src/contract";
 import { AccountData } from "lib/src/account";
-import { SyncRepoInfo } from "lib/src/main-repo";
+import { SyncPushRepoInfo } from "lib/src/main-repo";
 
 const CreateSyncRepoDialog = ({
   open,
@@ -24,7 +24,7 @@ const CreateSyncRepoDialog = ({
   metadataRepo: MetadataRepository;
   init?: SyncInfo;
 }) => {
-  const [to, setTo] = useState(init?.type === "syncRepos" ? init.to.path : "");
+  const [to, setTo] = useState(init?.type === "push" ? init.to.path : "");
   const { mutateAsync } = useCreateSync(metadataRepo, deviceId);
   const create = async () => {
     if (to === "") {
@@ -32,7 +32,7 @@ const CreateSyncRepoDialog = ({
     }
     await mutateAsync({
       id: init?.id ?? shortId(),
-      type: "syncRepos",
+      type: "push",
       repoId,
       to: { path: to },
     });
@@ -102,7 +102,7 @@ export function SyncRepoEntry({
   repoId,
   accountData,
 }: {
-  syncInfo: SyncRepoInfo;
+  syncInfo: SyncPushRepoInfo;
   metadataRepo: MetadataRepository;
   deviceId: string;
   repoId: string;
@@ -118,7 +118,7 @@ export function SyncRepoEntry({
       }
 
       const inlined = accountData.repoId === fromLocation.id;
-      const result = await trustedTsr.syncRepos({
+      const result = await trustedTsr.pushRepo({
         body: {
           repoId: syncInfo.id,
           encKey: fromLocation.encKey,
@@ -148,7 +148,7 @@ export function SyncRepoEntry({
       <Flex key={syncInfo.id} direction={"column"} gap={5} align={"start"}>
         <Text>Id: {syncInfo.id}</Text>
         <Text>Type: {syncInfo.type}</Text>
-        {syncInfo.type === "syncRepos" ? (
+        {syncInfo.type === "push" ? (
           <>
             <Text>To: {syncInfo.to.path}</Text>
           </>

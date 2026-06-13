@@ -76,9 +76,9 @@ const syncPath = (deviceId: string, syncId: string) => [
   "sync.json",
 ];
 
-export type SyncRepoInfo = {
+export type SyncPushRepoInfo = {
   id: string;
-  type: "syncRepos";
+  type: "push";
   repoId: string;
   to: { path: string };
 };
@@ -89,7 +89,7 @@ export type SyncPathInfo = {
   to: { path: string; remoteId?: string };
 };
 
-export type SyncInfo = SyncRepoInfo | SyncPathInfo;
+export type SyncInfo = SyncPushRepoInfo | SyncPathInfo;
 
 export class MetadataRepository {
   private constructor(

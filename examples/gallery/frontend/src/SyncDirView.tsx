@@ -157,24 +157,27 @@ export function SyncDirEntry({
           </>
         ) : null}
 
-        <Button onClick={toggle} disabled={isCopying}>
-          Dry Run
-        </Button>
-        <Flex direction={"row"} align={"center"} gap={5}>
-          <Button
-            onClick={() => {
-              cpDir();
-              recheck();
-            }}
-            disabled={isCopying}
-          >
-            Run
+        <Flex direction={"row"} gap={5}>
+          <Button onClick={toggle} disabled={isCopying} size="xs">
+            Dry Run
           </Button>
-          {syncStatusText ? <Text>{syncStatusText}</Text> : null}
+          <Flex direction={"row"} align={"center"} gap={5}>
+            <Button
+              onClick={() => {
+                cpDir();
+                recheck();
+              }}
+              disabled={isCopying}
+              size="xs"
+            >
+              Run
+            </Button>
+            {syncStatusText ? <Text>{syncStatusText}</Text> : null}
+          </Flex>
+          <Button onClick={toogleEdit} disabled={isCopying} size="xs">
+            Edit
+          </Button>
         </Flex>
-        <Button onClick={toogleEdit} disabled={isCopying}>
-          Edit
-        </Button>
       </Flex>
       {syncInfo.type === "cp" && (
         <Modal opened={openDryRunDialog} onClose={close} size={"80vw"}>
