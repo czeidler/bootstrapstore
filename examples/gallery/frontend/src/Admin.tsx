@@ -40,7 +40,7 @@ const AccountCreation = () => {
     <MainLayout
       Header={<Text>Create Account</Text>}
       Content={
-        <Flex m={5} direction={"column"}>
+        <Flex gap={"xs"} m={5} direction={"column"}>
           <PasswordInput
             size="sm"
             label="Password"

@@ -81,8 +81,10 @@ export function SyncsView({
   return (
     <>
       <Flex h={"100%"} direction={"column"}>
-        <Flex direction={"row"}>
-          <Button onClick={toggle}>Add Sync</Button>
+        <Flex direction={"row"} mt={5} mb={5}>
+          <Button size="xs" onClick={toggle}>
+            Add Sync
+          </Button>
         </Flex>
         <Divider />
         <Text>Syncs</Text>

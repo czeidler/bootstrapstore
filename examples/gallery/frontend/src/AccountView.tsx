@@ -244,13 +244,16 @@ const AccountView = ({
           <Flex direction={"row"} h={"100%"} mr="xs">
             <Flex direction="column" miw="400px">
               <Flex
-                pl="xs"
                 direction={"row"}
                 justify={"space-between"}
                 align={"center"}
+                m={5}
               >
                 <Text>Devices:</Text>
-                <Button onClick={() => setOpenAddDeviceDialog(true)}>
+                <Button
+                  size={"xs"}
+                  onClick={() => setOpenAddDeviceDialog(true)}
+                >
                   Add
                 </Button>
               </Flex>
