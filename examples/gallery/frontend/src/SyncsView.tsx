@@ -20,8 +20,8 @@ const CreateSyncDialog = ({
   metadataRepo: MetadataRepository;
   init?: SyncInfo;
 }) => {
-  const [from, setFrom] = useState(init?.type === "cp" ? init.from.path : "");
-  const [to, setTo] = useState(init?.type === "cp" ? init.to.path : "");
+  const [from, setFrom] = useState(init?.type === "sync" ? init.from.path : "");
+  const [to, setTo] = useState(init?.type === "sync" ? init.to.path : "");
   const { mutateAsync } = useCreateSync(metadataRepo, deviceId);
   const create = async () => {
     if (to === "" || from === "") {
@@ -29,7 +29,7 @@ const CreateSyncDialog = ({
     }
     await mutateAsync({
       id: init?.id ?? shortId(),
-      type: "cp",
+      type: "sync",
       from: { path: from },
       to: { path: to },
     });
@@ -87,7 +87,7 @@ export function SyncsView({
         <Divider />
         <Text>Syncs</Text>
         {syncs?.map((it) => {
-          if (it.type === "cp") {
+          if (it.type === "sync") {
             return (
               <SyncDirEntry
                 key={it.id}

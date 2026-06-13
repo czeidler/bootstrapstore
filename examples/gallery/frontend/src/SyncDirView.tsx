@@ -21,8 +21,8 @@ const CreateSyncDialog = ({
   metadataRepo: MetadataRepository;
   init?: SyncInfo;
 }) => {
-  const [from, setFrom] = useState(init?.type === "cp" ? init.from.path : "");
-  const [to, setTo] = useState(init?.type === "cp" ? init.to.path : "");
+  const [from, setFrom] = useState(init?.type === "sync" ? init.from.path : "");
+  const [to, setTo] = useState(init?.type === "sync" ? init.to.path : "");
   const { mutateAsync } = useCreateSync(metadataRepo, deviceId);
   const create = async () => {
     if (to === "" || from === "") {
@@ -30,7 +30,7 @@ const CreateSyncDialog = ({
     }
     await mutateAsync({
       id: init?.id ?? shortId(),
-      type: "cp",
+      type: "sync",
       from: { path: from },
       to: { path: to },
     });
@@ -117,7 +117,7 @@ export function SyncDirEntry({
 
   const { mutate: cpDir, isPending: isCopying } = useMutation({
     mutationFn: async () => {
-      if (syncInfo.type !== "cp") {
+      if (syncInfo.type !== "sync") {
         return;
       }
 
@@ -150,7 +150,7 @@ export function SyncDirEntry({
       <Flex key={syncInfo.id} direction={"column"} gap={5} align={"start"}>
         <Text>Id: {syncInfo.id}</Text>
         <Text>Type: {syncInfo.type}</Text>
-        {syncInfo.type === "cp" ? (
+        {syncInfo.type === "sync" ? (
           <>
             <Text>From: {syncInfo.from.path}</Text>
             <Text>To: {syncInfo.to.path}</Text>
@@ -179,7 +179,7 @@ export function SyncDirEntry({
           </Button>
         </Flex>
       </Flex>
-      {syncInfo.type === "cp" && (
+      {syncInfo.type === "sync" && (
         <Modal opened={openDryRunDialog} onClose={close} size={"80vw"}>
           <SyncDirStatus
             fromPath={syncInfo.from.path}

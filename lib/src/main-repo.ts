@@ -84,7 +84,7 @@ export type SyncPushRepoInfo = {
 };
 export type SyncPathInfo = {
   id: string;
-  type: "cp";
+  type: "sync";
   from: { path: string; remoteId?: string };
   to: { path: string; remoteId?: string };
 };
