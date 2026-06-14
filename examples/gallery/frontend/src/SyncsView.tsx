@@ -1,70 +1,11 @@
-import { useState } from "react";
 import { useDisclosure } from "@mantine/hooks";
-import { MetadataRepository, shortId, SyncInfo } from "lib";
-import { useCreateSync, useSyncs } from "./account-hooks";
-import { Button, Divider, Flex, Modal, Text, TextInput } from "@mantine/core";
+import { MetadataRepository } from "lib";
+import { useSyncs } from "./account-hooks";
+import { Button, Divider, Flex, Text } from "@mantine/core";
 import { SyncRepoEntry } from "./SyncRepoEntry";
 import { SyncDirEntry } from "./SyncDirView";
 import { AccountData } from "lib/src/account";
-
-const CreateSyncDialog = ({
-  open,
-  onClose,
-  deviceId,
-  metadataRepo,
-  init,
-}: {
-  open: boolean;
-  onClose: () => void;
-  deviceId: string;
-  metadataRepo: MetadataRepository;
-  init?: SyncInfo;
-}) => {
-  const [from, setFrom] = useState(init?.type === "sync" ? init.from.path : "");
-  const [to, setTo] = useState(init?.type === "sync" ? init.to.path : "");
-  const { mutateAsync } = useCreateSync(metadataRepo, deviceId);
-  const create = async () => {
-    if (to === "" || from === "") {
-      return;
-    }
-    await mutateAsync({
-      id: init?.id ?? shortId(),
-      type: "sync",
-      from: { path: from },
-      to: { path: to },
-    });
-    onClose();
-  };
-  return (
-    <Modal opened={open} onClose={onClose}>
-      <Flex direction={"column"} gap={10}>
-        <Text id="alert-dialog-title">Copy</Text>
-        <Flex direction={"column"}>
-          <Text>From</Text>
-          <TextInput
-            value={from}
-            onChange={(event) => setFrom(event.currentTarget.value)}
-          />
-          <Text>To</Text>
-          <TextInput
-            value={to}
-            onChange={(event) => setTo(event.currentTarget.value)}
-          />
-        </Flex>
-        <Flex gap={10} justify={"end"}>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button
-            onClick={create}
-            autoFocus
-            disabled={to === "" || from === ""}
-          >
-            Save
-          </Button>
-        </Flex>
-      </Flex>
-    </Modal>
-  );
-};
+import { SyncConfigDialog } from "./sync/SyncConfigDialog";
 
 export function SyncsView({
   metadataRepo,
@@ -114,7 +55,7 @@ export function SyncsView({
           throw Error("TODO");
         })}
       </Flex>
-      <CreateSyncDialog
+      <SyncConfigDialog
         deviceId={deviceId}
         metadataRepo={metadataRepo}
         open={openCreateSyncDialog}
