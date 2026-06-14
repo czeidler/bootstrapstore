@@ -14,19 +14,19 @@ export const DevicesView = ({
   metadataRepo: MetadataRepository;
   accountData: AccountData;
 }) => {
-  type TabValue = "data" | "remote";
-  const [tabValue, setTabValue] = useState<TabValue>("data");
+  type TabValue = "syncs" | "remote";
+  const [tabValue, setTabValue] = useState<TabValue>("syncs");
 
   return (
     <>
       <Flex direction="column" w="100%" h={"100%"}>
         <Tabs value={tabValue} onChange={(v) => setTabValue(v as TabValue)}>
           <Tabs.List>
-            <Tabs.Tab value="data">Data</Tabs.Tab>
+            <Tabs.Tab value="syncs">Syncs</Tabs.Tab>
             <Tabs.Tab value="remote">Remote</Tabs.Tab>
           </Tabs.List>
 
-          <Tabs.Panel value="data">
+          <Tabs.Panel value="syncs">
             <SyncsView
               metadataRepo={metadataRepo}
               deviceId={deviceId}
