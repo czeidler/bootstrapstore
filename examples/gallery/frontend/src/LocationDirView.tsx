@@ -3,14 +3,10 @@ import { FileBrowser } from "./FileBrowser";
 import { Flex, Tabs, Text } from "@mantine/core";
 import { RemoteProxyDirVFS } from "./remote-proxy-vfs";
 import { useMemo, useState } from "react";
-import { SyncDirView } from "./SyncDirView";
 import { DeviceWithLocations } from "./account-hooks";
 
 export function LocationDirView({
-  deviceId,
   location,
-  metadataRepo,
-  devicesWithLocations,
 }: {
   deviceId: string;
   location: LocationInfo;
@@ -34,11 +30,6 @@ export function LocationDirView({
 
         <Tabs.Panel value="details">
           <Text>Path: {location.path}</Text>
-          <SyncDirView
-            metadataRepo={metadataRepo}
-            deviceId={deviceId}
-            devicesWithLocations={devicesWithLocations}
-          />
         </Tabs.Panel>
         <Tabs.Panel value="browse">
           <FileBrowser root={root} />

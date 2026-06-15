@@ -5,7 +5,7 @@ import { SyncConfig } from "./SyncConfig";
 import { PushConfig } from "./PushConfig";
 import { useState } from "react";
 
-export const SyncConfigDialog = ({
+export const CreateSyncConfigDialog = ({
   open,
   onClose,
   deviceId,

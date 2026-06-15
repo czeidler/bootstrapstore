@@ -1,7 +1,7 @@
 import { MetadataRepository } from "lib";
 import { useState } from "react";
 import { RemoteTab } from "./RemoteTab";
-import { SyncsView } from "./SyncsView";
+import { SyncsView } from "./sync/SyncsView";
 import { AccountData } from "lib/src/account";
 import { Flex, Tabs } from "@mantine/core";
 

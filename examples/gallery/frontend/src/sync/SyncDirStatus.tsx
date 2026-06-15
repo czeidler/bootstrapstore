@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { trustedTsr } from "./tsr";
+import { trustedTsr } from "../tsr";
 import { DataTable } from "mantine-datatable";
 import { IconEdit, IconFilePlus, IconTrash } from "@tabler/icons-react";
 

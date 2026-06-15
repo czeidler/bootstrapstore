@@ -1,11 +1,11 @@
 import { useDisclosure } from "@mantine/hooks";
 import { MetadataRepository } from "lib";
-import { useSyncs } from "./account-hooks";
+import { useSyncs } from "../account-hooks";
 import { Button, Divider, Flex, Text } from "@mantine/core";
-import { SyncRepoEntry } from "./SyncRepoEntry";
-import { SyncDirEntry } from "./SyncDirView";
 import { AccountData } from "lib/src/account";
-import { SyncConfigDialog } from "./sync/SyncConfigDialog";
+import { CreateSyncConfigDialog } from "./CreateSyncConfigDialog";
+import { SyncEntry } from "./SyncEntry";
+import { PushRepoEntry } from "./PushRepoEntry";
 
 export function SyncsView({
   metadataRepo,
@@ -21,18 +21,17 @@ export function SyncsView({
   const [openCreateSyncDialog, { toggle, close }] = useDisclosure(false);
   return (
     <>
-      <Flex h={"100%"} direction={"column"}>
-        <Flex direction={"row"} mt={5} mb={5}>
+      <Flex h={"100%"} direction={"column"} gap={"xs"}>
+        <Flex direction={"row"} mt={"xs"}>
           <Button size="xs" onClick={toggle}>
             Add Sync
           </Button>
         </Flex>
-        <Divider />
-        <Text>Syncs</Text>
+
         {syncs?.map((it) => {
           if (it.type === "sync") {
             return (
-              <SyncDirEntry
+              <SyncEntry
                 key={it.id}
                 metadataRepo={metadataRepo}
                 deviceId={deviceId}
@@ -42,7 +41,7 @@ export function SyncsView({
           }
           if (it.type === "push") {
             return (
-              <SyncRepoEntry
+              <PushRepoEntry
                 key={it.id}
                 metadataRepo={metadataRepo}
                 deviceId={deviceId}
@@ -55,7 +54,7 @@ export function SyncsView({
           throw Error("TODO");
         })}
       </Flex>
-      <SyncConfigDialog
+      <CreateSyncConfigDialog
         deviceId={deviceId}
         metadataRepo={metadataRepo}
         open={openCreateSyncDialog}

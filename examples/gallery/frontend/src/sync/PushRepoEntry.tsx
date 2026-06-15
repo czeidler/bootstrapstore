@@ -1,15 +1,16 @@
 import { Button, Modal, Flex, Text, TextInput } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { MetadataRepository, shortId, SyncInfo } from "lib";
+import { MetadataRepository, shortId } from "lib";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useCreateSync } from "./account-hooks";
+import { useCreateSync } from "../account-hooks";
 import { useMutation } from "@tanstack/react-query";
-import { trustedTsr } from "./tsr";
-import { SyncStatusSEEBodyType } from "../../backend/src/contract";
+import { trustedTsr } from "../tsr";
+import { SyncStatusSEEBodyType } from "../../../backend/src/contract";
 import { AccountData } from "lib/src/account";
 import { SyncPushRepoInfo } from "lib/src/main-repo";
+import { SyncEntryLayout } from "./SyncEntryLayout";
 
-const CreateSyncRepoDialog = ({
+const EditPushRepoDialog = ({
   open,
   onClose,
   deviceId,
@@ -22,14 +23,11 @@ const CreateSyncRepoDialog = ({
   deviceId: string;
   repoId: string;
   metadataRepo: MetadataRepository;
-  init?: SyncInfo;
+  init: SyncPushRepoInfo;
 }) => {
-  const [to, setTo] = useState(init?.type === "push" ? init.to.path : "");
+  const [to, setTo] = useState(init.to.path);
   const { mutateAsync } = useCreateSync(metadataRepo, deviceId);
   const create = async () => {
-    if (to === "") {
-      return;
-    }
     await mutateAsync({
       id: init?.id ?? shortId(),
       type: "push",
@@ -95,7 +93,7 @@ function useSyncStatus(syncId: string) {
   }, [recheck]);
   return { syncStatus, recheck };
 }
-export function SyncRepoEntry({
+export function PushRepoEntry({
   syncInfo,
   metadataRepo,
   deviceId,
@@ -144,43 +142,42 @@ export function SyncRepoEntry({
           ? `Last synced at ${syncStatus.endTime}`
           : undefined;
   return (
-    <>
-      <Flex key={syncInfo.id} direction={"column"} gap={5} align={"start"}>
-        <Text>Id: {syncInfo.id}</Text>
-        <Text>Type: {syncInfo.type}</Text>
-        {syncInfo.type === "push" ? (
-          <>
-            <Text>To: {syncInfo.to.path}</Text>
-          </>
-        ) : null}
-
-        <Flex direction={"row"} align={"center"} gap={5}>
-          <Button
-            onClick={() => {
-              syncRepo();
-              recheck();
-            }}
-            disabled={isCopying}
-          >
-            Run
-          </Button>
-          {syncStatusText ? <Text>{syncStatusText}</Text> : null}
-        </Flex>
-        <Button onClick={toogleEdit} disabled={isCopying}>
+    <SyncEntryLayout
+      key={syncInfo.id}
+      id={syncInfo.id}
+      title={"Push Repo"}
+      isSyncing={isCopying}
+      sync={async () => {
+        syncRepo();
+        recheck();
+      }}
+      actions={[
+        <Button size={"xs"} onClick={toogleEdit} disabled={isCopying}>
           Edit
-        </Button>
-      </Flex>
+        </Button>,
+      ]}
+      Content={
+        <>
+          <Flex direction={"column"} gap={5} align={"start"}>
+            <Text>To: {syncInfo.to.path}</Text>
 
-      {openEditDialog && (
-        <CreateSyncRepoDialog
-          deviceId={deviceId}
-          repoId={repoId}
-          metadataRepo={metadataRepo}
-          open={openEditDialog}
-          init={syncInfo}
-          onClose={closeEdit}
-        />
-      )}
-    </>
+            <Flex direction={"row"} align={"center"} gap={5}>
+              {syncStatusText ? <Text>{syncStatusText}</Text> : null}
+            </Flex>
+          </Flex>
+
+          {openEditDialog && (
+            <EditPushRepoDialog
+              deviceId={deviceId}
+              repoId={repoId}
+              metadataRepo={metadataRepo}
+              open={openEditDialog}
+              init={syncInfo}
+              onClose={closeEdit}
+            />
+          )}
+        </>
+      }
+    />
   );
 }
