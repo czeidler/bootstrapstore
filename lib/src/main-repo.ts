@@ -52,8 +52,8 @@ const locationPath = (deviceId: string, locationId: string) => [
 ];
 export type LocationInfo = RepositoryLocationInfo | DirectoryLocationInfo;
 export type RepositoryLocationInfo = {
-  /** The repo id */
   id: string;
+  repoId: string;
   /** If undefined repo is stored in the default location */
   path?: string;
   type: "repository";
@@ -76,9 +76,17 @@ const syncPath = (deviceId: string, syncId: string) => [
   "sync.json",
 ];
 
+export type SnapshotInfo = {
+  id: string;
+  type: "snapshot";
+  from: { path: string };
+  /** Location id of a repository */
+  locationId: string;
+};
 export type SyncPushRepoInfo = {
   id: string;
   type: "push";
+  // TODO change to locationId
   repoId: string;
   to: { path: string };
 };
@@ -89,7 +97,7 @@ export type SyncPathInfo = {
   to: { path: string; remoteId?: string };
 };
 
-export type SyncInfo = SyncPushRepoInfo | SyncPathInfo;
+export type SyncInfo = SyncPushRepoInfo | SyncPathInfo | SnapshotInfo;
 
 export class MetadataRepository {
   private constructor(
@@ -210,7 +218,11 @@ export class MetadataRepository {
     await this.metaRepo.createSnapshot(new Date());
   }
 
-  async createChild(profileId: string, repoName?: string): Promise<Repository> {
+  async createChild(
+    profileId: string,
+    repoName?: string,
+    path?: string,
+  ): Promise<Repository> {
     const repoId = shortId();
     const key = crypto.getRandomValues(new Uint8Array(16));
     await Repository.create(repoId, this.ioConfig, this.storeGetter, key);
@@ -222,9 +234,11 @@ export class MetadataRepository {
 
     await this.writeLocation(profileId, {
       id: repoId,
+      repoId: repoId,
       type: "repository",
       encKey: uint8ArrayToBase64(key),
       name: repoName,
+      path,
     });
 
     // TODO move to separate method?

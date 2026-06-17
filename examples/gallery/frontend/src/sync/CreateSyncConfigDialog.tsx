@@ -4,6 +4,7 @@ import { Flex, Modal, Select } from "@mantine/core";
 import { SyncConfig } from "./SyncConfig";
 import { PushConfig } from "./PushConfig";
 import { useState } from "react";
+import { SnapshotConfig } from "./SnapshotConfig";
 
 export const CreateSyncConfigDialog = ({
   open,
@@ -25,6 +26,7 @@ export const CreateSyncConfigDialog = ({
           data={[
             { value: "sync", label: "Sync" },
             { value: "push", label: "Push Repository" },
+            { value: "snapshot", label: "Snapshot Directory" },
           ]}
           value={syncType}
           onChange={setSyncType}
@@ -37,6 +39,12 @@ export const CreateSyncConfigDialog = ({
           />
         ) : syncType === "push" ? (
           <PushConfig
+            deviceId={deviceId}
+            metadataRepo={metadataRepo}
+            onClose={onClose}
+          />
+        ) : syncType === "snapshot" ? (
+          <SnapshotConfig
             deviceId={deviceId}
             metadataRepo={metadataRepo}
             onClose={onClose}

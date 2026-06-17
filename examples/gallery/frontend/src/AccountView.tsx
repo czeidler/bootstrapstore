@@ -10,8 +10,9 @@ import HomeTwoToneIcon from "@mui/icons-material/HomeTwoTone";
 import { MainLayout } from "./MainLayout";
 import { getRepoIOConfig } from "./io-config";
 import { tsr } from "./tsr";
-import { IconChevronDown } from "@tabler/icons-react";
+import { IconChevronDown, IconFilePlus, IconEdit } from "@tabler/icons-react";
 import {
+  ActionIcon,
   Button,
   Divider,
   Flex,
@@ -30,6 +31,9 @@ import {
 } from "@mantine/core";
 import { LocationRepoView } from "./LocationRepoView";
 import { LocationDirView } from "./LocationDirView";
+import { useDisclosure } from "@mantine/hooks";
+import { CreateLocationDialog } from "./location/CreateLocationDialog";
+import { EditLocationDialog } from "./location/EditLocationDialog";
 
 // TEMP
 function create16ByteBuffer(str: string): Uint8Array {
@@ -127,6 +131,77 @@ const AddDeviceDialog = ({
   );
 };
 
+function EditDeviceLocationButton({
+  deviceId,
+  locationInfo,
+  metadataRepo,
+}: {
+  deviceId: string;
+  locationInfo: LocationInfo;
+  metadataRepo: MetadataRepository;
+}) {
+  const [
+    openCreateLocationDialog,
+    { toggle: toggleCreateLocationDialog, close: closeCreateLocationDialog },
+  ] = useDisclosure(false);
+  return (
+    <>
+      <ActionIcon
+        variant="outline"
+        ml="auto"
+        bd={0}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleCreateLocationDialog();
+        }}
+      >
+        <IconEdit />
+      </ActionIcon>
+      <EditLocationDialog
+        open={openCreateLocationDialog}
+        onClose={closeCreateLocationDialog}
+        deviceId={deviceId}
+        metadataRepo={metadataRepo}
+        locationInfo={locationInfo}
+      />
+    </>
+  );
+}
+
+function CreateDeviceLocationButton({
+  deviceId,
+  metadataRepo,
+}: {
+  deviceId: string;
+  metadataRepo: MetadataRepository;
+}) {
+  const [
+    openCreateLocationDialog,
+    { toggle: toggleCreateLocationDialog, close: closeCreateLocationDialog },
+  ] = useDisclosure(false);
+  return (
+    <>
+      <ActionIcon
+        variant="outline"
+        ml="auto"
+        bd={0}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleCreateLocationDialog();
+        }}
+      >
+        <IconFilePlus />
+      </ActionIcon>
+      <CreateLocationDialog
+        open={openCreateLocationDialog}
+        onClose={closeCreateLocationDialog}
+        deviceId={deviceId}
+        metadataRepo={metadataRepo}
+      />
+    </>
+  );
+}
+
 export function AccountViewPage({ accountFile }: { accountFile: AccountFile }) {
   const [accountData, setAccountData] = useState<AccountData | undefined>();
   const [metadataRepo, setMetadataRepo] = useState<
@@ -176,15 +251,18 @@ const AccountView = ({
   const { data: devicesWithLocations } = useDevicesWithLocations(metadataRepo);
 
   const locationToTreeChild = (deviceId: string, location: LocationInfo) => {
+    const nodeProps = { deviceId, locationInfo: location };
     if (location.type === "directory") {
       return {
         value: `${deviceId}#${location.id}`,
         label: <Text>Directory: {location.path}</Text>,
+        nodeProps,
       };
     }
     return {
       value: `${deviceId}#${location.id}`,
       label: <Text>Repository {location.id}</Text>,
+      nodeProps,
     };
   };
   const data = useMemo(
@@ -196,6 +274,7 @@ const AccountView = ({
             <Text>{`${accountData.deviceId} (Local)`}</Text>
           </Tooltip>
         ),
+        nodeProps: { deviceId: accountData.deviceId },
         children:
           devicesWithLocations
             ?.find((it) => it.device.id === accountData.deviceId)
@@ -208,6 +287,7 @@ const AccountView = ({
         .map((device) => ({
           value: device.device.id,
           label: <Text>{device.device.name ?? device.device.id}</Text>,
+          nodeProps: { deviceId: device.device.id },
           children: device.locations.map((it) =>
             locationToTreeChild(device.device.id, it),
           ),
@@ -261,6 +341,7 @@ const AccountView = ({
 
               <Tree
                 ml="xs"
+                mr="xs"
                 tree={tree}
                 data={data}
                 levelOffset={20}
@@ -303,6 +384,20 @@ const AccountView = ({
                       <Space w={16} />
                     )}
                     {node.label}
+
+                    {node.nodeProps?.deviceId &&
+                    node.nodeProps?.locationInfo ? (
+                      <EditDeviceLocationButton
+                        deviceId={node.nodeProps.deviceId}
+                        locationInfo={node.nodeProps.locationInfo}
+                        metadataRepo={metadataRepo}
+                      />
+                    ) : node.nodeProps?.deviceId ? (
+                      <CreateDeviceLocationButton
+                        deviceId={node.nodeProps.deviceId}
+                        metadataRepo={metadataRepo}
+                      />
+                    ) : null}
                   </Group>
                 )}
               />

@@ -116,10 +116,10 @@ export const useUpsertConnection = (
 export const useCreateChildRepo = (
   metadataRepo: MetadataRepository,
   deviceId: string,
-  repoName: string | undefined,
 ) =>
   useMutation({
-    mutationFn: () => metadataRepo.createChild(deviceId, repoName),
+    mutationFn: (params: { repoName?: string; path?: string }) =>
+      metadataRepo.createChild(deviceId, params.repoName, params.path),
     onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: ["devices"],
