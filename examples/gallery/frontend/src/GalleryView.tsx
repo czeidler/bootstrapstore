@@ -33,25 +33,23 @@ export default function GalleryView({
 
   const thumbnailDir = content.find((it) => it.name === ".thumbnails");
   const { dirEntries: thumbnailDirEntries } = useFileNavigation(
-    thumbnailDir?.type === "dir" ? thumbnailDir?.content : undefined
+    thumbnailDir?.type === "dir" ? thumbnailDir?.content : undefined,
   );
-  const thumbnailFiles = thumbnailDirEntries
+  const files = (thumbnailDir ? thumbnailDirEntries : content)
     .filter((it) => it.type === "file")
     .filter((it) => content.some((c) => c.name === it.name));
 
-  const [thumbnailPhotos, setThumbnailPhotos] = useState<
-    RepoPhoto[] | undefined
-  >(undefined);
+  const [photos, setPhotos] = useState<RepoPhoto[] | undefined>(undefined);
 
   useEffect(() => {
     (async () => {
-      setThumbnailPhotos(
-        thumbnailFiles
+      setPhotos(
+        files
           ?.filter((it) => it.type === "file")
           .filter((it) =>
             imageExtensions.some((ext) =>
-              it.name.toLocaleLowerCase().endsWith(ext)
-            )
+              it.name.toLocaleLowerCase().endsWith(ext),
+            ),
           )
           .map((it) => ({
             file: it.content,
@@ -59,26 +57,26 @@ export default function GalleryView({
             path: [...dirPath, it.name],
             width: baseWidth,
             height: baseHeight,
-          })) ?? []
+          })) ?? [],
       );
     })();
-  }, [dirPath, thumbnailFiles]);
+  }, [dirPath, files]);
   // Update image dimensions
   const onLoaded = useCallback(
     (index: number, image: { width: number; height: number }) => {
-      const newImages = [...(thumbnailPhotos ?? [])];
+      const newImages = [...(photos ?? [])];
       newImages[index].width = image.width;
       newImages[index].height = image.height;
-      setThumbnailPhotos(newImages);
+      setPhotos(newImages);
     },
-    [thumbnailPhotos]
+    [photos],
   );
 
   const [page, setPage] = useState(0);
   const imagesPerPage = 25;
-  const imagesOnPage = thumbnailPhotos?.slice(
+  const imagesOnPage = photos?.slice(
     page * imagesPerPage,
-    page * imagesPerPage + imagesPerPage
+    page * imagesPerPage + imagesPerPage,
   );
 
   return (
@@ -97,7 +95,7 @@ export default function GalleryView({
             setSelected(
               image?.type === "file"
                 ? { path: [...dirPath, name], file: image.content }
-                : undefined
+                : undefined,
             );
           }}
           render={{
@@ -116,7 +114,7 @@ export default function GalleryView({
         />
       </Stack>
       <Pagination
-        count={Math.ceil((thumbnailPhotos?.length ?? 0) / imagesPerPage)}
+        count={Math.ceil((photos?.length ?? 0) / imagesPerPage)}
         page={page + 1}
         onChange={(_, value) => {
           setPage(value - 1);
