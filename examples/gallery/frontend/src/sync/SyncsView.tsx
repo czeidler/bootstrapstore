@@ -1,11 +1,12 @@
 import { useDisclosure } from "@mantine/hooks";
 import { MetadataRepository } from "lib";
 import { useSyncs } from "../account-hooks";
-import { Button, Divider, Flex, Text } from "@mantine/core";
+import { Button, Flex } from "@mantine/core";
 import { AccountData } from "lib/src/account";
 import { CreateSyncConfigDialog } from "./CreateSyncConfigDialog";
 import { SyncEntry } from "./SyncEntry";
 import { PushRepoEntry } from "./PushRepoEntry";
+import { SnapshotEntry } from "./SnapshotEntry";
 
 export function SyncsView({
   metadataRepo,
@@ -48,6 +49,16 @@ export function SyncsView({
                 repoId={it.repoId}
                 syncInfo={it}
                 accountData={accountData}
+              />
+            );
+          }
+          if (it.type === "snapshot") {
+            return (
+              <SnapshotEntry
+                key={it.id}
+                metadataRepo={metadataRepo}
+                deviceId={deviceId}
+                syncInfo={it}
               />
             );
           }

@@ -10,7 +10,7 @@ import {
 import { storeGetter } from "./service";
 import fs from "fs/promises";
 import path from "path";
-import { base64ToUint8Array } from "lib/src/utils";
+import { base64ToUint8Array, pathToArray } from "lib/src/utils";
 
 export const pushRepo = async ({
   repoId,
@@ -26,7 +26,7 @@ export const pushRepo = async ({
   const fromStoreGetter =
     from.path === undefined
       ? storeGetter
-      : new RepoBlobStoreGetter(new FileBlobStore(from.path.split("/")));
+      : new RepoBlobStoreGetter(new FileBlobStore(pathToArray(from.path)));
   const fromRepo = await Repository.open(
     repoId,
     getRepoIOConfig(),
@@ -38,7 +38,7 @@ export const pushRepo = async ({
     },
   );
   const targetStoreGetter = new RepoBlobStoreGetter(
-    new FileBlobStore(to.path.split("/")),
+    new FileBlobStore(pathToArray(to.path)),
   );
   const targetBlobStore = targetStoreGetter.get(repoId);
   if (!(await targetBlobStore.exists(["index"]))) {
@@ -91,6 +91,7 @@ export const syncRepo = async ({
   checkoutPath: string;
   encKey: string;
 }) => {
+  const checkoutPathArray = pathToArray(checkoutPath);
   const output: DiffEntry[] = [];
   const repo = await Repository.open(repoId, getRepoIOConfig(), storeGetter, {
     key: base64ToUint8Array(encKey),
@@ -98,13 +99,13 @@ export const syncRepo = async ({
     inlined: false,
   });
   await diffWalk(
-    new FSDirReader([checkoutPath]),
+    new FSDirReader(checkoutPathArray),
     new RepoDirReader(repo),
     (entry) => output.push(entry),
   );
 
   for (const out of output) {
-    const fsPath = `${path.join(...checkoutPath, ...out.path)}`;
+    const fsPath = `${path.join(...checkoutPathArray, ...out.path)}`;
     switch (out.type) {
       case "Added":
       case "Changed": {

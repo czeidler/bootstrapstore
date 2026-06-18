@@ -61,3 +61,12 @@ export class ExhaustiveCheckError extends Error {
     super(`Unexpected variant: ${variant}`);
   }
 }
+
+export function pathToArray(path: string): string[] {
+  return path.split("/").map((it) => {
+    if (it === "") {
+      return "/";
+    }
+    return it;
+  });
+}

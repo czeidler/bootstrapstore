@@ -123,8 +123,12 @@ export function LocationRepoView({
         </Tabs.List>
 
         <Tabs.Panel value="details">
-          <Text>Name: {location.name}</Text>
-          <Text>Path: {location.path}</Text>
+          <Flex direction={"column"} align={"start"}>
+            <Text>Id: {location.id}</Text>
+            <Text>Repo Id: {location.repoId}</Text>
+            <Text>Name: {location.name}</Text>
+            <Text>Path: {location.path}</Text>
+          </Flex>
         </Tabs.Panel>
         <Tabs.Panel value="browse">
           {repo === undefined ? null : (
