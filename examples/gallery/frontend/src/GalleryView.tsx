@@ -3,10 +3,10 @@ import "react-photo-album/rows.css";
 import { useCallback, useEffect, useState } from "react";
 import { ImageDialog } from "./ImageDialog";
 import { Image } from "./Image";
-import { Pagination, Stack } from "@mui/material";
 import { imageExtensions } from "./utils";
 import { VFSEntry, VFSFile } from "lib/src/vfs";
 import { useFileNavigation } from "./useFileNavigation";
+import { Pagination, Flex } from "@mantine/core";
 
 const baseWidth = 800;
 const baseHeight = 600;
@@ -81,7 +81,7 @@ export default function GalleryView({
 
   return (
     <>
-      <Stack overflow={"auto"}>
+      <Flex direction="column" style={{ overflow: "scroll" }}>
         <RowsPhotoAlbum
           sizes={{ size: "100vw" }}
           rowConstraints={{
@@ -112,14 +112,13 @@ export default function GalleryView({
             ),
           }}
         />
-      </Stack>
+      </Flex>
       <Pagination
-        count={Math.ceil((photos?.length ?? 0) / imagesPerPage)}
-        page={page + 1}
-        onChange={(_, value) => {
-          setPage(value - 1);
+        total={Math.ceil((photos?.length ?? 0) / imagesPerPage) - 1}
+        value={page}
+        onChange={(value) => {
+          setPage(value);
         }}
-        sx={{ margin: "auto", marginBottom: 0 }}
       />
 
       <ImageDialog
