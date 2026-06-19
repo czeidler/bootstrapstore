@@ -1,8 +1,8 @@
 import { RenderImageProps } from "react-photo-album";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CircularProgress } from "@mui/material";
 import { VFSFile } from "lib/src/vfs";
+import { Loader } from "@mantine/core";
 
 const useLoadImage = (file: VFSFile | undefined, path: string[]) => {
   return useQuery({
@@ -41,7 +41,7 @@ export function Image(props: ImageProps) {
   }, [data, isLoaded, props]);
 
   return isLoading ? (
-    <CircularProgress />
+    <Loader />
   ) : (
     <img
       className={props.className}
