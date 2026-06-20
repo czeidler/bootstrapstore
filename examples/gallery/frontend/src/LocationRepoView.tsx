@@ -53,7 +53,7 @@ function RepoHistoryFileBrowser({
       .catch((e) => console.log(e));
   }, [metadataRepo, repo, selectedCommit]);
   return (
-    <Flex direction={"row"} gap={5} mt={5}>
+    <Flex direction={"row"} gap={5} h="100%">
       <Flex direction={"column"} justify={"start"}>
         <Combobox>
           <Combobox.Options style={{ justifyItems: "start" }}>
@@ -115,8 +115,17 @@ export function LocationRepoView({
   }, [metadataRepo, repo]);
   const [activeTab, setActiveTab] = useState<string | null>("details");
   return (
-    <Flex direction="column" style={{ width: "100%" }}>
-      <Tabs value={activeTab} onChange={setActiveTab}>
+    <Flex
+      direction="column"
+      style={{
+        width: "100%",
+      }}
+    >
+      <Tabs
+        value={activeTab}
+        onChange={setActiveTab}
+        style={{ display: "flex", flexDirection: "column", height: "100%" }}
+      >
         <Tabs.List>
           <Tabs.Tab value="details">Detail</Tabs.Tab>
           <Tabs.Tab value="browse">Browser</Tabs.Tab>
@@ -130,7 +139,7 @@ export function LocationRepoView({
             <Text>Path: {location.path}</Text>
           </Flex>
         </Tabs.Panel>
-        <Tabs.Panel value="browse">
+        <Tabs.Panel value="browse" mih={"0"}>
           {repo === undefined ? null : (
             <RepoHistoryFileBrowser
               metadataRepo={metadataRepo}

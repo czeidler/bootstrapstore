@@ -321,7 +321,7 @@ const AccountView = ({
       }
       Content={
         <>
-          <Flex direction={"row"} h={"100%"} mr="xs">
+          <Flex direction={"row"} h={"100%"} mr="xs" mih={0}>
             <Flex direction="column" miw="400px">
               <Flex
                 direction={"row"}
