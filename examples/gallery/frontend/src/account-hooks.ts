@@ -56,7 +56,13 @@ export const useDevicesWithLocations = (
       const devices = repos.filter((it): it is DeviceInfo => it !== undefined);
       return Promise.all(
         devices.map(async (device) => {
-          const locationEntries = await metadataRepo?.listLocations(device.id);
+          const locationEntries = await metadataRepo
+            ?.listLocations(device.id)
+            // device might not have a location yet:
+            ?.catch((e) => {
+              console.error(e);
+              return undefined;
+            });
           if (locationEntries === undefined) {
             return { device, locations: [] };
           }
