@@ -6,11 +6,15 @@ import { AccountData } from "lib/src/account";
 import { DevicesView } from "./DeviceView";
 import { useCreateDevice, useDevicesWithLocations } from "./account-hooks";
 import { shortId, stringToUint8Array } from "lib/src/utils";
-import HomeTwoToneIcon from "@mui/icons-material/HomeTwoTone";
 import { MainLayout } from "./MainLayout";
 import { getRepoIOConfig } from "./io-config";
 import { tsr } from "./tsr";
-import { IconChevronDown, IconFilePlus, IconEdit } from "@tabler/icons-react";
+import {
+  IconChevronDown,
+  IconFilePlus,
+  IconEdit,
+  IconHome,
+} from "@tabler/icons-react";
 import {
   ActionIcon,
   Button,
@@ -312,7 +316,7 @@ const AccountView = ({
           <Tooltip
             label={`Open: repo: ${accountData.repoId}, local device: ${accountData.deviceId}`}
           >
-            <HomeTwoToneIcon sx={{ alignSelf: "center" }} />
+            <IconHome />
           </Tooltip>
           <Title p="sx" size="h4">
             Account

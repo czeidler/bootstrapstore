@@ -1,9 +1,11 @@
 import GalleryView from "./GalleryView";
-import CollectionsTwoToneIcon from "@mui/icons-material/CollectionsTwoTone";
-import FolderTwoToneIcon from "@mui/icons-material/FolderTwoTone";
-import DriveFolderUploadTwoToneIcon from "@mui/icons-material/DriveFolderUploadTwoTone";
 import { useEffect, useState } from "react";
 import { VFSDir } from "lib";
+import {
+  IconFolderUp,
+  IconFolder,
+  IconLibraryPhoto,
+} from "@tabler/icons-react";
 
 import FileView from "./FileView";
 import { imageExtensions } from "./utils";
@@ -55,7 +57,7 @@ export const FileBrowser = ({ root }: { root: VFSDir | undefined }) => {
             disabled={(currentPath.length ?? 0) === 0}
             onClick={() => onBack()}
           >
-            <DriveFolderUploadTwoToneIcon />
+            <IconFolderUp />
           </ActionIcon>
         </Tooltip>
         <Breadcrumbs aria-label="breadcrumb">
@@ -66,14 +68,14 @@ export const FileBrowser = ({ root }: { root: VFSDir | undefined }) => {
           ))}
         </Breadcrumbs>
 
-        <Group gap={0} ml="auto" mr={0}>
+        <Group gap={5} ml="auto" mr={0}>
           <Tooltip label="Gallery">
             <ActionIcon
               aria-label="Gallery"
               disabled={viewType === "gallery"}
               onClick={() => setViewType("gallery")}
             >
-              <CollectionsTwoToneIcon />
+              <IconLibraryPhoto />
             </ActionIcon>
           </Tooltip>
           <Tooltip label="Files">
@@ -82,7 +84,7 @@ export const FileBrowser = ({ root }: { root: VFSDir | undefined }) => {
               disabled={viewType === "file"}
               onClick={() => setViewType("file")}
             >
-              <FolderTwoToneIcon />
+              <IconFolder />
             </ActionIcon>
           </Tooltip>
         </Group>

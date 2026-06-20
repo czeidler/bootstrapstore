@@ -5,6 +5,11 @@ packages:
   - examples/gallery/backend
   - examples/gallery/frontend
 
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
+  sharp: true
+
 minimumReleaseAge: 10080
 
 onlyBuiltDependencies:

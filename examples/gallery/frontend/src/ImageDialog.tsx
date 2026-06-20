@@ -1,4 +1,4 @@
-import Dialog from "@mui/material/Dialog";
+import { Modal } from "@mantine/core";
 import { Image } from "./Image";
 import { VFSFile } from "lib/src/vfs";
 
@@ -11,19 +11,11 @@ export function ImageDialog(props: ImageDialogProps) {
   const { onClose, selected } = props;
 
   return (
-    <Dialog
+    <Modal
+      size="lg"
       onClick={onClose}
       onClose={onClose}
-      open={selected !== undefined}
-      maxWidth={"xl"}
-      PaperProps={{
-        sx: {
-          width: "75vw",
-          height: "98vh",
-          maxWidth: "100%",
-          maxHeight: "100%",
-        },
-      }}
+      opened={selected !== undefined}
     >
       <Image
         file={selected?.file}
@@ -36,6 +28,6 @@ export function ImageDialog(props: ImageDialogProps) {
           objectFit: "contain",
         }}
       />
-    </Dialog>
+    </Modal>
   );
 }

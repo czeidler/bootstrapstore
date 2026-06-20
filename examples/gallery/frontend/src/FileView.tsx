@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import FolderTwoToneIcon from "@mui/icons-material/FolderTwoTone";
-import InsertDriveFileTwoToneIcon from "@mui/icons-material/InsertDriveFileTwoTone";
-import DriveFileMoveTwoToneIcon from "@mui/icons-material/DriveFileMoveTwoTone";
 import { VFSEntry } from "lib/src/vfs";
 import { DataTable } from "mantine-datatable";
 import "mantine-datatable/styles.layer.css";
+import { IconDatabase, IconFolder, IconFile } from "@tabler/icons-react";
 
 type ViewEntry = {
   id: string;
@@ -68,12 +66,12 @@ export default function FileView({
           render: (row) => {
             const type = row.entry.type;
             if (type === "dir") {
-              return <FolderTwoToneIcon />;
+              return <IconFolder />;
             }
             if (type === "repo") {
-              return <DriveFileMoveTwoToneIcon />;
+              return <IconDatabase />;
             }
-            return <InsertDriveFileTwoToneIcon />;
+            return <IconFile />;
           },
         },
         {

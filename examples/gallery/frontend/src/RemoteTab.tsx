@@ -1,14 +1,3 @@
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
 import { MetadataRepository, VFSDir, VFSEntry } from "lib";
 import { useEffect, useState } from "react";
 import { useConnections, useUpsertConnection } from "./account-hooks";
@@ -21,6 +10,16 @@ import { RemoteProxyDirVFS } from "./remote-proxy-vfs";
 import { useMutation } from "@tanstack/react-query";
 import { ClientInferRequest } from "@ts-rest/core";
 import { trustedContract } from "../../backend/src/contract";
+import {
+  Button,
+  Divider,
+  Flex,
+  Modal,
+  Text,
+  Textarea,
+  TextInput,
+  Title,
+} from "@mantine/core";
 
 const FileViewDialog = ({
   root,
@@ -41,27 +40,15 @@ const FileViewDialog = ({
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="xl"
-      fullWidth
-      slotProps={{
-        paper: {
-          style: {
-            height: "100%",
-          },
-        },
-      }}
-    >
-      <DialogTitle id="alert-dialog-title">Files</DialogTitle>
-      <DialogContent sx={{ pb: 0 }}>
-        <FileView content={dirEntries} onDirEntryClicked={onDirEntryClicked} />
-      </DialogContent>
-      <DialogActions sx={{ pt: 0 }}>
+    <Modal opened={open} onClose={onClose} maw="xl">
+      <Title id="alert-dialog-title">Files</Title>
+
+      <FileView content={dirEntries} onDirEntryClicked={onDirEntryClicked} />
+
+      <Flex>
         <Button onClick={onClose}>Ok</Button>
-      </DialogActions>
-    </Dialog>
+      </Flex>
+    </Modal>
   );
 };
 
@@ -109,62 +96,44 @@ const CreateConnectionDialog = ({
     close();
   };
   return (
-    <Dialog open={open !== undefined} onClose={close}>
-      <DialogTitle id="alert-dialog-title">Create sFTP Connection</DialogTitle>
-      <DialogContent>
-        {remote?.id !== undefined ? (
-          <TextField
-            value={remote.id}
-            autoFocus
-            margin="dense"
-            label="Id"
-            fullWidth
-            variant="standard"
-            disabled
-          />
-        ) : null}
-        <TextField
-          value={remote?.host ?? ""}
-          autoFocus
-          margin="dense"
-          label="Host"
-          fullWidth
-          variant="standard"
-          onChange={(event) =>
-            setRemote((prev) => ({ ...prev, host: event.target.value }))
-          }
-        />
-        <TextField
-          value={remote?.user ?? ""}
-          autoFocus
-          margin="dense"
-          label="User"
-          fullWidth
-          variant="standard"
-          onChange={(event) =>
-            setRemote((prev) => ({ ...prev, user: event.target.value }))
-          }
-        />
-        <TextField
-          value={remote?.keyPem ?? ""}
-          autoFocus
-          margin="dense"
-          label="Key Pem"
-          fullWidth
-          variant="standard"
-          multiline={true}
-          onChange={(event) =>
-            setRemote((prev) => ({ ...prev, keyPem: event.target.value }))
-          }
-        />
-      </DialogContent>
-      <DialogActions>
+    <Modal opened={open !== undefined} onClose={close}>
+      <Title id="alert-dialog-title">Create sFTP Connection</Title>
+
+      {remote?.id !== undefined ? (
+        <TextInput value={remote.id} autoFocus label="Id" disabled />
+      ) : null}
+      <TextInput
+        value={remote?.host ?? ""}
+        autoFocus
+        label="Host"
+        onChange={(event) =>
+          setRemote((prev) => ({ ...prev, host: event.target.value }))
+        }
+      />
+      <TextInput
+        value={remote?.user ?? ""}
+        autoFocus
+        label="User"
+        onChange={(event) =>
+          setRemote((prev) => ({ ...prev, user: event.target.value }))
+        }
+      />
+      <Textarea
+        value={remote?.keyPem ?? ""}
+        autoFocus
+        label="Key Pem"
+        onChange={(event) =>
+          setRemote((prev) => ({ ...prev, keyPem: event.target.value }))
+        }
+      />
+
+      <Flex mt={"xs"}>
         <Button onClick={close}>Cancel</Button>
         <Button onClick={create} autoFocus disabled={remote === undefined}>
           {remote?.id !== undefined ? "Save" : "Create"}
         </Button>
-      </DialogActions>
-    </Dialog>
+      </Flex>
+    </Modal>
   );
 };
 
@@ -192,18 +161,18 @@ export const RemoteTab = ({
 
   return (
     <>
-      <Stack height={"100%"}>
-        <Stack direction={"row"}>
+      <Flex direction="column" h={"100%"}>
+        <Flex direction={"row"}>
           <Button onClick={() => setOpenCreateConnectionDialog({})}>
             Add Connection
           </Button>
-        </Stack>
+        </Flex>
         <Divider />
-        <Typography>Connections</Typography>
+        <Text>Connections</Text>
         {connections?.map((it) => (
-          <Stack key={it.id} flexDirection={"row"}>
-            <Typography>Id: {it.id}</Typography>
-            <Typography>Type: {it.type}</Typography>
+          <Flex key={it.id} direction={"row"}>
+            <Text>Id: {it.id}</Text>
+            <Text>Type: {it.type}</Text>
             <Button
               onClick={() =>
                 ls({
@@ -229,9 +198,9 @@ export const RemoteTab = ({
             <Button onClick={() => setOpenDir(new RemoteProxyDirVFS(it, []))}>
               Browse
             </Button>
-          </Stack>
+          </Flex>
         ))}
-      </Stack>
+      </Flex>
       <FileViewDialog
         root={openDir}
         open={openDir !== undefined}
