@@ -365,8 +365,10 @@ const AccountView = ({
                         : "transparent", // Highlight color
                     }}
                     onClick={() => {
-                      tree.toggleSelected(node.value);
-                      tree.toggleExpanded(node.value);
+                      tree.select(node.value);
+                      if (tree.selectedState.includes(node.value)) {
+                        tree.toggleExpanded(node.value);
+                      }
                       const [deviceId, locationId] = node.value.split("#");
                       const location = devicesWithLocations
                         ?.find((it) => it.device.id === deviceId)
