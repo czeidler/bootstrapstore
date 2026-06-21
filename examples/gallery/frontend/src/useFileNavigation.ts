@@ -1,5 +1,5 @@
 import { Repository } from "lib";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { VFSDir, VFSEntry } from "lib";
 
 export type PathStackEntry = {
@@ -12,6 +12,14 @@ export const useFileNavigation = (root: VFSDir | undefined) => {
   const [pathStack, setPathStack] = useState<{ path: string[]; dir: VFSDir }[]>(
     root ? [{ path: [], dir: root }] : [],
   );
+
+  // Update root if changed
+  const currentRoot = useRef(root);
+  if (currentRoot.current !== root) {
+    setPathStack(root ? [{ path: [], dir: root }] : []);
+    currentRoot.current = root;
+  }
+
   const currentPath: { path: string[]; dir: VFSDir } | undefined =
     pathStack[pathStack.length - 1];
   const [dirEntries, setDirEntries] = useState<VFSEntry[]>([]);
