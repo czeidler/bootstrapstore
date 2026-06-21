@@ -87,8 +87,8 @@ export function SnapshotEntry({
       Content={
         <>
           <Flex direction={"column"} gap={5} align={"start"}>
-            <Text>Location id: {syncInfo.locationId}</Text>
             <Text>From: {syncInfo.from.path}</Text>
+            <Text>Target Repo: {syncInfo.locationId} (location id)</Text>
           </Flex>
 
           {openEditDialog && (
