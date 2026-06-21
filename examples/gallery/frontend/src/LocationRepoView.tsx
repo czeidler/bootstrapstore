@@ -7,13 +7,23 @@ import {
   VFSDir,
 } from "lib";
 import { FileBrowser } from "./FileBrowser";
-import { Combobox, Flex, Tabs, Text, ThemeIcon, Tooltip } from "@mantine/core";
+import {
+  Combobox,
+  Flex,
+  Tabs,
+  Text,
+  ThemeIcon,
+  Tooltip,
+  Collapse,
+  Button,
+} from "@mantine/core";
 import { useChildRepo } from "./account-hooks";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { IconClock } from "@tabler/icons-react";
-import { hexToUint8Array } from "lib/src/utils";
+import { base64ToUint8Array, hexToUint8Array } from "lib/src/utils";
 import { AccountData } from "lib/src/account";
+import { useDisclosure } from "@mantine/hooks";
 
 function RepoHistoryFileBrowser({
   metadataRepo,
@@ -114,6 +124,9 @@ export function LocationRepoView({
     return repo && metadataRepo ? rootDir(repo, metadataRepo) : undefined;
   }, [metadataRepo, repo]);
   const [activeTab, setActiveTab] = useState<string | null>("details");
+
+  const [showPublicUrl, { toggle: toggleShowPublicUrl }] = useDisclosure(false);
+
   return (
     <Flex
       direction="column"
@@ -137,6 +150,15 @@ export function LocationRepoView({
             <Text>Repo Id: {location.repoId}</Text>
             <Text>Name: {location.name}</Text>
             <Text>Path: {location.path}</Text>
+            <Flex align={"center"} gap="xs">
+              <Text>Public url query params: {location.path}</Text>
+              <Button onClick={() => toggleShowPublicUrl()} size="xs">
+                {showPublicUrl ? "Hide" : "Show"}
+              </Button>{" "}
+              <Collapse expanded={showPublicUrl}>
+                <Text>{` ?repoId=${location.repoId}&key=${Buffer.from(base64ToUint8Array(location.encKey)).toString("hex")}`}</Text>
+              </Collapse>
+            </Flex>
           </Flex>
         </Tabs.Panel>
         <Tabs.Panel value="browse" mih={"0"}>
