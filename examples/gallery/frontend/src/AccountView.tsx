@@ -14,6 +14,9 @@ import {
   IconFilePlus,
   IconEdit,
   IconHome,
+  IconDatabase,
+  IconFolder,
+  IconDevicesPc,
 } from "@tabler/icons-react";
 import {
   ActionIcon,
@@ -259,13 +262,25 @@ const AccountView = ({
     if (location.type === "directory") {
       return {
         value: `${deviceId}#${location.id}`,
-        label: <Text>Directory: {location.path}</Text>,
+        label: (
+          <Flex gap={5}>
+            <IconFolder />
+            <Text>{location.path}</Text>
+          </Flex>
+        ),
         nodeProps,
       };
     }
     return {
       value: `${deviceId}#${location.id}`,
-      label: <Text>Repository {location.id}</Text>,
+      label: (
+        <Flex gap={5}>
+          <IconDatabase />
+          <Tooltip label={`Location id: ${location.id}`} openDelay={500}>
+            <Text>{location.name ?? location.id}</Text>
+          </Tooltip>
+        </Flex>
+      ),
       nodeProps,
     };
   };
@@ -274,9 +289,12 @@ const AccountView = ({
       {
         value: accountData.deviceId,
         label: (
-          <Tooltip label={`${me?.body?.admin?.path}`}>
-            <Text>{`${accountData.deviceId} (Local)`}</Text>
-          </Tooltip>
+          <Flex gap={5}>
+            <IconDevicesPc />
+            <Tooltip label={`${me?.body?.admin?.path}`}>
+              <Text>{`${accountData.deviceId} (Local)`}</Text>
+            </Tooltip>
+          </Flex>
         ),
         nodeProps: { deviceId: accountData.deviceId },
         children:
@@ -290,7 +308,12 @@ const AccountView = ({
         ?.filter((device) => device.device.id !== accountData.deviceId)
         .map((device) => ({
           value: device.device.id,
-          label: <Text>{device.device.name ?? device.device.id}</Text>,
+          label: (
+            <Flex gap={5}>
+              <IconDevicesPc />
+              <Text>{device.device.name ?? device.device.id}</Text>
+            </Flex>
+          ),
           nodeProps: { deviceId: device.device.id },
           children: device.locations.map((it) =>
             locationToTreeChild(device.device.id, it),
@@ -387,7 +410,7 @@ const AccountView = ({
                         }}
                       />
                     ) : (
-                      <Space w={16} />
+                      <Space w={24} />
                     )}
                     {node.label}
 
