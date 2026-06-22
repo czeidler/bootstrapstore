@@ -144,7 +144,7 @@ export function PushRepoEntry({
   deviceId: string;
   accountData: AccountData;
 }) {
-  const [openEditDialog, { toggle: toogleEdit, close: closeEdit }] =
+  const [openEditDialog, { toggle: toggleEdit, close: closeEdit }] =
     useDisclosure(false);
   const { mutate: syncRepo, isPending: isCopying } = useMutation({
     mutationFn: async () => {
@@ -193,7 +193,7 @@ export function PushRepoEntry({
         recheck();
       }}
       actions={[
-        <Button size={"xs"} onClick={toogleEdit} disabled={isCopying}>
+        <Button size={"xs"} onClick={toggleEdit} disabled={isCopying}>
           Edit
         </Button>,
       ]}
