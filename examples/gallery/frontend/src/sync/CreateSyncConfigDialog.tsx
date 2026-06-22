@@ -2,7 +2,7 @@ import { MetadataRepository } from "lib";
 import { Flex, Modal, Select } from "@mantine/core";
 
 import { SyncConfig } from "./SyncConfig";
-import { PushConfig } from "./PushConfig";
+import { PushRepoConfig } from "./PushRepoConfig";
 import { useState } from "react";
 import { SnapshotConfig } from "./SnapshotConfig";
 
@@ -38,7 +38,7 @@ export const CreateSyncConfigDialog = ({
             onClose={onClose}
           />
         ) : syncType === "push" ? (
-          <PushConfig
+          <PushRepoConfig
             deviceId={deviceId}
             metadataRepo={metadataRepo}
             onClose={onClose}

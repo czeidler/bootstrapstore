@@ -1,63 +1,103 @@
-import { Button, Modal, Flex, Text, TextInput } from "@mantine/core";
+import { Button, Modal, Flex, Text, TextInput, Select } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { MetadataRepository, shortId } from "lib";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useCreateSync } from "../account-hooks";
+import { useCreateSync, useDevicesWithLocations } from "../account-hooks";
 import { useMutation } from "@tanstack/react-query";
 import { trustedTsr } from "../tsr";
 import { SyncStatusSEEBodyType } from "../../../backend/src/contract";
 import { AccountData } from "lib/src/account";
 import { SyncPushRepoInfo } from "lib/src/main-repo";
 import { SyncEntryLayout } from "./SyncEntryLayout";
+import { SyncConfigLayout } from "./SyncConfigLayout";
+
+export const PushRepoConfig = ({
+  onClose,
+  deviceId,
+  metadataRepo,
+  init,
+}: {
+  onClose: () => void;
+  deviceId: string;
+  metadataRepo: MetadataRepository;
+  init?: SyncPushRepoInfo;
+}) => {
+  const [locationId, setLocationId] = useState(init?.locationId ?? null);
+  const [to, setTo] = useState(init?.to.path ?? "");
+  const { data: devicesWithLocations } = useDevicesWithLocations(metadataRepo);
+  const localRepos = devicesWithLocations
+    ?.find((it) => it.device.id === deviceId)
+    ?.locations.filter((it) => it.type === "repository");
+  const options = localRepos?.map((item) => ({
+    value: item.id,
+    label: item.name ?? item.id,
+  }));
+
+  const { mutateAsync } = useCreateSync(metadataRepo, deviceId);
+  const save = async () => {
+    if (to === "" || locationId === null) {
+      return;
+    }
+    await mutateAsync({
+      id: init?.id ?? shortId(),
+      type: "push",
+      locationId,
+      to: { path: to },
+    });
+    onClose();
+  };
+  return (
+    <SyncConfigLayout
+      Content={
+        <>
+          <Select
+            label="Repository"
+            data={options}
+            value={locationId}
+            onChange={setLocationId}
+          />
+
+          <TextInput
+            label="To"
+            value={to}
+            onChange={(event) => setTo(event.currentTarget.value)}
+          />
+        </>
+      }
+      onClose={onClose}
+      save={save}
+      disabled={to === "" || locationId === null}
+    />
+  );
+};
 
 const EditPushRepoDialog = ({
   open,
   onClose,
   deviceId,
-  repoId,
   metadataRepo,
   init,
 }: {
   open: boolean;
   onClose: () => void;
   deviceId: string;
-  repoId: string;
   metadataRepo: MetadataRepository;
   init: SyncPushRepoInfo;
 }) => {
-  const [to, setTo] = useState(init.to.path);
-  const { mutateAsync } = useCreateSync(metadataRepo, deviceId);
-  const create = async () => {
-    await mutateAsync({
-      id: init?.id ?? shortId(),
-      type: "push",
-      repoId,
-      to: { path: to },
-    });
-    onClose();
-  };
   return (
     <Modal opened={open} onClose={onClose}>
       <Flex direction={"column"} gap={10}>
-        <Text id="alert-dialog-title">Push Repo</Text>
-        <Flex direction={"column"}>
-          <Text>To</Text>
-          <TextInput
-            value={to}
-            onChange={(event) => setTo(event.currentTarget.value)}
-          />
-        </Flex>
-        <Flex gap={10} justify={"end"}>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button onClick={create} autoFocus disabled={to === ""}>
-            Save
-          </Button>
-        </Flex>
+        <Text id="alert-dialog-title">Snapshot</Text>
+        <PushRepoConfig
+          onClose={onClose}
+          deviceId={deviceId}
+          metadataRepo={metadataRepo}
+          init={init}
+        />
       </Flex>
     </Modal>
   );
 };
-
 function useSyncStatus(syncId: string) {
   const [syncStatus, setSyncStatus] = useState<SyncStatusSEEBodyType | null>(
     null,
@@ -97,20 +137,21 @@ export function PushRepoEntry({
   syncInfo,
   metadataRepo,
   deviceId,
-  repoId,
   accountData,
 }: {
   syncInfo: SyncPushRepoInfo;
   metadataRepo: MetadataRepository;
   deviceId: string;
-  repoId: string;
   accountData: AccountData;
 }) {
   const [openEditDialog, { toggle: toogleEdit, close: closeEdit }] =
     useDisclosure(false);
   const { mutate: syncRepo, isPending: isCopying } = useMutation({
     mutationFn: async () => {
-      const fromLocation = await metadataRepo.readLocation(deviceId, repoId);
+      const fromLocation = await metadataRepo.readLocation(
+        deviceId,
+        syncInfo.locationId,
+      );
       if (fromLocation?.type !== "repository") {
         throw Error("Expected repository location");
       }
@@ -159,6 +200,7 @@ export function PushRepoEntry({
       Content={
         <>
           <Flex direction={"column"} gap={5} align={"start"}>
+            <Text>From location: {syncInfo.locationId}</Text>
             <Text>To: {syncInfo.to.path}</Text>
 
             <Flex direction={"row"} align={"center"} gap={5}>
@@ -169,7 +211,6 @@ export function PushRepoEntry({
           {openEditDialog && (
             <EditPushRepoDialog
               deviceId={deviceId}
-              repoId={repoId}
               metadataRepo={metadataRepo}
               open={openEditDialog}
               init={syncInfo}

@@ -4,9 +4,9 @@ import { useSyncs } from "../account-hooks";
 import { Button, Flex } from "@mantine/core";
 import { AccountData } from "lib/src/account";
 import { CreateSyncConfigDialog } from "./CreateSyncConfigDialog";
-import { SyncEntry } from "./SyncEntry";
-import { PushRepoEntry } from "./PushRepoEntry";
-import { SnapshotEntry } from "./SnapshotEntry";
+import { SyncEntry } from "./SyncConfig";
+import { PushRepoEntry } from "./PushRepoConfig";
+import { SnapshotEntry } from "./SnapshotConfig";
 
 export function SyncsView({
   metadataRepo,
@@ -46,7 +46,6 @@ export function SyncsView({
                 key={it.id}
                 metadataRepo={metadataRepo}
                 deviceId={deviceId}
-                repoId={it.repoId}
                 syncInfo={it}
                 accountData={accountData}
               />
