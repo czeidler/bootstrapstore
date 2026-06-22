@@ -86,8 +86,7 @@ export type SnapshotInfo = {
 export type SyncPushRepoInfo = {
   id: string;
   type: "push";
-  // TODO change to locationId
-  repoId: string;
+  locationId: string;
   to: { path: string };
 };
 export type SyncPathInfo = {
