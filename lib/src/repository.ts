@@ -109,6 +109,14 @@ export class Repository {
     await store.write(["index"], cipher);
   }
 
+  static exists(
+    repoId: string,
+    storeGetter: BlobStoreGetter,
+  ): Promise<boolean> {
+    const store = storeGetter.get(repoId);
+    return store.exists(["index"]);
+  }
+
   static async open(
     repoId: string,
     repoIOConfig: RepoIOConfig,

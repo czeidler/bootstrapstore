@@ -159,7 +159,7 @@ export function PushRepoEntry({
       const inlined = accountData.repoId === fromLocation.id;
       const result = await trustedTsr.pushRepo({
         body: {
-          repoId: syncInfo.id,
+          repoId: fromLocation.repoId,
           encKey: fromLocation.encKey,
           from: { path: fromLocation.path, branch: "main", inlined },
           to: { path: syncInfo.to.path, branch: "main", inlined },

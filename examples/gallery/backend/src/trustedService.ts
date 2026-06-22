@@ -8,7 +8,7 @@ import {
   FileBlobStore,
 } from "lib-node";
 import { storeGetter } from "./service";
-import fs from "fs/promises";
+import fs, { mkdir } from "fs/promises";
 import path from "path";
 import { base64ToUint8Array, pathToArray } from "lib/src/utils";
 
@@ -23,10 +23,9 @@ export const pushRepo = async ({
   from: { path?: string; branch?: string; inlined?: boolean };
   to: { path: string; branch?: string; inlined?: boolean };
 }) => {
-  const fromStoreGetter =
-    from.path === undefined
-      ? storeGetter
-      : new RepoBlobStoreGetter(new FileBlobStore(pathToArray(from.path)));
+  const fromStoreGetter = !from.path
+    ? storeGetter
+    : new RepoBlobStoreGetter(new FileBlobStore(pathToArray(from.path)));
   const fromRepo = await Repository.open(
     repoId,
     getRepoIOConfig(),
@@ -45,6 +44,17 @@ export const pushRepo = async ({
     const sourceBlobStore = fromStoreGetter.get(repoId);
     const index = await sourceBlobStore.read(["index"]);
     await targetBlobStore.write(["index"], index);
+  }
+
+  // to
+  await mkdir(to.path, { recursive: true });
+  if (!(await Repository.exists(repoId, fromStoreGetter))) {
+    await Repository.create(
+      repoId,
+      getRepoIOConfig(),
+      targetStoreGetter,
+      base64ToUint8Array(encKey),
+    );
   }
   const toRepo = await Repository.open(
     repoId,
