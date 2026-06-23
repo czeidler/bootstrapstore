@@ -39,16 +39,10 @@ export const pushRepo = async ({
   const targetStoreGetter = new RepoBlobStoreGetter(
     new FileBlobStore(pathToArray(to.path)),
   );
-  const targetBlobStore = targetStoreGetter.get(repoId);
-  if (!(await targetBlobStore.exists(["index"]))) {
-    const sourceBlobStore = fromStoreGetter.get(repoId);
-    const index = await sourceBlobStore.read(["index"]);
-    await targetBlobStore.write(["index"], index);
-  }
 
   // to
   await mkdir(to.path, { recursive: true });
-  if (!(await Repository.exists(repoId, fromStoreGetter))) {
+  if (!(await Repository.exists(repoId, targetStoreGetter))) {
     await Repository.create(
       repoId,
       getRepoIOConfig(),
