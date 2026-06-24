@@ -155,7 +155,6 @@ function EditDeviceLocationButton({
     <>
       <ActionIcon
         variant="outline"
-        ml="auto"
         bd={0}
         onClick={(e) => {
           e.stopPropagation();
@@ -190,7 +189,6 @@ function CreateDeviceLocationButton({
     <>
       <ActionIcon
         variant="outline"
-        ml="auto"
         bd={0}
         onClick={(e) => {
           e.stopPropagation();
@@ -414,19 +412,29 @@ const AccountView = ({
                     )}
                     {node.label}
 
-                    {node.nodeProps?.deviceId &&
-                    node.nodeProps?.locationInfo ? (
-                      <EditDeviceLocationButton
-                        deviceId={node.nodeProps.deviceId}
-                        locationInfo={node.nodeProps.locationInfo}
-                        metadataRepo={metadataRepo}
-                      />
-                    ) : node.nodeProps?.deviceId ? (
-                      <CreateDeviceLocationButton
-                        deviceId={node.nodeProps.deviceId}
-                        metadataRepo={metadataRepo}
-                      />
-                    ) : null}
+                    <Flex // Prevents click and key events from bubbling up to the tree
+                      ml="auto"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                      }}
+                      onKeyDown={(event) => {
+                        event.stopPropagation();
+                      }}
+                    >
+                      {node.nodeProps?.deviceId &&
+                      node.nodeProps?.locationInfo ? (
+                        <EditDeviceLocationButton
+                          deviceId={node.nodeProps.deviceId}
+                          locationInfo={node.nodeProps.locationInfo}
+                          metadataRepo={metadataRepo}
+                        />
+                      ) : node.nodeProps?.deviceId ? (
+                        <CreateDeviceLocationButton
+                          deviceId={node.nodeProps.deviceId}
+                          metadataRepo={metadataRepo}
+                        />
+                      ) : null}
+                    </Flex>
                   </Group>
                 )}
               />
