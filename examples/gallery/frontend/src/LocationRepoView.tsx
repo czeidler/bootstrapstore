@@ -115,7 +115,7 @@ export function LocationRepoView({
     throw Error("Location not a repository");
   }
 
-  const { data } = useChildRepo(metadataRepo, deviceId, location.id);
+  const { data } = useChildRepo(metadataRepo, deviceId, location.repoId);
   // metadata is not a child repo (not on the main branch)
   const repo =
     metadataRepo.metaRepo.repoId === location.id ? metadataRepo.metaRepo : data;

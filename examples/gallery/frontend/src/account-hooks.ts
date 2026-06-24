@@ -124,8 +124,19 @@ export const useCreateChildRepo = (
   deviceId: string,
 ) =>
   useMutation({
-    mutationFn: (params: { repoName?: string; path?: string }) =>
-      metadataRepo.createChild(deviceId, params.repoName, params.path),
+    mutationFn: (params: {
+      repoName?: string;
+      path?: string;
+      key?: Uint8Array;
+      repoId?: string;
+    }) =>
+      metadataRepo.createChild(
+        deviceId,
+        params.repoName,
+        params.path,
+        params.repoId,
+        params.key,
+      ),
     onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: ["devices"],

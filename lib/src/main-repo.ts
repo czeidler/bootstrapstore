@@ -57,6 +57,7 @@ export type RepositoryLocationInfo = {
   /** If undefined repo is stored in the default location */
   path?: string;
   type: "repository";
+  /** Base64 key */
   encKey: string;
   name?: string;
 };
@@ -221,9 +222,11 @@ export class MetadataRepository {
     profileId: string,
     repoName?: string,
     path?: string,
+    inputRepoId?: string,
+    inputKey?: Uint8Array,
   ): Promise<Repository> {
-    const repoId = shortId();
-    const key = crypto.getRandomValues(new Uint8Array(16));
+    const repoId = inputRepoId ?? shortId();
+    const key = inputKey ?? crypto.getRandomValues(new Uint8Array(16));
     await Repository.create(repoId, this.ioConfig, this.storeGetter, key);
     const repo = Repository.open(repoId, this.ioConfig, this.storeGetter, {
       key,
@@ -232,7 +235,7 @@ export class MetadataRepository {
     });
 
     await this.writeLocation(profileId, {
-      id: repoId,
+      id: inputRepoId ? shortId() : repoId,
       repoId: repoId,
       type: "repository",
       encKey: uint8ArrayToBase64(key),

@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useCreateChildRepo } from "../account-hooks";
+import { useCreateChildRepo, useDevicesWithLocations } from "../account-hooks";
 import { MetadataRepository } from "lib";
 import { RepositoryLocationInfo } from "lib/src/main-repo";
 import { LocationConfigLayout } from "./LocationConfigLayout";
-import { TextInput } from "@mantine/core";
+import { Select, TextInput } from "@mantine/core";
+import { base64ToUint8Array } from "lib/src/utils";
 
 export function RepositoryConfig({
   onClose,
@@ -16,16 +17,33 @@ export function RepositoryConfig({
   metadataRepo: MetadataRepository;
   init?: RepositoryLocationInfo;
 }) {
+  // source repo
+  const [locationId, setLocationId] = useState<string | null>();
+  const { data: devicesWithLocations } = useDevicesWithLocations(metadataRepo);
+  const localRepos = devicesWithLocations
+    ?.find((it) => it.device.id === deviceId)
+    ?.locations.filter((it) => it.type === "repository");
+  const options = localRepos?.map((item) => ({
+    value: item.id,
+    label: item.name ?? item.id,
+  }));
+
   const [name, setName] = useState(init?.name ?? "");
   const [path, setPath] = useState(init?.path ?? "");
   const { mutateAsync } = useCreateChildRepo(metadataRepo, deviceId);
   const save = async () => {
+    const repoLocation = localRepos?.find((it) => it.id === locationId);
     await mutateAsync({
       repoName: name,
       path,
+      key: repoLocation?.encKey
+        ? base64ToUint8Array(repoLocation.encKey)
+        : undefined,
+      repoId: repoLocation?.repoId,
     });
     onClose();
   };
+
   return (
     <LocationConfigLayout
       Content={
@@ -35,6 +53,14 @@ export function RepositoryConfig({
             value={name}
             onChange={(event) => setName(event.currentTarget.value)}
           />
+          {init !== undefined ? null : (
+            <Select
+              label="Copy Repository"
+              data={options}
+              value={locationId}
+              onChange={setLocationId}
+            />
+          )}
           <TextInput
             label="Path"
             value={path}
