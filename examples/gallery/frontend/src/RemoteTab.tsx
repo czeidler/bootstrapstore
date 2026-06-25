@@ -18,7 +18,6 @@ import {
   Text,
   Textarea,
   TextInput,
-  Title,
 } from "@mantine/core";
 
 const FileViewDialog = ({
@@ -40,9 +39,7 @@ const FileViewDialog = ({
   };
 
   return (
-    <Modal opened={open} onClose={onClose} maw="xl">
-      <Title id="alert-dialog-title">Files</Title>
-
+    <Modal title="Files" opened={open} onClose={onClose} maw="xl">
       <FileView content={dirEntries} onDirEntryClicked={onDirEntryClicked} />
 
       <Flex>
@@ -96,9 +93,11 @@ const CreateConnectionDialog = ({
     close();
   };
   return (
-    <Modal opened={open !== undefined} onClose={close}>
-      <Title id="alert-dialog-title">Create sFTP Connection</Title>
-
+    <Modal
+      title="Create sFTP Connection"
+      opened={open !== undefined}
+      onClose={close}
+    >
       {remote?.id !== undefined ? (
         <TextInput value={remote.id} autoFocus label="Id" disabled />
       ) : null}
@@ -127,7 +126,7 @@ const CreateConnectionDialog = ({
         }
       />
 
-      <Flex mt={"xs"}>
+      <Flex mt={"xs"} gap="xs">
         <Button onClick={close}>Cancel</Button>
         <Button onClick={create} autoFocus disabled={remote === undefined}>
           {remote?.id !== undefined ? "Save" : "Create"}
@@ -163,7 +162,7 @@ export const RemoteTab = ({
     <>
       <Flex direction="column" h={"100%"}>
         <Flex direction={"row"}>
-          <Button onClick={() => setOpenCreateConnectionDialog({})}>
+          <Button size="xs" onClick={() => setOpenCreateConnectionDialog({})}>
             Add Connection
           </Button>
         </Flex>

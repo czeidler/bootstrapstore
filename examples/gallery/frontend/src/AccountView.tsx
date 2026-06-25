@@ -118,9 +118,7 @@ const AddDeviceDialog = ({
     onClose();
   };
   return (
-    <Modal opened={open} onClose={onClose} centered>
-      <Title>Add Device</Title>
-
+    <Modal title="Add Device" opened={open} onClose={onClose} centered>
       <TextInput
         autoFocus={true}
         value={deviceName}
