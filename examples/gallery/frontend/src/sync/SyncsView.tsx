@@ -22,8 +22,8 @@ export function SyncsView({
   const [openCreateSyncDialog, { toggle, close }] = useDisclosure(false);
   return (
     <>
-      <Flex h={"100%"} direction={"column"} gap={"xs"}>
-        <Flex direction={"row"} mt={"xs"}>
+      <Flex h={"100%"} direction={"column"} gap={"xs"} mt={"xs"}>
+        <Flex direction={"row"}>
           <Button size="xs" onClick={toggle}>
             Add Sync
           </Button>

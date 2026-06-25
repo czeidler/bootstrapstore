@@ -14,14 +14,14 @@ export const SyncEntryLayout = ({
   Content,
   actions,
   sync,
-  isSyncing,
+  disabled,
 }: {
   id: string;
   title: string;
   Content: ReactNode;
   actions?: ReactNode[];
   sync: () => Promise<void>;
-  isSyncing: boolean;
+  disabled: boolean;
 }) => {
   const theme = useMantineTheme();
   return (
@@ -43,7 +43,7 @@ export const SyncEntryLayout = ({
 
       {Content}
       <Flex gap={"xs"} justify={"start"}>
-        <Button onClick={sync} autoFocus disabled={isSyncing} size="xs">
+        <Button onClick={sync} autoFocus disabled={disabled} size="xs">
           Run
         </Button>
         {...actions ?? []}

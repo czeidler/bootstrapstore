@@ -160,7 +160,7 @@ export const RemoteTab = ({
 
   return (
     <>
-      <Flex direction="column" h={"100%"}>
+      <Flex direction="column" h={"100%"} gap="xs" mt={"xs"}>
         <Flex direction={"row"}>
           <Button size="xs" onClick={() => setOpenCreateConnectionDialog({})}>
             Add Connection

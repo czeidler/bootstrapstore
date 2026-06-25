@@ -136,7 +136,7 @@ export function SnapshotEntry({
       key={syncInfo.id}
       id={syncInfo.id}
       title={"Snapshot Directory"}
-      isSyncing={isCopying}
+      disabled={isCopying}
       sync={async () => {
         snapshot();
       }}

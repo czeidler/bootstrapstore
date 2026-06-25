@@ -168,7 +168,7 @@ export function SyncEntry({
       key={syncInfo.id}
       id={syncInfo.id}
       title={"Sync"}
-      isSyncing={isCopying}
+      disabled={isCopying}
       sync={async () => {
         cpDir();
         recheck();

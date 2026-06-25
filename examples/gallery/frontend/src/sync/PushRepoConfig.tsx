@@ -187,7 +187,7 @@ export function PushRepoEntry({
       key={syncInfo.id}
       id={syncInfo.id}
       title={"Push Repo"}
-      isSyncing={isCopying}
+      disabled={isCopying}
       sync={async () => {
         syncRepo();
         recheck();
