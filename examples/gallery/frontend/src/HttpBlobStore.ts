@@ -35,7 +35,7 @@ export class HttpBlobStore implements BlobStore {
     return result.body;
   }
 
-  async write(path: string[], data: Uint8Array): Promise<void> {
+  async write(path: string[], data: Uint8Array<ArrayBuffer>): Promise<void> {
     const result = await tsr.postBlob({
       query: { repoId: this.repoId, path },
       body: {
