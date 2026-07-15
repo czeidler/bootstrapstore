@@ -4,7 +4,6 @@ import {
   contractSSE,
   serverSSEHandler,
   SyncStatusSEEBodyType,
-  trustedContract,
 } from "./contract";
 import multer from "multer";
 import express from "express";
@@ -20,6 +19,7 @@ import {
   RCloneRCCommands,
 } from "lib-node/src/rclone";
 import { RCloneJobManager } from "./rclone-job-manager";
+import { contractLocal } from "./contractLocal";
 
 const upload = multer();
 const s = initServer();
@@ -151,7 +151,7 @@ export const buildApp = (config: AppConfig) => {
       },
     );
 
-    const trustedRouter = s.router(trustedContract, {
+    const trustedRouter = s.router(contractLocal, {
       pushRepo: {
         handler: async ({ body }) => {
           await pushRepo(body);
@@ -274,7 +274,7 @@ export const buildApp = (config: AppConfig) => {
         },
       },
     });
-    createExpressEndpoints(trustedContract, trustedRouter, app);
+    createExpressEndpoints(contractLocal, trustedRouter, app);
   }
 
   return app;
