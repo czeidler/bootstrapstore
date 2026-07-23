@@ -80,6 +80,65 @@ export const contract = c.router({
     },
   },
 
+  // registration
+  startRegistration: {
+    method: "POST",
+    path: "/register",
+    body: z.object({ registrationRequest: z.string() }),
+    responses: {
+      201: z.object({
+        userId: z.string(),
+        registrationResponse: z.string(),
+      }),
+    },
+  },
+  finishRegistration: {
+    method: "POST",
+    path: "/finishRegister",
+    body: z.object({
+      userId: z.string(),
+      userName: z.string(),
+      email: z.string().optional(),
+      registrationRecord: z.string(),
+    }),
+    responses: {
+      201: z.object({}),
+    },
+  },
+  // login
+  startLogin: {
+    method: "POST",
+    path: "/startLogin",
+    body: z.object({ userName: z.string(), startLoginRequest: z.string() }),
+    responses: {
+      201: z.object({
+        loginResponse: z.string(),
+      }),
+    },
+  },
+  finishLogin: {
+    method: "POST",
+    path: "/finishLogin",
+    body: z.object({ userName: z.string(), finishLoginRequest: z.string() }),
+    responses: {
+      201: z.object({ userId: z.string() }),
+    },
+  },
+  // logout
+  logout: {
+    method: "POST",
+    path: "/logout",
+    body: z.object({
+      auth: z.object({
+        userId: z.string(),
+        sessionKey: z.string(),
+      }),
+    }),
+    responses: {
+      201: z.void(),
+    },
+  },
+
   postBlob: {
     method: "POST",
     path: "/blobs",

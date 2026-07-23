@@ -6,34 +6,39 @@ import { AccountViewPage } from "./AccountView";
 import { MainLayout } from "./MainLayout";
 import { getRepoIOConfig } from "./io-config";
 import { queryClient } from "./account-hooks";
-import { stringToUint8Array } from "lib/src/utils";
-import { Button, Flex, Loader, PasswordInput, Text } from "@mantine/core";
-
-// TEMP
-function create16ByteBuffer(str: string): Uint8Array {
-  const array = stringToUint8Array(str);
-  const result = new Uint8Array(16);
-  result.set(array.subarray(0, 16), 0);
-  return result;
-}
+import {
+  Button,
+  Flex,
+  Loader,
+  PasswordInput,
+  Text,
+  TextInput,
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { register } from "./opaque";
 
 const AccountCreation = () => {
+  const [userName, setUserName] = useState<string | undefined>();
   const [password, setPassword] = useState<string | undefined>();
   const { mutate: onClick, isPending } = useMutation({
     mutationFn: async () => {
-      if (password === undefined) {
+      if (password === undefined || userName === undefined) {
         return;
       }
+      const { exportKey } = await register(userName, password);
+      const key = Buffer.from(exportKey, "base64").subarray(0, 16);
       const store = storeGetter.get(undefined);
-      await Account.createAccount(
-        store,
-        storeGetter,
-        getRepoIOConfig(),
-        create16ByteBuffer(password),
-      );
+      await Account.createAccount(store, storeGetter, getRepoIOConfig(), key);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accountFile"] });
+    },
+    onError: (e) => {
+      notifications.show({
+        title: `Error`,
+        message: `${e}`,
+        color: "red",
+      });
     },
   });
   return (
@@ -41,6 +46,11 @@ const AccountCreation = () => {
       Header={<Text>Create Account</Text>}
       Content={
         <Flex gap={"xs"} m={5} direction={"column"}>
+          <TextInput
+            size="sm"
+            label="User Name"
+            onChange={(e) => setUserName(e.target.value)}
+          />
           <PasswordInput
             size="sm"
             label="Password"

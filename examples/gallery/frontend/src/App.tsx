@@ -10,12 +10,15 @@ import { Admin } from "./Admin";
 import { queryClient } from "./account-hooks";
 import { theme } from "./theme";
 import "@mantine/core/styles.css";
+import "@mantine/notifications/styles.css";
 
 import { MantineProvider } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
 
 const App = () => {
   return (
     <MantineProvider theme={theme}>
+      <Notifications autoClose={4000} />
       <QueryClientProvider client={queryClient}>
         <BrowserRouter
           future={{

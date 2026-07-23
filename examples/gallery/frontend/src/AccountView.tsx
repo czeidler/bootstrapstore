@@ -41,6 +41,8 @@ import { LocationDirView } from "./LocationDirView";
 import { useDisclosure } from "@mantine/hooks";
 import { CreateLocationDialog } from "./location/CreateLocationDialog";
 import { EditLocationDialog } from "./location/EditLocationDialog";
+import { notifications } from "@mantine/notifications";
+import { login } from "./opaque";
 
 // TEMP
 function create16ByteBuffer(str: string): Uint8Array {
@@ -57,22 +59,33 @@ const OpenAccount = ({
   onOpen: (accountData: AccountData, metadataRepo: MetadataRepository) => void;
   accountFile: AccountFile;
 }) => {
+  const [userName, setUserName] = useState<string | undefined>();
   const [password, setPassword] = useState<string | undefined>();
 
   const { mutate: openAccount } = useMutation({
     mutationFn: async () => {
-      if (password === undefined) {
+      if (password === undefined || userName === undefined) {
         return;
       }
+      const { exportKey } = await login(userName, password);
+      const key = Buffer.from(exportKey, "base64").subarray(0, 16);
+
       const account = await Account.openAccount(
         storeGetter,
         getRepoIOConfig(),
-        create16ByteBuffer(password),
+        key,
         accountFile,
       );
 
       const metadataRepo = await account.openMetadataRepo();
       onOpen(account.accountData, metadataRepo);
+    },
+    onError: (e) => {
+      notifications.show({
+        title: `Error`,
+        message: `${e}`,
+        color: "red",
+      });
     },
   });
 
@@ -85,6 +98,11 @@ const OpenAccount = ({
       }
       Content={
         <Flex gap={"xs"} m={"xs"} direction={"column"}>
+          <TextInput
+            size="sm"
+            label="User Name"
+            onChange={(e) => setUserName(e.target.value)}
+          />
           <PasswordInput
             label="Password"
             onChange={(e) => setPassword(e.target.value)}

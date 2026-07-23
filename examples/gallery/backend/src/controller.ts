@@ -20,11 +20,25 @@ import {
 } from "lib-node/src/rclone";
 import { RCloneJobManager } from "./rclone-job-manager";
 import { contractLocal } from "./contractLocal";
+import {
+  finishLogin,
+  finishRegistration,
+  logout,
+  startLogin,
+  startRegistration,
+} from "./user/auth-service";
+import { Connection } from "./user/db";
 
 const upload = multer();
 const s = initServer();
 
-const mainRouter = ({ admin }: { admin?: { path: string } }) => {
+const mainRouter = ({
+  connection,
+  admin,
+}: {
+  admin?: { path: string };
+  connection: Connection;
+}) => {
   const { hasRepoReadAccess, hasRepoWriteAccess } = authValidation(
     admin !== undefined,
   );
@@ -32,6 +46,49 @@ const mainRouter = ({ admin }: { admin?: { path: string } }) => {
     me: {
       handler: async () => {
         return { status: 200, body: { admin } };
+      },
+    },
+
+    startRegistration: {
+      handler: async ({ body }) => {
+        return {
+          status: 201,
+          body: startRegistration(body.registrationRequest),
+        };
+      },
+    },
+    finishRegistration: {
+      handler: async ({ body }) => {
+        await finishRegistration(body, connection);
+        return {
+          status: 201,
+          body: {},
+        };
+      },
+    },
+    startLogin: {
+      handler: async ({ body }) => {
+        return {
+          status: 201,
+          body: await startLogin(body, connection),
+        };
+      },
+    },
+    finishLogin: {
+      handler: async ({ body }) => {
+        return {
+          status: 201,
+          body: await finishLogin(body, connection),
+        };
+      },
+    },
+    logout: {
+      handler: async ({ body }) => {
+        logout(body.auth);
+        return {
+          status: 201,
+          body: undefined,
+        };
       },
     },
 
@@ -91,6 +148,7 @@ export type AppConfig = {
   path: string;
   isAdmin: boolean;
   isLocal: boolean;
+  connection: Connection;
 };
 
 export const buildApp = (config: AppConfig) => {
@@ -110,8 +168,12 @@ export const buildApp = (config: AppConfig) => {
 
   createExpressEndpoints(
     contract,
-    mainRouter({ admin: config.isAdmin ? { path: config.path } : undefined }),
+    mainRouter({
+      connection: config.connection,
+      admin: config.isAdmin ? { path: config.path } : undefined,
+    }),
     app,
+    { jsonQuery: true },
   );
 
   if (config.isLocal) {
