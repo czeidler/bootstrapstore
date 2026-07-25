@@ -1,13 +1,11 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { AccountFile, Account, MetadataRepository, LocationInfo } from "lib";
-import { storeGetter } from "./utils";
+import { useQuery } from "@tanstack/react-query";
+import { MetadataRepository, LocationInfo } from "lib";
 import { useMemo, useState } from "react";
 import { AccountData } from "lib/src/account";
 import { DevicesView } from "./DeviceView";
 import { useCreateDevice, useDevicesWithLocations } from "./account-hooks";
-import { shortId, stringToUint8Array } from "lib/src/utils";
+import { shortId } from "lib/src/utils";
 import { MainLayout } from "./MainLayout";
-import { getRepoIOConfig } from "./io-config";
 import { tsr } from "./tsr";
 import {
   IconChevronDown,
@@ -26,7 +24,6 @@ import {
   getTreeExpandedState,
   Group,
   Modal,
-  PasswordInput,
   Space,
   Text,
   TextInput,
@@ -41,80 +38,6 @@ import { LocationDirView } from "./LocationDirView";
 import { useDisclosure } from "@mantine/hooks";
 import { CreateLocationDialog } from "./location/CreateLocationDialog";
 import { EditLocationDialog } from "./location/EditLocationDialog";
-import { notifications } from "@mantine/notifications";
-import { login } from "./opaque";
-
-// TEMP
-function create16ByteBuffer(str: string): Uint8Array {
-  const array = stringToUint8Array(str);
-  const result = new Uint8Array(16);
-  result.set(array.subarray(0, 16), 0);
-  return result;
-}
-
-const OpenAccount = ({
-  onOpen,
-  accountFile,
-}: {
-  onOpen: (accountData: AccountData, metadataRepo: MetadataRepository) => void;
-  accountFile: AccountFile;
-}) => {
-  const [userName, setUserName] = useState<string | undefined>();
-  const [password, setPassword] = useState<string | undefined>();
-
-  const { mutate: openAccount } = useMutation({
-    mutationFn: async () => {
-      if (password === undefined || userName === undefined) {
-        return;
-      }
-      const { exportKey } = await login(userName, password);
-      const key = Buffer.from(exportKey, "base64").subarray(0, 16);
-
-      const account = await Account.openAccount(
-        storeGetter,
-        getRepoIOConfig(),
-        key,
-        accountFile,
-      );
-
-      const metadataRepo = await account.openMetadataRepo();
-      onOpen(account.accountData, metadataRepo);
-    },
-    onError: (e) => {
-      notifications.show({
-        title: `Error`,
-        message: `${e}`,
-        color: "red",
-      });
-    },
-  });
-
-  return (
-    <MainLayout
-      Header={
-        <Title p="sx" size="h4">
-          Open Account
-        </Title>
-      }
-      Content={
-        <Flex gap={"xs"} m={"xs"} direction={"column"}>
-          <TextInput
-            size="sm"
-            label="User Name"
-            onChange={(e) => setUserName(e.target.value)}
-          />
-          <PasswordInput
-            label="Password"
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <Button disabled={!password} onClick={() => openAccount()}>
-            Open
-          </Button>
-        </Flex>
-      }
-    />
-  );
-};
 
 const AddDeviceDialog = ({
   open,
@@ -223,32 +146,7 @@ function CreateDeviceLocationButton({
   );
 }
 
-export function AccountViewPage({ accountFile }: { accountFile: AccountFile }) {
-  const [accountData, setAccountData] = useState<AccountData | undefined>();
-  const [metadataRepo, setMetadataRepo] = useState<
-    MetadataRepository | undefined
-  >();
-
-  if (accountData === undefined || metadataRepo === undefined) {
-    return (
-      <OpenAccount
-        accountFile={accountFile}
-        onOpen={(accountData, metadataRepo) => {
-          setAccountData(accountData);
-          setMetadataRepo(metadataRepo);
-        }}
-      />
-    );
-  }
-  return (
-    <AccountView
-      accountData={accountData}
-      metadataRepo={metadataRepo}
-      key={accountData.deviceId}
-    />
-  );
-}
-const AccountView = ({
+export const AccountView = ({
   accountData,
   metadataRepo,
 }: {

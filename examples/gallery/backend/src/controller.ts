@@ -59,18 +59,19 @@ const mainRouter = ({
     },
     finishRegistration: {
       handler: async ({ body }) => {
-        await finishRegistration(body, connection);
+        const result = await finishRegistration(body, connection);
         return {
           status: 201,
-          body: {},
+          body: result,
         };
       },
     },
     startLogin: {
       handler: async ({ body }) => {
+        const result = await startLogin(body, connection);
         return {
           status: 201,
-          body: await startLogin(body, connection),
+          body: result,
         };
       },
     },

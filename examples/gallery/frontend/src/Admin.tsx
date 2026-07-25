@@ -1,64 +1,159 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { readAccountFile, Account } from "lib";
 import { storeGetter } from "./utils";
 import { useState } from "react";
-import { AccountViewPage } from "./AccountView";
+import { AccountView } from "./AccountView";
 import { MainLayout } from "./MainLayout";
 import { getRepoIOConfig } from "./io-config";
 import { queryClient } from "./account-hooks";
 import {
   Button,
   Flex,
-  Loader,
   PasswordInput,
+  Tabs,
   Text,
   TextInput,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { register } from "./opaque";
+import { login, register } from "./opaque";
+import { useSnapshot } from "valtio";
+import { authUserStore } from "./auth-store";
 
-const AccountCreation = () => {
+function errorNotification(message: string) {
+  notifications.show({
+    title: `Error`,
+    message,
+    color: "red",
+  });
+}
+
+const LoginRegister = () => {
+  const [tabValue, setTabValue] = useState<string>("login");
+
   const [userName, setUserName] = useState<string | undefined>();
   const [password, setPassword] = useState<string | undefined>();
-  const { mutate: onClick, isPending } = useMutation({
+
+  const { mutate: onRegister, isPending: registerPending } = useMutation({
     mutationFn: async () => {
       if (password === undefined || userName === undefined) {
         return;
       }
-      const { exportKey } = await register(userName, password);
-      const key = Buffer.from(exportKey, "base64").subarray(0, 16);
+      const registerResult = await register(userName, password);
+      if (registerResult === "UserExists") {
+        errorNotification(`User already exists`);
+        return;
+      }
+      const key = Buffer.from(registerResult.exportKey, "base64").subarray(
+        0,
+        16,
+      );
       const store = storeGetter.get(undefined);
       await Account.createAccount(store, storeGetter, getRepoIOConfig(), key);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accountFile"] });
     },
-    onError: (e) => {
-      notifications.show({
-        title: `Error`,
-        message: `${e}`,
-        color: "red",
-      });
-    },
+    onError: (e) => errorNotification(`${e}`),
   });
+
+  const { mutate: onLogin, isPending: loginPending } = useMutation({
+    mutationFn: async () => {
+      if (password === undefined || userName === undefined) {
+        return;
+      }
+      const loginResponse = await login(userName, password);
+      if (loginResponse === "NotFound") {
+        errorNotification("User does not exist");
+        return;
+      }
+      const key = Buffer.from(loginResponse.exportKey, "base64").subarray(
+        0,
+        16,
+      );
+
+      const store = storeGetter.get(undefined);
+      const accountFile = await readAccountFile(store);
+      if (accountFile === undefined) {
+        errorNotification("Account file missing");
+        return;
+      }
+      const account = await Account.openAccount(
+        storeGetter,
+        getRepoIOConfig(),
+        key,
+        accountFile,
+      );
+
+      const metadataRepo = await account.openMetadataRepo();
+      authUserStore.user = {
+        sessionKey: loginResponse.sessionKey,
+        account,
+        metadataRepo,
+      };
+    },
+    onError: (e) => errorNotification(`${e}`),
+  });
+
+  const hasData = userName && password;
+  const isPending = registerPending || loginPending;
+
   return (
     <MainLayout
-      Header={<Text>Create Account</Text>}
+      Header={<Text>Login</Text>}
       Content={
-        <Flex gap={"xs"} m={5} direction={"column"}>
-          <TextInput
-            size="sm"
-            label="User Name"
-            onChange={(e) => setUserName(e.target.value)}
-          />
-          <PasswordInput
-            size="sm"
-            label="Password"
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <Button disabled={!password || isPending} onClick={() => onClick()}>
-            Create
-          </Button>
+        <Flex style={{ alignSelf: "center" }}>
+          <Tabs value={tabValue} onChange={(v) => setTabValue(v as string)}>
+            <Tabs.List>
+              <Tabs.Tab value="login">Login</Tabs.Tab>
+              <Tabs.Tab value="register">Register</Tabs.Tab>
+            </Tabs.List>
+
+            <Tabs.Panel value="login">
+              <Flex gap={"xs"} m={5} direction={"column"}>
+                <TextInput
+                  size="sm"
+                  label="User Name"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                />
+                <PasswordInput
+                  size="sm"
+                  label="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+
+                <Button
+                  disabled={!hasData || isPending}
+                  onClick={() => onLogin()}
+                >
+                  Login
+                </Button>
+              </Flex>
+            </Tabs.Panel>
+            <Tabs.Panel value="register">
+              <Flex gap={"xs"} m={5} direction={"column"}>
+                <TextInput
+                  size="sm"
+                  label="User Name"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                />
+                <PasswordInput
+                  size="sm"
+                  label="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <Button
+                  disabled={!hasData || isPending}
+                  onClick={() => onRegister()}
+                >
+                  Register
+                </Button>
+              </Flex>
+            </Tabs.Panel>
+          </Tabs>
         </Flex>
       }
     />
@@ -66,25 +161,17 @@ const AccountCreation = () => {
 };
 
 export const Admin = () => {
-  const { data: accountFile, isLoading } = useQuery({
-    queryKey: ["accountFile"],
-    queryFn: async () => {
-      const store = storeGetter.get(undefined);
-      return (await readAccountFile(store)) ?? null;
-    },
-  });
+  const authUser = useSnapshot(authUserStore);
+  if (authUserStore.user && authUser.user) {
+    const accountData = authUser.user.account.accountData;
+    return (
+      <AccountView
+        accountData={accountData}
+        metadataRepo={authUserStore.user.metadataRepo}
+        key={accountData.deviceId}
+      />
+    );
+  }
 
-  return (
-    <>
-      {isLoading ? (
-        <Flex h="100%" justify={"center"} align={"center"}>
-          <Loader color="blue" />;
-        </Flex>
-      ) : !accountFile ? (
-        <AccountCreation />
-      ) : (
-        <AccountViewPage accountFile={accountFile} />
-      )}
-    </>
-  );
+  return <LoginRegister />;
 };

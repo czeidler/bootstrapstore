@@ -5,7 +5,7 @@ export async function register(
   userName: string,
   password: string,
   email?: string,
-): Promise<{ exportKey: string }> {
+): Promise<{ exportKey: string } | "UserExists"> {
   const { clientRegistrationState, registrationRequest } =
     opaque.client.startRegistration({ password });
   const result = await tsr.startRegistration({ body: { registrationRequest } });
@@ -28,13 +28,16 @@ export async function register(
   if (finishResult.status !== 201) {
     throw Error(`Failed to finish registration: ${finishResult.status}`);
   }
+  if (finishResult.body.status === "UserExists") {
+    return "UserExists";
+  }
   return { exportKey };
 }
 
 export async function login(
   userName: string,
   password: string,
-): Promise<{ exportKey: string }> {
+): Promise<{ exportKey: string; sessionKey: string } | "NotFound"> {
   const { clientLoginState, startLoginRequest } = opaque.client.startLogin({
     password,
   });
@@ -43,6 +46,9 @@ export async function login(
   });
   if (result.status !== 201) {
     throw Error(`Failed to start registration: ${result.status}`);
+  }
+  if (result.body.status === "NotFound") {
+    return "NotFound";
   }
   const finishLoginData = opaque.client.finishLogin({
     clientLoginState,
@@ -59,5 +65,8 @@ export async function login(
     throw Error(`Failed to finish login: ${result.status}`);
   }
 
-  return { exportKey: finishLoginData.exportKey };
+  return {
+    exportKey: finishLoginData.exportKey,
+    sessionKey: finishLoginData.sessionKey,
+  };
 }

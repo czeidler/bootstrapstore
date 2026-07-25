@@ -108,7 +108,7 @@ export async function finishRegistration(
     registrationRecord: string;
   },
   con: Connection,
-): Promise<void> {
+): Promise<{ status: "Ok" | "UserExists" }> {
   if (
     !userContext.ongoingRegistrations.finishOngoingRegistration(input.userId)
   ) {
@@ -119,7 +119,7 @@ export async function finishRegistration(
     userName: input.userName,
   });
   if (existingUser !== undefined) {
-    throw Error("User already exists");
+    return { status: "UserExists" };
   }
   await userRepo.addUser({
     id: input.userId,
@@ -127,11 +127,8 @@ export async function finishRegistration(
     email: input.email,
     registration_record: input.registrationRecord,
   });
+  return { status: "Ok" };
 }
-
-export type StartLoginResponse = {
-  loginResponse: string;
-};
 
 export async function startLogin(
   {
@@ -142,11 +139,11 @@ export async function startLogin(
     startLoginRequest: string;
   },
   con: Connection,
-): Promise<StartLoginResponse> {
+): Promise<{ status: "Ok"; loginResponse: string } | { status: "NotFound" }> {
   const userRepo = new UserRepository(con);
   const existingUser = await userRepo.getByUseName({ userName });
   if (existingUser === undefined) {
-    throw Error("User does not exist");
+    return { status: "NotFound" };
   }
   const { loginResponse, serverLoginState } = opaque.server.startLogin({
     userIdentifier: existingUser.id,
@@ -155,7 +152,7 @@ export async function startLogin(
     startLoginRequest,
   });
   userContext.userSessions.startLogin(existingUser.id, serverLoginState);
-  return { loginResponse };
+  return { status: "Ok", loginResponse };
 }
 
 export type FinishLoginResponse = {

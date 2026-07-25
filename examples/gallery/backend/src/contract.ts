@@ -102,7 +102,9 @@ export const contract = c.router({
       registrationRecord: z.string(),
     }),
     responses: {
-      201: z.object({}),
+      201: z.object({
+        status: z.union([z.literal("Ok"), z.literal("UserExists")]),
+      }),
     },
   },
   // login
@@ -111,9 +113,13 @@ export const contract = c.router({
     path: "/startLogin",
     body: z.object({ userName: z.string(), startLoginRequest: z.string() }),
     responses: {
-      201: z.object({
-        loginResponse: z.string(),
-      }),
+      201: z.discriminatedUnion("status", [
+        z.object({
+          status: z.literal("Ok"),
+          loginResponse: z.string(),
+        }),
+        z.object({ status: z.literal("NotFound") }),
+      ]),
     },
   },
   finishLogin: {

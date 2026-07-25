@@ -94,6 +94,7 @@ export class Account {
     await metadataRepo.writeLocation(deviceId, {
       id: repoId,
       type: "repository",
+      repoId,
       encKey: repoKeyBase64,
     });
     await metadataRepo.snapshot();
