@@ -12,19 +12,22 @@ import fs, { mkdir } from "fs/promises";
 import path from "path";
 import { base64ToUint8Array, pathToArray } from "lib/src/utils";
 
-export const pushRepo = async ({
-  repoId,
-  encKey,
-  from,
-  to,
-}: {
-  repoId: string;
-  encKey: string;
-  from: { path?: string; branch?: string; inlined?: boolean };
-  to: { path: string; branch?: string; inlined?: boolean };
-}) => {
+export const pushRepo = async (
+  userId: string,
+  {
+    repoId,
+    encKey,
+    from,
+    to,
+  }: {
+    repoId: string;
+    encKey: string;
+    from: { path?: string; branch?: string; inlined?: boolean };
+    to: { path: string; branch?: string; inlined?: boolean };
+  },
+) => {
   const fromStoreGetter = !from.path
-    ? storeGetter
+    ? storeGetter(userId)
     : new RepoBlobStoreGetter(new FileBlobStore(pathToArray(from.path)));
   const fromRepo = await Repository.open(
     repoId,
@@ -63,21 +66,29 @@ export const pushRepo = async ({
   await toRepo.pull(fromRepo, new Date());
 };
 
-export const syncRepoStatus = async ({
-  repoId,
-  checkoutPath,
-  encKey,
-}: {
-  repoId: string;
-  checkoutPath: string;
-  encKey: string;
-}): Promise<DiffEntry[]> => {
+export const syncRepoStatus = async (
+  userId: string,
+  {
+    repoId,
+    checkoutPath,
+    encKey,
+  }: {
+    repoId: string;
+    checkoutPath: string;
+    encKey: string;
+  },
+): Promise<DiffEntry[]> => {
   const output: DiffEntry[] = [];
-  const repo = await Repository.open(repoId, getRepoIOConfig(), storeGetter, {
-    key: base64ToUint8Array(encKey),
-    branch: "main",
-    inlined: false,
-  });
+  const repo = await Repository.open(
+    repoId,
+    getRepoIOConfig(),
+    storeGetter(userId),
+    {
+      key: base64ToUint8Array(encKey),
+      branch: "main",
+      inlined: false,
+    },
+  );
   await diffWalk(
     new FSDirReader([checkoutPath]),
     new RepoDirReader(repo),
@@ -86,22 +97,30 @@ export const syncRepoStatus = async ({
   return output;
 };
 
-export const syncRepo = async ({
-  repoId,
-  checkoutPath,
-  encKey,
-}: {
-  repoId: string;
-  checkoutPath: string;
-  encKey: string;
-}) => {
+export const syncRepo = async (
+  userId: string,
+  {
+    repoId,
+    checkoutPath,
+    encKey,
+  }: {
+    repoId: string;
+    checkoutPath: string;
+    encKey: string;
+  },
+) => {
   const checkoutPathArray = pathToArray(checkoutPath);
   const output: DiffEntry[] = [];
-  const repo = await Repository.open(repoId, getRepoIOConfig(), storeGetter, {
-    key: base64ToUint8Array(encKey),
-    branch: "main",
-    inlined: false,
-  });
+  const repo = await Repository.open(
+    repoId,
+    getRepoIOConfig(),
+    storeGetter(userId),
+    {
+      key: base64ToUint8Array(encKey),
+      branch: "main",
+      inlined: false,
+    },
+  );
   await diffWalk(
     new FSDirReader(checkoutPathArray),
     new RepoDirReader(repo),

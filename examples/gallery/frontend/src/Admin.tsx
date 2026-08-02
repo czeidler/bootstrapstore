@@ -47,8 +47,19 @@ const LoginRegister = () => {
         0,
         16,
       );
-      const store = storeGetter.get(undefined);
-      await Account.createAccount(store, storeGetter, getRepoIOConfig(), key);
+      const loginResult = await login(userName, password);
+      if (typeof loginResult === "string") {
+        errorNotification(`Failed to login into just registered account`);
+        return;
+      }
+      const auth = loginResult.auth;
+      const store = storeGetter(auth).get(undefined);
+      await Account.createAccount(
+        store,
+        storeGetter(auth),
+        getRepoIOConfig(),
+        key,
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accountFile"] });
@@ -71,14 +82,15 @@ const LoginRegister = () => {
         16,
       );
 
-      const store = storeGetter.get(undefined);
+      const auth = loginResponse.auth;
+      const store = storeGetter(auth).get(undefined);
       const accountFile = await readAccountFile(store);
       if (accountFile === undefined) {
         errorNotification("Account file missing");
         return;
       }
       const account = await Account.openAccount(
-        storeGetter,
+        storeGetter(auth),
         getRepoIOConfig(),
         key,
         accountFile,
@@ -86,7 +98,7 @@ const LoginRegister = () => {
 
       const metadataRepo = await account.openMetadataRepo();
       authUserStore.user = {
-        sessionKey: loginResponse.sessionKey,
+        auth,
         account,
         metadataRepo,
       };

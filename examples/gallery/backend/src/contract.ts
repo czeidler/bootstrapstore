@@ -64,15 +64,23 @@ export function serverSSEHandler<T extends SSEEndpoint>(
   });
 }
 
+export const Auth = z.object({
+  userId: z.string(),
+  sessionKey: z.string(),
+});
+
 export const contract = c.router({
   me: {
     method: "GET",
     path: "/me",
+    query: z.object({
+      auth: Auth.optional(),
+    }),
     responses: {
       200: z.object({
-        admin: z
+        desktopMode: z
           .object({
-            /** Working dir path on th server */
+            /** Working dir path on the server */
             path: z.string(),
           })
           .optional(),
@@ -135,10 +143,7 @@ export const contract = c.router({
     method: "POST",
     path: "/logout",
     body: z.object({
-      auth: z.object({
-        userId: z.string(),
-        sessionKey: z.string(),
-      }),
+      auth: Auth,
     }),
     responses: {
       201: z.void(),
@@ -152,6 +157,7 @@ export const contract = c.router({
     query: z.object({
       repoId: z.string().optional(),
       path: z.array(z.string()),
+      auth: Auth,
     }),
     body: c.type<{ blob: File }>(),
     responses: {
@@ -169,6 +175,7 @@ export const contract = c.router({
     query: z.object({
       repoId: z.string().optional(),
       path: z.array(z.string()),
+      auth: Auth,
     }),
     responses: {
       200: z.boolean(),
@@ -185,6 +192,10 @@ export const contract = c.router({
     query: z.object({
       repoId: z.string().optional(),
       path: z.array(z.string()),
+      auth: z.object({
+        userId: z.string(),
+        sessionKey: z.string().optional(),
+      }),
     }),
     responses: {
       200: z.unknown(),
@@ -198,6 +209,7 @@ export const contract = c.router({
     query: z.object({
       repoId: z.string().optional(),
       path: z.array(z.string()),
+      auth: Auth,
     }),
     responses: {
       200: z.object({

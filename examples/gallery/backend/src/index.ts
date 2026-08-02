@@ -1,3 +1,4 @@
+import path from "node:path";
 import { findOrDownloadRclone } from "../node_modules/lib-node/src/rclone";
 import { buildApp } from "./controller";
 import { repoDir } from "./service";
@@ -6,17 +7,16 @@ import { connectToDB, DB, migrate } from "./user/db";
 const port = 8080;
 
 // TODO make this a cli parameter
-const isAdmin = true;
-const isLocal = true;
+const desktopMode = true;
 
 const main = async () => {
-  const db = await connectToDB<DB>("database.sqlite");
+  const db = await connectToDB<DB>(path.join(repoDir, "database.sqlite"));
   await migrate(db);
 
   console.log("> Search for rclone");
   await findOrDownloadRclone();
 
-  const app = buildApp({ isAdmin, isLocal, path: repoDir, connection: db });
+  const app = buildApp({ desktopMode, path: repoDir, connection: db });
   app.listen(port, () => {
     console.log(`App listening on port ${port}`);
   });

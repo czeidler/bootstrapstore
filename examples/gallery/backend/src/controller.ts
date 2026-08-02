@@ -26,6 +26,7 @@ import {
   logout,
   startLogin,
   startRegistration,
+  validateAuth,
 } from "./user/auth-service";
 import { Connection } from "./user/db";
 
@@ -34,18 +35,22 @@ const s = initServer();
 
 const mainRouter = ({
   connection,
-  admin,
+  desktopMode,
 }: {
-  admin?: { path: string };
+  desktopMode?: { path: string };
   connection: Connection;
 }) => {
-  const { hasRepoReadAccess, hasRepoWriteAccess } = authValidation(
-    admin !== undefined,
-  );
+  const { hasRepoReadAccess, hasRepoWriteAccess } = authValidation();
   return s.router(contract, {
     me: {
-      handler: async () => {
-        return { status: 200, body: { admin } };
+      handler: async ({ query }) => {
+        if (query.auth === undefined) {
+          return { status: 200, body: { desktopMode } };
+        }
+        if (!validateAuth(query.auth)) {
+          throw new Error("Not authenticated");
+        }
+        return { status: 200, body: { desktopMode } };
       },
     },
 
@@ -96,11 +101,13 @@ const mainRouter = ({
     postBlob: {
       middleware: [upload.single("blob")],
       handler: async ({ query, file }) => {
-        if (!hasRepoWriteAccess(query.repoId)) {
+        if (!hasRepoWriteAccess(query.repoId, query.auth)) {
           return { status: 403 };
         }
         const blob = file as Express.Multer.File;
-        await storeGetter.get(query.repoId).write(query.path, blob.buffer);
+        await storeGetter(query.auth.userId)
+          .get(query.repoId)
+          .write(query.path, blob.buffer);
         return {
           status: 201,
           body: {
@@ -112,20 +119,27 @@ const mainRouter = ({
       },
     },
     fileExists: async ({ query }) => {
-      if (!hasRepoReadAccess(query.repoId)) {
+      if (!hasRepoReadAccess(query.repoId, query.auth)) {
         return { status: 403 };
       }
-      const exists = await storeGetter.get(query.repoId).exists(query.path);
+      const exists = await storeGetter(query.auth.userId)
+        .get(query.repoId)
+        .exists(query.path);
       return {
         status: 200,
         body: exists,
       };
     },
     getFile: async ({ res, query }) => {
-      if (!hasRepoReadAccess(query.repoId)) {
+      const { userId, sessionKey } = query.auth;
+      const auth =
+        sessionKey !== undefined ? { userId, sessionKey } : undefined;
+      if (!hasRepoReadAccess(query.repoId, auth)) {
         return { status: 403 };
       }
-      const buffer = await storeGetter.get(query.repoId).read(query.path);
+      const buffer = await storeGetter(query.auth.userId)
+        .get(query.repoId)
+        .read(query.path);
       res.setHeader("Content-type", "application/octet-stream");
       return {
         status: 200,
@@ -133,10 +147,12 @@ const mainRouter = ({
       };
     },
     list: async ({ query }) => {
-      if (!hasRepoWriteAccess(query.repoId)) {
+      if (!hasRepoWriteAccess(query.repoId, query.auth)) {
         return { status: 403 };
       }
-      const content = await storeGetter.get(query.repoId).list(query.path);
+      const content = await storeGetter(query.auth.userId)
+        .get(query.repoId)
+        .list(query.path);
       return {
         status: 200,
         body: { content: content.map((it) => ({ name: it })) },
@@ -147,8 +163,7 @@ const mainRouter = ({
 
 export type AppConfig = {
   path: string;
-  isAdmin: boolean;
-  isLocal: boolean;
+  desktopMode: boolean;
   connection: Connection;
 };
 
@@ -171,13 +186,13 @@ export const buildApp = (config: AppConfig) => {
     contract,
     mainRouter({
       connection: config.connection,
-      admin: config.isAdmin ? { path: config.path } : undefined,
+      desktopMode: config.desktopMode ? { path: config.path } : undefined,
     }),
     app,
     { jsonQuery: true },
   );
 
-  if (config.isLocal) {
+  if (config.desktopMode) {
     serverSSEHandler(
       app,
       contractSSE.syncStatusEvents,
@@ -217,7 +232,7 @@ export const buildApp = (config: AppConfig) => {
     const trustedRouter = s.router(contractLocal, {
       pushRepo: {
         handler: async ({ body }) => {
-          await pushRepo(body);
+          await pushRepo(body.auth.userId, body);
           return {
             status: 201,
             body: {},
@@ -226,7 +241,7 @@ export const buildApp = (config: AppConfig) => {
       },
       snapshotCheckoutStatus: {
         handler: async ({ body }) => {
-          const entry = await syncRepoStatus(body);
+          const entry = await syncRepoStatus(body.auth.userId, body);
           return {
             status: 201,
             body: {
@@ -237,7 +252,7 @@ export const buildApp = (config: AppConfig) => {
       },
       snapshotCheckout: {
         handler: async ({ body }) => {
-          await syncRepo(body);
+          await syncRepo(body.auth.userId, body);
           return { status: 200, body: {} };
         },
       },

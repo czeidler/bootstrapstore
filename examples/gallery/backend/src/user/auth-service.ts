@@ -194,14 +194,17 @@ type AuthData = {
   sessionKey: string;
 };
 
-function validateAuth({ userId, sessionKey }: AuthData) {
+export function validateAuth({ userId, sessionKey }: AuthData): boolean {
   if (userContext.userSessions.getSessionKey(userId) !== sessionKey) {
-    throw Error("Not authorized");
+    return false;
   }
+  return true;
 }
 
 export function logout(auth: AuthData): string | undefined {
-  validateAuth(auth);
+  if (!validateAuth(auth)) {
+    return "Not authorized";
+  }
 
   userContext.userSessions.logout(auth.userId);
   return undefined;

@@ -11,7 +11,12 @@ import { Flex } from "@mantine/core";
 export const Home = () => {
   const [searchParams] = useSearchParams();
   const keyParam = searchParams.get("key");
+  const userId = searchParams.get("userId") ?? "";
   const repoId = searchParams.get("repoId") ?? "";
+  const auth = {
+    userId,
+    sessionKey: "",
+  };
 
   const [repo, setRepo] = useState<{
     repo: Repository;
@@ -24,7 +29,7 @@ export const Home = () => {
       const repo = await Repository.open(
         repoId,
         getRepoIOConfig(),
-        storeGetter,
+        storeGetter(auth),
         {
           key,
           branch: "main",
@@ -33,7 +38,7 @@ export const Home = () => {
       );
       const metadataRepository = await MetadataRepository.fromRepo(
         repo,
-        storeGetter,
+        storeGetter(auth),
         getRepoIOConfig(),
       );
       setRepo({ repo, metadataRepository });

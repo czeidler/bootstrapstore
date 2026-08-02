@@ -203,7 +203,7 @@ export const AccountView = ({
         label: (
           <Flex gap={5}>
             <IconDevicesPc />
-            <Tooltip label={`${me?.body?.admin?.path}`}>
+            <Tooltip label={`${me?.body?.desktopMode?.path}`}>
               <Text>{`${accountData.deviceId} (Local)`}</Text>
             </Tooltip>
           </Flex>
@@ -232,7 +232,7 @@ export const AccountView = ({
           ),
         })) ?? []),
     ],
-    [accountData.deviceId, devicesWithLocations, me?.body?.admin?.path],
+    [accountData.deviceId, devicesWithLocations, me?.body?.desktopMode?.path],
   );
   const tree = useTree({
     initialSelectedState: [accountData.deviceId], // Set initial selected nodes

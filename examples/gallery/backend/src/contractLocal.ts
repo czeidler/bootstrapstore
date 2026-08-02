@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { c } from "./contract";
+import { Auth, c } from "./contract";
 
 const Remote = z.object({
   type: z.enum(["sftp"]),
@@ -15,6 +15,7 @@ export const contractLocal = c.router({
     path: "/repos/push",
     description: "Sync repos",
     body: z.object({
+      auth: Auth,
       encKey: z.string(),
       repoId: z.string(),
       from: z.object({
@@ -37,6 +38,7 @@ export const contractLocal = c.router({
     path: "/snapshot-checkout",
     description: "Snapshots checkout path into a repo",
     body: z.object({
+      auth: Auth,
       encKey: z.string(),
       repoId: z.string(),
       checkoutPath: z.string(),
@@ -49,6 +51,7 @@ export const contractLocal = c.router({
     method: "POST",
     path: "/snapshot-checkout-status",
     body: z.object({
+      auth: Auth,
       encKey: z.string(),
       repoId: z.string(),
       checkoutPath: z.string(),

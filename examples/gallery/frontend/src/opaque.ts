@@ -5,7 +5,7 @@ export async function register(
   userName: string,
   password: string,
   email?: string,
-): Promise<{ exportKey: string } | "UserExists"> {
+): Promise<{ userId: string; exportKey: string } | "UserExists"> {
   const { clientRegistrationState, registrationRequest } =
     opaque.client.startRegistration({ password });
   const result = await tsr.startRegistration({ body: { registrationRequest } });
@@ -31,13 +31,16 @@ export async function register(
   if (finishResult.body.status === "UserExists") {
     return "UserExists";
   }
-  return { exportKey };
+  return { userId: result.body.userId, exportKey };
 }
 
 export async function login(
   userName: string,
   password: string,
-): Promise<{ exportKey: string; sessionKey: string } | "NotFound"> {
+): Promise<
+  | { exportKey: string; auth: { userId: string; sessionKey: string } }
+  | "NotFound"
+> {
   const { clientLoginState, startLoginRequest } = opaque.client.startLogin({
     password,
   });
@@ -67,6 +70,9 @@ export async function login(
 
   return {
     exportKey: finishLoginData.exportKey,
-    sessionKey: finishLoginData.sessionKey,
+    auth: {
+      userId: finishResult.body.userId,
+      sessionKey: finishLoginData.sessionKey,
+    },
   };
 }

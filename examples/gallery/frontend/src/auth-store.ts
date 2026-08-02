@@ -3,7 +3,7 @@ import { Account } from "lib/src/account";
 import { proxy } from "valtio";
 
 type AuthenticatedUser = {
-  sessionKey: string;
+  auth: { userId: string; sessionKey: string };
   account: Account;
   metadataRepo: MetadataRepository;
 };
