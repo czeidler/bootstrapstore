@@ -16,7 +16,7 @@ import {
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { login, register } from "./opaque";
-import { useSnapshot } from "valtio";
+import { ref, useSnapshot } from "valtio";
 import { authUserStore } from "./auth-store";
 
 function errorNotification(message: string) {
@@ -100,7 +100,7 @@ const LoginRegister = () => {
       authUserStore.user = {
         auth,
         account,
-        metadataRepo,
+        metadataRepo: ref(metadataRepo),
       };
     },
     onError: (e) => errorNotification(`${e}`),

@@ -2,8 +2,8 @@ packages:
   - lib
   - lib-node
   - scripts
-  - examples/gallery/backend
-  - examples/gallery/frontend
+  - backend
+  - frontend
 
 allowBuilds:
   better-sqlite3: true

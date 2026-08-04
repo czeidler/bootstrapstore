@@ -1,69 +1,25 @@
-import { Connection, DB, connectToDB, migrate } from "./db";
-import express from "express";
-import * as trpcExpress from "@trpc/server/adapters/express";
-import { appRouter } from "./controller";
-import cors from "cors";
-import dotenv from "dotenv";
-import cookieSession from "cookie-session";
-import crypto from "crypto";
+import path from "node:path";
+import { findOrDownloadRclone } from "../node_modules/lib-node/src/rclone";
+import { buildApp } from "./controller";
+import { repoDir } from "./service";
+import { connectToDB, DB, migrate } from "./user/db";
 
-export type CreateContext = ({
-  req,
-  res,
-}: trpcExpress.CreateExpressContextOptions) => Pick<
-  trpcExpress.CreateExpressContextOptions,
-  "req" | "res"
-> & {
-  connection: Connection;
-};
+const port = 8080;
 
-async function main() {
-  dotenv.config();
+// TODO make this a cli parameter
+const desktopMode = true;
 
-  const db = await connectToDB<DB>("database");
+const main = async () => {
+  const db = await connectToDB<DB>(path.join(repoDir, "database.sqlite"));
   await migrate(db);
 
-  const createContext: CreateContext = ({ req, res }) => ({
-    req,
-    res,
-    connection: db,
-  });
+  console.log("> Search for rclone");
+  await findOrDownloadRclone();
 
-  const app = express();
-  app.use(
-    cookieSession({
-      name: "session",
-      keys: [crypto.randomUUID()],
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    })
-  );
-  app.use(
-    cors({
-      methods: ["POST", "GET", "OPTIONS"],
-      /*origin: function (_origin, callback) {
-        // allow all origins
-        callback(null, true);
-      },*/
-    })
-  );
-  app.use(
-    "/trpc",
-    trpcExpress.createExpressMiddleware({
-      router: appRouter,
-      createContext,
-    })
-  );
-  const port = 8080;
+  const app = buildApp({ desktopMode, path: repoDir, connection: db });
   app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`);
+    console.log(`App listening on port ${port}`);
   });
-
-  const shutDown = async () => {
-    await db.destroy();
-    process.exit(1);
-  };
-  process.on("SIGTERM", shutDown);
-  process.on("SIGINT", shutDown);
-}
+};
 
 main().catch((e) => console.error(e));
