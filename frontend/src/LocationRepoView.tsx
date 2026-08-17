@@ -24,6 +24,8 @@ import { IconClock } from "@tabler/icons-react";
 import { base64ToUint8Array, hexToUint8Array } from "lib/src/utils";
 import { AccountData } from "lib/src/account";
 import { useDisclosure } from "@mantine/hooks";
+import { useSnapshot } from "valtio";
+import { authUserStore } from "./auth-store";
 
 function RepoHistoryFileBrowser({
   metadataRepo,
@@ -127,6 +129,7 @@ export function LocationRepoView({
 
   const [showPublicUrl, { toggle: toggleShowPublicUrl }] = useDisclosure(false);
 
+  const authUser = useSnapshot(authUserStore);
   return (
     <Flex
       direction="column"
@@ -156,7 +159,7 @@ export function LocationRepoView({
                 {showPublicUrl ? "Hide" : "Show"}
               </Button>{" "}
               <Collapse expanded={showPublicUrl}>
-                <Text>{` ?repoId=${location.repoId}&key=${Buffer.from(base64ToUint8Array(location.encKey)).toString("hex")}`}</Text>
+                <Text>{` ?userId=${authUser.user?.auth.userId}&repoId=${location.repoId}&key=${Buffer.from(base64ToUint8Array(location.encKey)).toString("hex")}`}</Text>
               </Collapse>
             </Flex>
           </Flex>
