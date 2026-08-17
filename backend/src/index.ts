@@ -2,7 +2,8 @@ import path from "node:path";
 import { findOrDownloadRclone } from "../node_modules/lib-node/src/rclone";
 import { buildApp } from "./controller";
 import { repoDir } from "./service";
-import { connectToDB, DB, migrate } from "./user/db";
+import { connectToDB, migrateToLatest } from "./user/db";
+import { DB } from "./user/db.generated";
 
 const port = 8080;
 
@@ -11,7 +12,7 @@ const desktopMode = true;
 
 const main = async () => {
   const db = await connectToDB<DB>(path.join(repoDir, "database.sqlite"));
-  await migrate(db);
+  await migrateToLatest(db);
 
   console.log("> Search for rclone");
   await findOrDownloadRclone();

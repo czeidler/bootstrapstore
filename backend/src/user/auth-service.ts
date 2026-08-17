@@ -123,9 +123,9 @@ export async function finishRegistration(
   }
   await userRepo.addUser({
     id: input.userId,
-    user_name: input.userName,
+    userName: input.userName,
     email: input.email,
-    registration_record: input.registrationRecord,
+    registrationRecord: input.registrationRecord,
   });
   return { status: "Ok" };
 }
@@ -147,7 +147,7 @@ export async function startLogin(
   }
   const { loginResponse, serverLoginState } = opaque.server.startLogin({
     userIdentifier: existingUser.id,
-    registrationRecord: existingUser.registration_record,
+    registrationRecord: existingUser.registrationRecord,
     serverSetup: process.env.OPAQUE_SERVER_SETUP ?? "",
     startLoginRequest,
   });

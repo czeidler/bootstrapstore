@@ -1,30 +1,9 @@
-import {
-  ColumnType,
-  Generated,
-  Insertable,
-  Kysely,
-  Selectable,
-  SqliteDialect,
-} from "kysely";
+import { Kysely, SqliteDialect } from "kysely";
 import { FileMigrationProvider, Migrator } from "kysely/migration";
 import { promises as fs } from "fs";
 import path from "path";
 import Database from "better-sqlite3";
-
-export interface UserTable {
-  id: ColumnType<string, string, never>;
-  user_name: string;
-  email: string | undefined;
-  registration_record: string;
-  created_at: Generated<Date>;
-}
-
-export type User = Selectable<UserTable>;
-export type NewUser = Insertable<UserTable>;
-
-export interface DB {
-  user: UserTable;
-}
+import { DB } from "./db.generated";
 
 export type Connection = Kysely<DB>;
 
@@ -43,7 +22,7 @@ export function tx<T, R>(con: Kysely<T>, job: (con: Kysely<T>) => Promise<R>) {
   return con.transaction().execute(job);
 }
 
-export async function migrate<T>(db: Kysely<T>) {
+export async function migrateToLatest<T>(db: Kysely<T>) {
   const migrator = new Migrator({
     db,
     provider: new FileMigrationProvider({
