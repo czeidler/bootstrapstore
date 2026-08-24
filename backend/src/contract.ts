@@ -115,6 +115,20 @@ export const contract = c.router({
       }),
     },
   },
+  startChildRegistration: {
+    method: "POST",
+    path: "/register-child",
+    body: z.object({
+      auth: Auth,
+      registrationRequest: z.string(),
+    }),
+    responses: {
+      201: z.object({
+        userId: z.string(),
+        registrationResponse: z.string(),
+      }),
+    },
+  },
   // login
   startLogin: {
     method: "POST",

@@ -4,15 +4,22 @@ import { Connection } from "./db";
 import { UserRepository } from "./user-repository";
 
 class OngoingRegistrations {
-  private ongoing: Record<string, { registrationTime: number }> = {};
+  private ongoing: Record<
+    string,
+    { registrationTime: number; parentUserId: string | undefined }
+  > = {};
 
-  startRegistration(userId: string) {
-    this.ongoing[userId] = { registrationTime: Date.now() };
+  startRegistration(userId: string, parentUserId: string | undefined) {
+    this.ongoing[userId] = { registrationTime: Date.now(), parentUserId };
   }
 
-  finishOngoingRegistration(userId: string): boolean {
+  finishOngoingRegistration(
+    userId: string,
+  ):
+    | { registrationTime: number; parentUserId: string | undefined }
+    | undefined {
     this.clean();
-    const ongoing = this.ongoing[userId] !== undefined;
+    const ongoing = this.ongoing[userId];
     delete this.ongoing[userId];
     return ongoing;
   }
@@ -88,7 +95,30 @@ export function startRegistration(
   registrationRequest: string,
 ): StartRegistrationResponse {
   const userIdentifier = generate();
-  userContext.ongoingRegistrations.startRegistration(userIdentifier);
+  userContext.ongoingRegistrations.startRegistration(userIdentifier, undefined);
+  const response = opaque.server.createRegistrationResponse({
+    serverSetup: process.env.OPAQUE_SERVER_SETUP ?? "",
+    userIdentifier,
+    registrationRequest,
+  });
+  return {
+    userId: userIdentifier,
+    registrationResponse: response.registrationResponse,
+  };
+}
+
+export function startChildRegistration(
+  auth: AuthData,
+  registrationRequest: string,
+): StartRegistrationResponse | string {
+  if (!validateAuth(auth)) {
+    return "Not authorized";
+  }
+  const userIdentifier = generate();
+  userContext.ongoingRegistrations.startRegistration(
+    userIdentifier,
+    auth.userId,
+  );
   const response = opaque.server.createRegistrationResponse({
     serverSetup: process.env.OPAQUE_SERVER_SETUP ?? "",
     userIdentifier,
@@ -109,9 +139,9 @@ export async function finishRegistration(
   },
   con: Connection,
 ): Promise<{ status: "Ok" | "UserExists" }> {
-  if (
-    !userContext.ongoingRegistrations.finishOngoingRegistration(input.userId)
-  ) {
+  const ongoingRegistration =
+    userContext.ongoingRegistrations.finishOngoingRegistration(input.userId);
+  if (ongoingRegistration === undefined) {
     throw Error(`No ongoing registration for userId ${input.userId}`);
   }
   const userRepo = new UserRepository(con);
@@ -124,6 +154,7 @@ export async function finishRegistration(
   await userRepo.addUser({
     id: input.userId,
     userName: input.userName,
+    parentId: ongoingRegistration.parentUserId,
     email: input.email,
     registrationRecord: input.registrationRecord,
   });

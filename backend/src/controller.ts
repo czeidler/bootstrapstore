@@ -24,6 +24,7 @@ import {
   finishLogin,
   finishRegistration,
   logout,
+  startChildRegistration,
   startLogin,
   startRegistration,
   validateAuth,
@@ -71,6 +72,21 @@ const mainRouter = ({
         };
       },
     },
+    startChildRegistration: {
+      handler: async ({ body }) => {
+        const result = startChildRegistration(
+          body.auth,
+          body.registrationRequest,
+        );
+        if (typeof result === "string") {
+          return { status: 401, body: undefined };
+        }
+        return {
+          status: 201,
+          body: result,
+        };
+      },
+    },
     startLogin: {
       handler: async ({ body }) => {
         const result = await startLogin(body, connection);
@@ -90,7 +106,10 @@ const mainRouter = ({
     },
     logout: {
       handler: async ({ body }) => {
-        logout(body.auth);
+        const result = logout(body.auth);
+        if (typeof result === "string") {
+          return { status: 401, body: undefined };
+        }
         return {
           status: 201,
           body: undefined,

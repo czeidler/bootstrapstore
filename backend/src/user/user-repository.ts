@@ -23,6 +23,7 @@ export class UserRepository {
     userName: string;
     email?: string;
     registrationRecord: string;
+    parentId?: string;
   }) {
     await this.db.transaction().execute(async (tx) => {
       const newUser = await tx
@@ -30,6 +31,7 @@ export class UserRepository {
         .values({
           id: user.id,
           user_name: user.userName,
+          parent_id: user.parentId,
           registration_record: user.registrationRecord,
         })
         .returning(["id"])

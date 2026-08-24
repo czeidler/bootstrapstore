@@ -10,7 +10,7 @@ export async function up(db: Kysely<any>): Promise<void> {
     .addColumn("user_name", "text", (col) => col.notNull())
     .addColumn("email", "text")
     // Only set if the user is child of another user (service account)
-    .addColumn("parent_id", "integer", (col) => col.references("user.id"))
+    .addColumn("parent_id", "text", (col) => col.references("user.id"))
     // opaque record
     .addColumn("registration_record", "text")
     .execute();

@@ -27,7 +27,7 @@ export interface User {
   created_at: Generated<string>;
   email: string | null;
   id: string;
-  parent_id: number | null;
+  parent_id: string | null;
   registration_record: string | null;
   user_name: string;
 }
