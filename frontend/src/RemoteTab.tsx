@@ -1,7 +1,7 @@
 import { MetadataRepository, VFSDir, VFSEntry } from "lib";
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useConnections, useUpsertConnection } from "./account-hooks";
-import { ConnectionInfo } from "lib/src/main-repo";
+import { BootstrapConnectionInfo, SSHConnectionInfo } from "lib/src/main-repo";
 import { trustedTsr } from "./tsr";
 import { shortId } from "lib/src/utils";
 import { useFileNavigation } from "./useFileNavigation";
@@ -9,16 +9,17 @@ import FileView from "./FileView";
 import { RemoteProxyDirVFS } from "./remote-proxy-vfs";
 import { useMutation } from "@tanstack/react-query";
 import { ClientInferRequest } from "@ts-rest/core";
-import { trustedContract } from "../../backend/src/contract";
 import {
   Button,
   Divider,
   Flex,
   Modal,
+  Select,
   Text,
   Textarea,
   TextInput,
 } from "@mantine/core";
+import { contractLocal } from "../../backend/src/contractLocal";
 
 const FileViewDialog = ({
   root,
@@ -49,24 +50,50 @@ const FileViewDialog = ({
   );
 };
 
-const CreateConnectionDialog = ({
+const ConnectionConfigLayout = ({
+  Content,
+  onClose,
+  save,
+  disabled,
+}: {
+  Content: ReactNode;
+  onClose: () => void;
+  save: () => Promise<void>;
+  disabled: boolean;
+}) => {
+  return (
+    <Flex h="100%" gap={"xs"} w={"100%"} direction={"column"}>
+      {Content}
+      <Flex gap={"xs"} justify={"end"}>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={save} autoFocus disabled={disabled}>
+          Save
+        </Button>
+      </Flex>
+    </Flex>
+  );
+};
+
+const SSHConnectionConfig = ({
   open,
   onClose,
   deviceId,
   metadataRepo,
 }: {
-  open: { connection?: ConnectionInfo } | undefined;
+  open: { ssh?: SSHConnectionInfo } | undefined;
   onClose: () => void;
   deviceId: string;
   metadataRepo: MetadataRepository;
 }) => {
-  const [remote, setRemote] = useState<Partial<ConnectionInfo> | undefined>();
+  const [remote, setRemote] = useState<
+    Partial<SSHConnectionInfo> | undefined
+  >();
 
   useEffect(() => {
     if (remote === undefined) {
-      setRemote(open?.connection);
+      setRemote(open?.ssh);
     }
-  }, [remote, open?.connection]);
+  }, [remote, open?.ssh]);
 
   const { mutateAsync: upsertConnection } = useUpsertConnection(
     metadataRepo,
@@ -76,7 +103,7 @@ const CreateConnectionDialog = ({
     setRemote(undefined);
     onClose();
   };
-  const create = async () => {
+  const save = async () => {
     if (remote === undefined) {
       return;
     }
@@ -92,45 +119,172 @@ const CreateConnectionDialog = ({
     }
     close();
   };
+
+  return (
+    <ConnectionConfigLayout
+      Content={
+        <>
+          {remote?.id !== undefined ? (
+            <TextInput value={remote.id} autoFocus label="Id" disabled />
+          ) : null}
+          <TextInput
+            value={remote?.host ?? ""}
+            autoFocus
+            label="Host"
+            onChange={(event) =>
+              setRemote((prev) => ({ ...prev, host: event.target.value }))
+            }
+          />
+          <TextInput
+            value={remote?.user ?? ""}
+            autoFocus
+            label="User"
+            onChange={(event) =>
+              setRemote((prev) => ({ ...prev, user: event.target.value }))
+            }
+          />
+          <Textarea
+            value={remote?.keyPem ?? ""}
+            autoFocus
+            label="Key Pem"
+            onChange={(event) =>
+              setRemote((prev) => ({ ...prev, keyPem: event.target.value }))
+            }
+          />
+        </>
+      }
+      onClose={onClose}
+      save={save}
+      disabled={remote === undefined}
+    />
+  );
+};
+
+const BootstrapConnectionConfig = ({
+  open,
+  onClose,
+  deviceId,
+  metadataRepo,
+}: {
+  open: { bootstrap?: BootstrapConnectionInfo } | undefined;
+  onClose: () => void;
+  deviceId: string;
+  metadataRepo: MetadataRepository;
+}) => {
+  const [remote, setRemote] = useState<
+    Partial<BootstrapConnectionInfo> | undefined
+  >();
+
+  useEffect(() => {
+    if (remote === undefined) {
+      setRemote(open?.bootstrap);
+    }
+  }, [remote, open?.bootstrap]);
+
+  const { mutateAsync: upsertConnection } = useUpsertConnection(
+    metadataRepo,
+    deviceId,
+  );
+  const close = () => {
+    setRemote(undefined);
+    onClose();
+  };
+  const save = async () => {
+    if (remote === undefined) {
+      return;
+    }
+    const { userName, password } = remote;
+    if (userName !== undefined && password !== undefined) {
+      await upsertConnection({
+        id: remote.id ?? shortId(),
+        type: "bootstrap",
+        userName,
+        password,
+      });
+    }
+    close();
+  };
+
+  return (
+    <ConnectionConfigLayout
+      Content={
+        <>
+          {remote?.id !== undefined ? (
+            <TextInput value={remote.id} autoFocus label="Id" disabled />
+          ) : null}
+          <TextInput
+            value={remote?.userName ?? ""}
+            autoFocus
+            label="User name"
+            onChange={(event) =>
+              setRemote((prev) => ({ ...prev, host: event.target.value }))
+            }
+          />
+          <TextInput
+            value={remote?.password ?? ""}
+            autoFocus
+            label="Password"
+            onChange={(event) =>
+              setRemote((prev) => ({ ...prev, user: event.target.value }))
+            }
+          />
+        </>
+      }
+      onClose={onClose}
+      save={save}
+      disabled={remote === undefined}
+    />
+  );
+};
+
+const CreateConnectionDialog = ({
+  open,
+  onClose,
+  deviceId,
+  metadataRepo,
+}: {
+  open:
+    | { ssh?: SSHConnectionInfo; bootstrap?: BootstrapConnectionInfo }
+    | undefined;
+  onClose: () => void;
+  deviceId: string;
+  metadataRepo: MetadataRepository;
+}) => {
+  const [connectionType, setConnectionType] = useState<string | null>();
+
   return (
     <Modal
-      title="Create sFTP Connection"
+      title="Create Connection"
       opened={open !== undefined}
       onClose={close}
     >
-      {remote?.id !== undefined ? (
-        <TextInput value={remote.id} autoFocus label="Id" disabled />
-      ) : null}
-      <TextInput
-        value={remote?.host ?? ""}
-        autoFocus
-        label="Host"
-        onChange={(event) =>
-          setRemote((prev) => ({ ...prev, host: event.target.value }))
-        }
-      />
-      <TextInput
-        value={remote?.user ?? ""}
-        autoFocus
-        label="User"
-        onChange={(event) =>
-          setRemote((prev) => ({ ...prev, user: event.target.value }))
-        }
-      />
-      <Textarea
-        value={remote?.keyPem ?? ""}
-        autoFocus
-        label="Key Pem"
-        onChange={(event) =>
-          setRemote((prev) => ({ ...prev, keyPem: event.target.value }))
-        }
-      />
+      <Flex direction={"column"} gap="xs">
+        <Select
+          label={"Connection Type"}
+          data={[
+            { value: "ssh", label: "SSH" },
+            { value: "bootstrap", label: "Bootstrap" },
+          ]}
+          value={connectionType}
+          onChange={setConnectionType}
+        />
 
-      <Flex mt={"xs"} gap="xs">
-        <Button onClick={close}>Cancel</Button>
-        <Button onClick={create} autoFocus disabled={remote === undefined}>
-          {remote?.id !== undefined ? "Save" : "Create"}
-        </Button>
+        {connectionType === "ssh" && (
+          <SSHConnectionConfig
+            open={open}
+            deviceId={deviceId}
+            onClose={onClose}
+            metadataRepo={metadataRepo}
+          />
+        )}
+        {connectionType === "bootstrap" && (
+          <BootstrapConnectionConfig
+            open={open}
+            deviceId={deviceId}
+            onClose={onClose}
+            metadataRepo={metadataRepo}
+          />
+        )}
       </Flex>
     </Modal>
   );
@@ -145,13 +299,11 @@ export const RemoteTab = ({
 }) => {
   const { data: connections } = useConnections(metadataRepo, deviceId);
   const [openCreateConnectionDialog, setOpenCreateConnectionDialog] = useState<
-    { connection?: ConnectionInfo } | undefined
+    { ssh?: SSHConnectionInfo; bootstrap?: BootstrapConnectionInfo } | undefined
   >(undefined);
 
   const { mutateAsync: ls } = useMutation({
-    mutationFn: async (
-      params: ClientInferRequest<typeof trustedContract.ls>,
-    ) => {
+    mutationFn: async (params: ClientInferRequest<typeof contractLocal.ls>) => {
       return trustedTsr.ls(params);
     },
   });
@@ -168,37 +320,48 @@ export const RemoteTab = ({
         </Flex>
         <Divider />
         <Text>Connections</Text>
-        {connections?.map((it) => (
-          <Flex key={it.id} direction={"row"}>
-            <Text>Id: {it.id}</Text>
-            <Text>Type: {it.type}</Text>
-            <Button
-              onClick={() =>
-                ls({
-                  body: {
-                    remote: {
-                      type: it.type,
-                      host: it.host,
-                      user: it.user,
-                      keyPem: it.keyPem,
-                    },
-                    path: "",
-                  },
-                })
-              }
-            >
-              RClone test
-            </Button>
-            <Button
-              onClick={() => setOpenCreateConnectionDialog({ connection: it })}
-            >
-              Edit Connection
-            </Button>
-            <Button onClick={() => setOpenDir(new RemoteProxyDirVFS(it, []))}>
-              Browse
-            </Button>
-          </Flex>
-        ))}
+        {connections?.map((it) => {
+          if (it.type === "sftp") {
+            return (
+              <Flex key={it.id} direction={"row"}>
+                <Text>Id: {it.id}</Text>
+                <Text>Type: {it.type}</Text>
+                <Button
+                  onClick={() =>
+                    ls({
+                      body: {
+                        remote: {
+                          type: it.type,
+                          host: it.host,
+                          user: it.user,
+                          keyPem: it.keyPem,
+                        },
+                        path: "",
+                      },
+                    })
+                  }
+                >
+                  RClone test
+                </Button>
+                <Button
+                  onClick={() =>
+                    setOpenCreateConnectionDialog((prev) => ({
+                      ...prev,
+                      ssh: it,
+                    }))
+                  }
+                >
+                  Edit Connection
+                </Button>
+                <Button
+                  onClick={() => setOpenDir(new RemoteProxyDirVFS(it, []))}
+                >
+                  Browse
+                </Button>
+              </Flex>
+            );
+          }
+        })}
       </Flex>
       <FileViewDialog
         root={openDir}

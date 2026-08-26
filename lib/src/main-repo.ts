@@ -30,13 +30,22 @@ const connectionsPath = (deviceId: string, connectionId: string) => [
   connectionId,
   "connection.json",
 ];
-export type ConnectionInfo = {
+
+export type SSHConnectionInfo = {
   id: string;
   type: "sftp";
   host: string;
   user: string;
   keyPem: string;
 };
+export type BootstrapConnectionInfo = {
+  id: string;
+  type: "bootstrap";
+  userName: string;
+  password: string;
+};
+export type ConnectionInfo = SSHConnectionInfo | BootstrapConnectionInfo;
+
 // location
 const locationBasePath = (deviceId: string) => [
   deviceDir,
