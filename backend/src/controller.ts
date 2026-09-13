@@ -12,7 +12,7 @@ import cors from "cors";
 import { Readable } from "stream";
 import { authValidation } from "./auth";
 import { syncRepo, pushRepo, syncRepoStatus } from "./trustedService";
-import { diffWalk, RCloneVFSDir } from "lib-node";
+import { diffWalk, RCloneVFSDir, Restic } from "lib-node";
 import { ExhaustiveCheckError } from "lib";
 import {
   lsEntryLSEntryToDirReader,
@@ -368,6 +368,16 @@ export const buildApp = (config: AppConfig) => {
             status: 201,
             body: result,
           };
+        },
+      },
+      resticBackup: {
+        handler: async ({ body }) => {
+          await Restic.backup(
+            body.remote,
+            body.resticTargetRepoPath,
+            body.paths,
+          );
+          return { status: 201, body: undefined };
         },
       },
     });

@@ -150,4 +150,16 @@ export const contractLocal = c.router({
       403: z.undefined(),
     },
   },
+  resticBackup: {
+    method: "POST",
+    path: "/resticBackup",
+    body: z.object({
+      remote: Remote,
+      resticTargetRepoPath: z.string(),
+      paths: z.array(z.string()),
+    }),
+    responses: {
+      201: z.void(),
+    },
+  },
 });

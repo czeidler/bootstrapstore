@@ -105,8 +105,19 @@ export type SyncPathInfo = {
   from: { path: string; remoteId?: string };
   to: { path: string; remoteId?: string };
 };
+export type ResticBackup = {
+  id: string;
+  type: "restic";
+  remoteId: string;
+  repositoryPath: string;
+  paths: string[];
+};
 
-export type SyncInfo = SyncPushRepoInfo | SyncPathInfo | SnapshotInfo;
+export type SyncInfo =
+  | SyncPushRepoInfo
+  | SyncPathInfo
+  | SnapshotInfo
+  | ResticBackup;
 
 export class MetadataRepository {
   private constructor(

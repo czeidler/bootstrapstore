@@ -5,6 +5,7 @@ export { Repository } from "./repository";
 export type { DirEntry, RepoIOConfig, RepoConfig } from "./repository";
 export { MetadataRepository } from "./main-repo";
 export type {
+  SSHConnectionInfo,
   ConnectionInfo,
   DeviceInfo,
   LocationInfo,
