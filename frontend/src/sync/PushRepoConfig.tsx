@@ -4,7 +4,7 @@ import { MetadataRepository, shortId } from "lib";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useCreateSync, useDevicesWithLocations } from "../account-hooks";
 import { useMutation } from "@tanstack/react-query";
-import { trustedTsr } from "../tsr";
+import { trustedClient } from "../client";
 import { SyncStatusSEEBodyType } from "../../../backend/src/contract";
 import { AccountData } from "lib/src/account";
 import { SyncPushRepoInfo } from "lib/src/main-repo";
@@ -163,7 +163,7 @@ export function PushRepoEntry({
       }
 
       const inlined = accountData.repoId === fromLocation.id;
-      const result = await trustedTsr.pushRepo({
+      const result = await trustedClient.pushRepo({
         auth: authUser.user.auth,
         repoId: fromLocation.repoId,
         encKey: fromLocation.encKey,

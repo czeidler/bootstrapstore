@@ -7,7 +7,7 @@ import { SnapshotInfo } from "lib/src/main-repo";
 import { SyncEntryLayout } from "./SyncEntryLayout";
 import { useDisclosure } from "@mantine/hooks";
 import { useMutation } from "@tanstack/react-query";
-import { trustedTsr } from "../tsr";
+import { trustedClient } from "../client";
 import { useSnapshot } from "valtio";
 import { authUserStore } from "../auth-store";
 
@@ -123,7 +123,7 @@ export function SnapshotEntry({
         throw Error("No auth user");
       }
 
-      const result = await trustedTsr.snapshotCheckout({
+      const result = await trustedClient.snapshotCheckout({
         auth: authUser.user.auth,
         repoId: fromLocation.repoId,
         encKey: fromLocation.encKey,

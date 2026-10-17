@@ -8,7 +8,7 @@ import { SyncEntryLayout } from "./SyncEntryLayout";
 import { SyncDirStatus } from "./SyncDirStatus";
 import { useDisclosure } from "@mantine/hooks";
 import { useMutation } from "@tanstack/react-query";
-import { trustedTsr } from "../tsr";
+import { trustedClient } from "../client";
 import { SyncStatusSEEBodyType } from "../../../backend/src/contract";
 
 export const SyncConfig = ({
@@ -139,7 +139,7 @@ export function SyncEntry({
 
   const { mutate: cpDir, isPending: isCopying } = useMutation({
     mutationFn: async () => {
-      const result = await trustedTsr.syncDir({
+      const result = await trustedClient.syncDir({
         syncId: syncInfo.id,
         from: { path: syncInfo.from.path },
         to: { path: syncInfo.to.path },

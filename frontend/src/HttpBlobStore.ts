@@ -1,5 +1,5 @@
 import type { BlobStore } from "lib";
-import { tsr } from "./tsr";
+import { client } from "./client";
 
 export class HttpBlobStore implements BlobStore {
   constructor(
@@ -8,7 +8,7 @@ export class HttpBlobStore implements BlobStore {
   ) {}
 
   async list(path: string[]): Promise<string[]> {
-    const result = await tsr.list({
+    const result = await client.list({
       repoId: this.repoId,
       path,
       auth: this.auth,
@@ -17,7 +17,7 @@ export class HttpBlobStore implements BlobStore {
   }
 
   async read(path: string[]): Promise<Uint8Array> {
-    const result = await tsr.getFile({
+    const result = await client.getFile({
       repoId: this.repoId,
       path,
       auth: this.auth,
@@ -26,7 +26,7 @@ export class HttpBlobStore implements BlobStore {
   }
 
   async exists(path: string[]): Promise<boolean> {
-    const result = await tsr.fileExists({
+    const result = await client.fileExists({
       repoId: this.repoId,
       path,
       auth: this.auth,
@@ -35,7 +35,7 @@ export class HttpBlobStore implements BlobStore {
   }
 
   async write(path: string[], data: Uint8Array<ArrayBuffer>): Promise<void> {
-    await tsr.postBlob({
+    await client.postBlob({
       repoId: this.repoId,
       path,
       auth: this.auth,

@@ -7,8 +7,8 @@ import { RouterContractClient } from "@orpc/contract";
 const link = new RPCLink({
   origin: "http://localhost:8080",
 });
-export const tsr: RouterContractClient<typeof contract> =
+export const client: RouterContractClient<typeof contract> =
   createORPCClient(link);
 
-export const trustedTsr: RouterContractClient<typeof contractLocal> =
+export const trustedClient: RouterContractClient<typeof contractLocal> =
   createORPCClient(link);

@@ -1,5 +1,5 @@
 import * as opaque from "@serenity-kit/opaque";
-import { tsr } from "./tsr";
+import { client } from "./client";
 
 export async function register(
   userName: string,
@@ -8,14 +8,14 @@ export async function register(
 ): Promise<{ userId: string; exportKey: string } | "UserExists"> {
   const { clientRegistrationState, registrationRequest } =
     opaque.client.startRegistration({ password });
-  const result = await tsr.startRegistration({ registrationRequest });
+  const result = await client.startRegistration({ registrationRequest });
 
   const { registrationRecord, exportKey } = opaque.client.finishRegistration({
     password,
     registrationResponse: result.registrationResponse,
     clientRegistrationState,
   });
-  const finishResult = await tsr.finishRegistration({
+  const finishResult = await client.finishRegistration({
     userId: result.userId,
     userName,
     email,
@@ -38,7 +38,7 @@ export async function login(
   const { clientLoginState, startLoginRequest } = opaque.client.startLogin({
     password,
   });
-  const result = await tsr.startLogin({
+  const result = await client.startLogin({
     userName,
     startLoginRequest,
   });
@@ -53,7 +53,7 @@ export async function login(
   if (finishLoginData === undefined) {
     throw Error(`Failed to finish login protocol`);
   }
-  const finishResult = await tsr.finishLogin({
+  const finishResult = await client.finishLogin({
     userName,
     finishLoginRequest: finishLoginData.finishLoginRequest,
   });

@@ -5,7 +5,7 @@ import {
   VFSEntry,
   VFSFile,
 } from "lib";
-import { trustedTsr } from "./tsr";
+import { trustedClient } from "./client";
 
 class RemoteProxyFileVFS implements VFSFile {
   constructor(
@@ -42,7 +42,7 @@ export class RemoteProxyDirVFS implements VFSDir {
   ) {}
 
   async list(): Promise<VFSEntry[]> {
-    const result = await trustedTsr.ls({
+    const result = await trustedClient.ls({
       remote: this.remote,
       path: this.path.join("/"),
     });

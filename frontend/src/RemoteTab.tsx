@@ -2,7 +2,7 @@ import { MetadataRepository, VFSDir, VFSEntry } from "lib";
 import { ReactNode, useEffect, useState } from "react";
 import { useConnections, useUpsertConnection } from "./account-hooks";
 import { BootstrapConnectionInfo, SSHConnectionInfo } from "lib/src/main-repo";
-import { trustedTsr } from "./tsr";
+import { trustedClient } from "./client";
 import { shortId } from "lib/src/utils";
 import { useFileNavigation } from "./useFileNavigation";
 import FileView from "./FileView";
@@ -306,7 +306,7 @@ export const RemoteTab = ({
     mutationFn: async (
       params: InferContractRouterInputs<typeof contractLocal.ls>,
     ) => {
-      return trustedTsr.ls(params);
+      return trustedClient.ls(params);
     },
   });
 

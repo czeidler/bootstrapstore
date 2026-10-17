@@ -6,7 +6,7 @@ import { DevicesView } from "./DeviceView";
 import { useCreateDevice, useDevicesWithLocations } from "./account-hooks";
 import { shortId } from "lib/src/utils";
 import { MainLayout } from "./MainLayout";
-import { tsr } from "./tsr";
+import { client } from "./client";
 import {
   IconChevronDown,
   IconFilePlus,
@@ -155,7 +155,7 @@ export const AccountView = ({
 }) => {
   const { data: me } = useQuery({
     queryFn: async () => {
-      const response = await tsr.me({});
+      const response = await client.me({});
       return response;
     },
     queryKey: ["me"],

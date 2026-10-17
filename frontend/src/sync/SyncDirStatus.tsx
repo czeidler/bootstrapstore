@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { trustedTsr } from "../tsr";
+import { trustedClient } from "../client";
 import { DataTable } from "mantine-datatable";
 import { IconEdit, IconFilePlus, IconTrash } from "@tabler/icons-react";
 
@@ -13,7 +13,7 @@ export function SyncDirStatus({
   const { data } = useQuery({
     queryKey: ["diff"],
     queryFn: async () => {
-      const diff = await trustedTsr.diff({
+      const diff = await trustedClient.diff({
         left: {
           path: fromPath,
         },
