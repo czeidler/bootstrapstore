@@ -140,16 +140,11 @@ export function SyncEntry({
   const { mutate: cpDir, isPending: isCopying } = useMutation({
     mutationFn: async () => {
       const result = await trustedTsr.syncDir({
-        body: {
-          syncId: syncInfo.id,
-          from: { path: syncInfo.from.path },
-          to: { path: syncInfo.to.path },
-        },
+        syncId: syncInfo.id,
+        from: { path: syncInfo.from.path },
+        to: { path: syncInfo.to.path },
       });
-      if (result.status !== 201) {
-        throw Error(`HTTP status ${result.status}`);
-      }
-      return result.body;
+      return result;
     },
   });
 

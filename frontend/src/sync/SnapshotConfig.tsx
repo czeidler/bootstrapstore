@@ -8,6 +8,8 @@ import { SyncEntryLayout } from "./SyncEntryLayout";
 import { useDisclosure } from "@mantine/hooks";
 import { useMutation } from "@tanstack/react-query";
 import { trustedTsr } from "../tsr";
+import { useSnapshot } from "valtio";
+import { authUserStore } from "../auth-store";
 
 export const SnapshotConfig = ({
   onClose,
@@ -105,6 +107,7 @@ export function SnapshotEntry({
   metadataRepo: MetadataRepository;
   deviceId: string;
 }) {
+  const authUser = useSnapshot(authUserStore);
   const [openEditDialog, { toggle: toggleEdit, close: closeEdit }] =
     useDisclosure(false);
   const { mutate: snapshot, isPending: isCopying } = useMutation({
@@ -116,18 +119,17 @@ export function SnapshotEntry({
       if (fromLocation?.type !== "repository") {
         throw Error("Expected repository location");
       }
+      if (authUser.user?.auth === undefined) {
+        throw Error("No auth user");
+      }
 
       const result = await trustedTsr.snapshotCheckout({
-        body: {
-          repoId: fromLocation.repoId,
-          encKey: fromLocation.encKey,
-          checkoutPath: syncInfo.from.path,
-        },
+        auth: authUser.user.auth,
+        repoId: fromLocation.repoId,
+        encKey: fromLocation.encKey,
+        checkoutPath: syncInfo.from.path,
       });
-      if (result.status !== 201) {
-        throw Error(`HTTP status ${result.status}`);
-      }
-      return result.body;
+      return result;
     },
   });
 

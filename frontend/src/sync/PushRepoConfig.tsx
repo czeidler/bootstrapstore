@@ -10,6 +10,8 @@ import { AccountData } from "lib/src/account";
 import { SyncPushRepoInfo } from "lib/src/main-repo";
 import { SyncEntryLayout } from "./SyncEntryLayout";
 import { SyncConfigLayout } from "./SyncConfigLayout";
+import { useSnapshot } from "valtio";
+import { authUserStore } from "../auth-store";
 
 export const PushRepoConfig = ({
   onClose,
@@ -144,6 +146,7 @@ export function PushRepoEntry({
   deviceId: string;
   accountData: AccountData;
 }) {
+  const authUser = useSnapshot(authUserStore);
   const [openEditDialog, { toggle: toggleEdit, close: closeEdit }] =
     useDisclosure(false);
   const { mutate: syncRepo, isPending: isCopying } = useMutation({
@@ -155,20 +158,19 @@ export function PushRepoEntry({
       if (fromLocation?.type !== "repository") {
         throw Error("Expected repository location");
       }
+      if (authUser.user?.auth === undefined) {
+        throw Error("No auth user");
+      }
 
       const inlined = accountData.repoId === fromLocation.id;
       const result = await trustedTsr.pushRepo({
-        body: {
-          repoId: fromLocation.repoId,
-          encKey: fromLocation.encKey,
-          from: { path: fromLocation.path, branch: "main", inlined },
-          to: { path: syncInfo.to.path, branch: "main", inlined },
-        },
+        auth: authUser.user.auth,
+        repoId: fromLocation.repoId,
+        encKey: fromLocation.encKey,
+        from: { path: fromLocation.path, branch: "main", inlined },
+        to: { path: syncInfo.to.path, branch: "main", inlined },
       });
-      if (result.status !== 201) {
-        throw Error(`HTTP status ${result.status}`);
-      }
-      return result.body;
+      return result;
     },
   });
 

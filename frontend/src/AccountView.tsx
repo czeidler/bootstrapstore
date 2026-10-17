@@ -155,10 +155,7 @@ export const AccountView = ({
 }) => {
   const { data: me } = useQuery({
     queryFn: async () => {
-      const response = await tsr.me();
-      if (response.status !== 200) {
-        throw Error(JSON.stringify(response));
-      }
+      const response = await tsr.me({});
       return response;
     },
     queryKey: ["me"],
@@ -203,7 +200,7 @@ export const AccountView = ({
         label: (
           <Flex gap={5}>
             <IconDevicesPc />
-            <Tooltip label={`${me?.body?.desktopMode?.path}`}>
+            <Tooltip label={`${me?.desktopMode?.path}`}>
               <Text>{`${accountData.deviceId} (Local)`}</Text>
             </Tooltip>
           </Flex>
@@ -232,7 +229,7 @@ export const AccountView = ({
           ),
         })) ?? []),
     ],
-    [accountData.deviceId, devicesWithLocations, me?.body?.desktopMode?.path],
+    [accountData.deviceId, devicesWithLocations, me?.desktopMode?.path],
   );
   const tree = useTree({
     initialSelectedState: [accountData.deviceId], // Set initial selected nodes

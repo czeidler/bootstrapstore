@@ -8,7 +8,6 @@ import { useFileNavigation } from "./useFileNavigation";
 import FileView from "./FileView";
 import { RemoteProxyDirVFS } from "./remote-proxy-vfs";
 import { useMutation } from "@tanstack/react-query";
-import { ClientInferRequest } from "@ts-rest/core";
 import {
   Button,
   Divider,
@@ -19,7 +18,8 @@ import {
   Textarea,
   TextInput,
 } from "@mantine/core";
-import { contractLocal } from "../../backend/src/contractLocal";
+import { contractLocal } from "../../backend/src/contract-local";
+import { InferContractRouterInputs } from "@orpc/contract";
 
 const FileViewDialog = ({
   root,
@@ -303,7 +303,9 @@ export const RemoteTab = ({
   >(undefined);
 
   const { mutateAsync: ls } = useMutation({
-    mutationFn: async (params: ClientInferRequest<typeof contractLocal.ls>) => {
+    mutationFn: async (
+      params: InferContractRouterInputs<typeof contractLocal.ls>,
+    ) => {
       return trustedTsr.ls(params);
     },
   });
@@ -329,15 +331,13 @@ export const RemoteTab = ({
                 <Button
                   onClick={() =>
                     ls({
-                      body: {
-                        remote: {
-                          type: it.type,
-                          host: it.host,
-                          user: it.user,
-                          keyPem: it.keyPem,
-                        },
-                        path: "",
+                      remote: {
+                        type: it.type,
+                        host: it.host,
+                        user: it.user,
+                        keyPem: it.keyPem,
                       },
+                      path: "",
                     })
                   }
                 >

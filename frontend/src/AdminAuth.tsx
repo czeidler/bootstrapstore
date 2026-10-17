@@ -7,10 +7,7 @@ import { Loader } from "@mantine/core";
 export const AdminAuth = ({ children }: { children: React.ReactNode }) => {
   const { data, isLoading } = useQuery({
     queryFn: async () => {
-      const response = await tsr.me({ query: { auth: undefined } });
-      if (response.status !== 200) {
-        throw Error(JSON.stringify(response));
-      }
+      const response = await tsr.me({ auth: undefined });
       return response;
     },
     queryKey: ["me"],
@@ -18,7 +15,7 @@ export const AdminAuth = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && data?.body.desktopMode === undefined) {
+    if (!isLoading && data?.desktopMode === undefined) {
       navigate("/");
     }
   }, [isLoading, data, navigate]);

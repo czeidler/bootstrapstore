@@ -14,17 +14,12 @@ export function SyncDirStatus({
     queryKey: ["diff"],
     queryFn: async () => {
       const diff = await trustedTsr.diff({
-        body: {
-          left: {
-            path: fromPath,
-          },
-          right: { path: toPath },
+        left: {
+          path: fromPath,
         },
+        right: { path: toPath },
       });
-      if (diff.status !== 201) {
-        throw Error(`HTTP status ${diff.status}`);
-      }
-      return diff.body;
+      return diff;
     },
   });
   if (data === undefined) return <></>;

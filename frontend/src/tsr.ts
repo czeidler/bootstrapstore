@@ -1,12 +1,14 @@
-import { initClient } from "@ts-rest/core";
 import { contract } from "../../backend/src/contract";
-import { contractLocal } from "../../backend/src/contractLocal";
+import { contractLocal } from "../../backend/src/contract-local";
+import { createORPCClient } from "@orpc/client";
+import { RPCLink } from "@orpc/client/fetch";
+import { RouterContractClient } from "@orpc/contract";
 
-const options = {
-  baseUrl: "http://localhost:8080",
-  jsonQuery: true,
-};
+const link = new RPCLink({
+  origin: "http://localhost:8080",
+});
+export const tsr: RouterContractClient<typeof contract> =
+  createORPCClient(link);
 
-export const tsr = initClient(contract, options);
-
-export const trustedTsr = initClient(contractLocal, options);
+export const trustedTsr: RouterContractClient<typeof contractLocal> =
+  createORPCClient(link);
