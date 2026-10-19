@@ -1,4 +1,8 @@
-import { oc } from "@orpc/contract";
+import {
+  asyncIteratorObject,
+  InferContractRouterOutputs,
+  oc,
+} from "@orpc/contract";
 import { openapi } from "@orpc/openapi";
 import { z } from "zod";
 import { Auth } from "./contract";
@@ -12,6 +16,20 @@ const Remote = z.object({
 
 /** Endpoints for a trusted local server, e.g. when run locally in "Desktop" mode. */
 export const contractLocal = {
+  syncStatusEvents: oc.input(z.object({ syncId: z.string() })).output(
+    asyncIteratorObject(
+      z.discriminatedUnion("status", [
+        z.object({
+          status: z.literal("error"),
+          error: z.string(),
+          endTime: z.string(),
+        }),
+        z.object({ status: z.literal("success"), endTime: z.string() }),
+        z.object({ status: z.literal("ongoing") }),
+      ]),
+    ),
+  ),
+
   pushRepo: oc
     .meta(
       openapi({
@@ -171,3 +189,11 @@ export const contractLocal = {
     )
     .output(z.void()),
 };
+
+type SyncStatusEventsTypeRaw = InferContractRouterOutputs<
+  typeof contractLocal.syncStatusEvents
+>;
+export type SyncStatusEventsType =
+  SyncStatusEventsTypeRaw extends AsyncIteratorObject<infer TEvent, any, any>
+    ? TEvent
+    : never;

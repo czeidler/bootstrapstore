@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { MetadataRepository, shortId } from "lib";
 import { useCreateSync } from "../account-hooks";
 import { Button, Flex, Modal, Text, TextInput } from "@mantine/core";
@@ -9,7 +9,7 @@ import { SyncDirStatus } from "./SyncDirStatus";
 import { useDisclosure } from "@mantine/hooks";
 import { useMutation } from "@tanstack/react-query";
 import { trustedClient } from "../client";
-import { SyncStatusSEEBodyType } from "../../../backend/src/contract";
+import { useSyncStatus } from "./useSyncStatus";
 
 export const SyncConfig = ({
   onClose,
@@ -87,42 +87,6 @@ const EditSyncDialog = ({
     </Modal>
   );
 };
-
-function useSyncStatus(syncId: string) {
-  const [syncStatus, setSyncStatus] = useState<SyncStatusSEEBodyType | null>(
-    null,
-  );
-  const eventSource = useRef<EventSource | null>(null);
-
-  const recheck = useCallback(() => {
-    eventSource.current?.close();
-
-    const es = new EventSource(
-      `http://localhost:8080/sync-status-events?syncId=${syncId}`,
-    );
-    eventSource.current = es;
-
-    es.onmessage = (event: MessageEvent) => {
-      console.log("Received event:", event.data);
-      setSyncStatus(JSON.parse(event.data).event);
-    };
-
-    es.onerror = () => {
-      if (es.readyState === EventSource.CLOSED) {
-        console.log("EventSource closed by server");
-      }
-    };
-  }, [syncId]);
-
-  useEffect(() => {
-    recheck();
-    return () => {
-      eventSource.current?.close();
-      eventSource.current = null;
-    };
-  }, [recheck]);
-  return { syncStatus, recheck };
-}
 
 export function SyncEntry({
   syncInfo,

@@ -1,17 +1,17 @@
 import { Button, Modal, Flex, Text, TextInput, Select } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { MetadataRepository, shortId } from "lib";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useCreateSync, useDevicesWithLocations } from "../account-hooks";
 import { useMutation } from "@tanstack/react-query";
 import { trustedClient } from "../client";
-import { SyncStatusSEEBodyType } from "../../../backend/src/contract";
 import { AccountData } from "lib/src/account";
 import { SyncPushRepoInfo } from "lib/src/main-repo";
 import { SyncEntryLayout } from "./SyncEntryLayout";
 import { SyncConfigLayout } from "./SyncConfigLayout";
 import { useSnapshot } from "valtio";
 import { authUserStore } from "../auth-store";
+import { useSyncStatus } from "./useSyncStatus";
 
 export const PushRepoConfig = ({
   onClose,
@@ -100,41 +100,7 @@ const EditPushRepoDialog = ({
     </Modal>
   );
 };
-function useSyncStatus(syncId: string) {
-  const [syncStatus, setSyncStatus] = useState<SyncStatusSEEBodyType | null>(
-    null,
-  );
-  const eventSource = useRef<EventSource | null>(null);
 
-  const recheck = useCallback(() => {
-    eventSource.current?.close();
-
-    const es = new EventSource(
-      `http://localhost:8080/sync-status-events?syncId=${syncId}`,
-    );
-    eventSource.current = es;
-
-    es.onmessage = (event: MessageEvent) => {
-      console.log("Received event:", event.data);
-      setSyncStatus(JSON.parse(event.data).event);
-    };
-
-    es.onerror = () => {
-      if (es.readyState === EventSource.CLOSED) {
-        console.log("EventSource closed by server");
-      }
-    };
-  }, [syncId]);
-
-  useEffect(() => {
-    recheck();
-    return () => {
-      eventSource.current?.close();
-      eventSource.current = null;
-    };
-  }, [recheck]);
-  return { syncStatus, recheck };
-}
 export function PushRepoEntry({
   syncInfo,
   metadataRepo,

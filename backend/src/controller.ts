@@ -1,10 +1,4 @@
-import {
-  contract,
-  contractSSE,
-  serverSSEHandler,
-  SyncStatusSEEBodyType,
-} from "./contract";
-import multer from "multer";
+import { contract } from "./contract";
 import express from "express";
 import { storeGetter } from "./service";
 import cors from "cors";
@@ -17,7 +11,7 @@ import {
   RCloneRCCommands,
 } from "lib-node/src/rclone";
 import { RCloneJobManager } from "./rclone-job-manager";
-import { contractLocal } from "./contract-local";
+import { contractLocal, SyncStatusEventsType } from "./contract-local";
 import {
   finishLogin,
   finishRegistration,
@@ -145,9 +139,45 @@ export type AppConfig = {
 };
 
 const osLocal = implement(contractLocal);
-const localRouter = () => {
+const localRouter = (config: AppConfig) => {
   const rsyncManager = new RCloneJobManager();
   return osLocal.router({
+    syncStatusEvents: osLocal.syncStatusEvents.handler(async function* ({
+      signal,
+      input,
+    }) {
+      if (!config.desktopMode) {
+        return;
+      }
+      while (!signal?.aborted) {
+        const status = await rsyncManager.jobStatus(input.syncId);
+        if (status === undefined) {
+          return;
+        }
+        const event: SyncStatusEventsType = status.finished
+          ? ({
+              status: "ongoing",
+            } satisfies SyncStatusEventsType)
+          : status.success
+            ? ({
+                status: "success",
+                endTime: status.endTime,
+              } satisfies SyncStatusEventsType)
+            : ({
+                status: "error",
+                error: status.error,
+                endTime: status.endTime,
+              } satisfies SyncStatusEventsType);
+
+        yield event;
+        if (event.status !== "ongoing") {
+          return;
+        }
+
+        await new Promise((r) => setTimeout(r, 300));
+      }
+    }),
+
     pushRepo: osLocal.pushRepo.handler(async ({ input }) => {
       await pushRepo(input.auth.userId, input);
       return {};
@@ -278,7 +308,7 @@ export const buildApp = (config: AppConfig) => {
         connection: config.connection,
         desktopMode: config.desktopMode ? { path: config.path } : undefined,
       }),
-      ...localRouter(),
+      ...localRouter(config),
     },
     {
       interceptors: [
@@ -302,44 +332,6 @@ export const buildApp = (config: AppConfig) => {
     if (matched) return;
     next();
   });
-
-  if (config.desktopMode) {
-    serverSSEHandler(
-      app,
-      contractSSE.syncStatusEvents,
-      ({ query, onEvent, end }) => {
-        const interval = setInterval(async () => {
-          const status = await rsyncManager.jobStatus(query.syncId);
-          const event: SyncStatusSEEBodyType | undefined =
-            status === undefined
-              ? undefined
-              : !status.finished
-                ? ({
-                    status: "ongoing",
-                  } satisfies SyncStatusSEEBodyType)
-                : status.success
-                  ? ({
-                      status: "success",
-                      endTime: status.endTime,
-                    } satisfies SyncStatusSEEBodyType)
-                  : ({
-                      status: "error",
-                      error: status.error,
-                      endTime: status.endTime,
-                    } satisfies SyncStatusSEEBodyType);
-
-          onEvent(event);
-          if (event?.status !== "ongoing") {
-            clearInterval(interval);
-            end();
-          }
-        }, 300);
-        return () => {
-          clearInterval(interval);
-        };
-      },
-    );
-  }
 
   return app;
 };
